@@ -1,308 +1,367 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import {
-  Package, TrendingUp, AlertTriangle, ClipboardList,
-  Truck, DollarSign, ArrowUpRight, ArrowDownRight,
+  Package, ShoppingCart, Truck, BarChart3, ScanBarcode, Receipt,
+  ArrowRight, CheckCircle2, CarFront, Shield, Zap, Users, ChevronRight,
+  Phone, Mail, MapPin, Clock, Star, TrendingUp,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/constants';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend,
-} from 'recharts';
 
-interface DashboardData {
-  totalProducts: number;
-  totalStock: number;
-  totalStockValue: number;
-  todaySales: number;
-  lowStockCount: number;
-  pendingOrders: number;
-  recentOrders: Array<{
-    id: string;
-    orderNumber: string;
-    customer: { name: string };
-    totalAmount: number;
-    status: string;
-    paymentStatus: string;
-    createdAt: string;
-  }>;
-  lowStockProducts: Array<{
-    id: string;
-    name: string;
-    stock: number;
-    minStock: number;
-    category: { name: string } | null;
-  }>;
-  deliveryStats?: Array<{ name: string; value: number }>;
+/* ── Scroll Animation Hook ── */
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+          } else {
+            entry.target.classList.remove('revealed');
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    // Observe the container and all children with .reveal-item
+    const items = el.querySelectorAll('.reveal-item');
+    items.forEach((item) => observer.observe(item));
+    observer.observe(el);
+
+    return () => observer.disconnect();
+  }, []);
+
+  return ref;
 }
 
-const COLORS = ['#0061FF', '#2ECC71', '#E67E22', '#E74C3C', '#9B59B6', '#1ABC9C'];
+/* ── Data ── */
+const trustBadges = [
+  { icon: CheckCircle2, title: 'Quality Products', desc: 'We source and distribute trusted and high-quality merchandise.' },
+  { icon: Clock, title: 'Timely Delivery', desc: 'Our logistics team ensures fast and on-time delivery every time.' },
+  { icon: Shield, title: 'Inventory Accuracy', desc: 'Real-time stock tracking to prevent shortages and overstock.' },
+  { icon: Star, title: 'Customer Satisfaction', desc: 'We build long-term relationships through excellent service.' },
+];
 
-export default function DashboardPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [salesData, setSalesData] = useState<Array<{ date: string; sales: number }>>([]);
-  const [loading, setLoading] = useState(true);
+const services = [
+  { icon: Package, title: 'Food and Grocery Distribution', desc: 'Ensuring consistent supply of essential food and grocery items to retailers.' },
+  { icon: Zap, title: 'Frozen Product Distribution', desc: 'Specialized handling and storage for frozen products to maintain quality.' },
+  { icon: Truck, title: 'Wholesale and Bulk Supply', desc: 'Providing bulk supply options for commercial establishments and businesses.' },
+  { icon: ShoppingCart, title: 'Retail Store Supply Solutions', desc: 'Comprehensive supply chain solutions tailored for supermarkets and stores.' },
+  { icon: BarChart3, title: 'Warehousing & Inventory', desc: 'Modern facilities for safe storage and precise inventory management.' },
+  { icon: CarFront, title: 'Logistics and Transportation', desc: 'Efficient and timely delivery services across our coverage areas.' },
+];
+
+const stats = [
+  { value: '10+', label: 'Years of Experience' },
+  { value: '500+', label: 'Happy Clients' },
+  { value: '1,000+', label: 'Products Distributed' },
+  { value: '15+', label: 'Delivery Vehicles' },
+  { value: 'Wide', label: 'Coverage in Mindanao' },
+  { value: '100%', label: 'System Reliability' },
+];
+
+const coverageAreas = [
+  'Lanao del Sur',
+  'Lanao del Norte',
+  'Iligan City',
+  'And Nearby Areas',
+];
+
+export default function LandingPage() {
+  const heroRef = useScrollReveal();
+  const trustRef = useScrollReveal();
+  const aboutRef = useScrollReveal();
+  const servicesRef = useScrollReveal();
+  const whyRef = useScrollReveal();
+  const coverageRef = useScrollReveal();
+
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
-
-  const fetchDashboard = async () => {
-    try {
-      const [dashRes, salesRes] = await Promise.all([
-        fetch('/api/reports?type=dashboard'),
-        fetch('/api/reports?type=sales'),
-      ]);
-      const dashData = await dashRes.json();
-      const salesResult = await salesRes.json();
-      setData(dashData);
-      setSalesData(salesResult.dailySales || []);
-    } catch (error) {
-      console.error('Failed to fetch dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (status === 'authenticated') {
-      fetchDashboard();
-    }
-  }, [status]);
-
-  if (status === 'loading' || loading) {
-    return (
-      <div className="loading-page">
-        <div className="loading-spinner lg" />
-        <p>Loading dashboard...</p>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="loading-page">
-        <p>Failed to load dashboard data</p>
-      </div>
-    );
-  }
-
-  const deliveryData = data.deliveryStats || [
-    { name: 'No Data', value: 1 }
-  ];
-
-  const statusBadge = (status: string) => {
-    const map: Record<string, string> = {
-      pending: 'badge-warning',
-      confirmed: 'badge-primary',
-      delivered: 'badge-success',
-      cancelled: 'badge-danger',
-      paid: 'badge-success',
-      unpaid: 'badge-danger',
-      partial: 'badge-warning',
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
     };
-    return map[status] || 'badge-neutral';
-  };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Overview of your distribution operations</p>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon blue">
-            <Package size={24} strokeWidth={1.75} />
+    <div className="landing-page">
+      {/* ===== NAVBAR ===== */}
+      <nav className={`landing-nav ${isScrolled ? 'scrolled' : ''}`}>
+        <div className="landing-nav-inner">
+          <div className="landing-nav-logo">
+            <div className="landing-nav-logo-icon">
+              <CarFront size={22} strokeWidth={2} />
+            </div>
+            <span>Amroding General Merchandise</span>
           </div>
-          <div className="stat-info">
-            <div className="stat-label">Total Products</div>
-            <div className="stat-value">{data.totalProducts}</div>
-            <div className="stat-change positive">
-              <ArrowUpRight size={12} /> {data.totalStock} units in stock
+          <div className="landing-nav-links">
+            <a href="#" className="active">Home</a>
+            <a href="#about">About Us</a>
+            <a href="#services">Products & Services</a>
+            <a href="#why">Why Choose Us</a>
+            <a href="#coverage">Our Coverage</a>
+            <a href="#coverage">Contact Us</a>
+          </div>
+          <div className="landing-nav-actions">
+            <Link href="/login" className="landing-btn-primary">
+              Login
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* ===== HERO — White background ===== */}
+      <section className="landing-hero" ref={heroRef}>
+        <div className="landing-hero-content reveal-item">
+          <span className="landing-hero-welcome">WELCOME TO</span>
+          <h1 className="landing-hero-title">
+            YOUR TRUSTED<br />DISTRIBUTION PARTNER<br /><span className="landing-hero-highlight">IN MINDANAO</span>
+          </h1>
+          <p className="landing-hero-subtitle">
+            We deliver quality food, grocery, and frozen products 
+            with reliability and excellence across Lanao del Sur, 
+            Lanao del Norte, and nearby areas in Mindanao.
+          </p>
+          <div className="landing-hero-actions">
+            <a href="#about" className="landing-btn-primary landing-btn-lg">
+              Learn More About Us
+            </a>
+            <a href="#coverage" className="landing-btn-outline-dark landing-btn-lg">
+              Contact Us
+            </a>
+          </div>
+        </div>
+        <div className="landing-hero-visual reveal-item">
+          <div className="landing-hero-image-wrapper">
+            <img src="/images/hero-truck.jpg" alt="Amroding General Merchandise Trucks" className="landing-hero-image" />
+          </div>
+        </div>
+      </section>
+
+      {/* ===== TRUST BADGES — Light gray ===== */}
+      <section className="landing-trust" ref={trustRef}>
+        <div className="landing-section-inner">
+          <div className="landing-trust-grid">
+            {trustBadges.map((badge, i) => (
+              <div key={badge.title} className="landing-trust-item reveal-item" style={{ transitionDelay: `${i * 100}ms` }}>
+                <div className="landing-trust-icon">
+                  <badge.icon size={24} />
+                </div>
+                <h4>{badge.title}</h4>
+                <p>{badge.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== ABOUT — White ===== */}
+      <section className="landing-about" id="about" ref={aboutRef}>
+        <div className="landing-section-inner">
+          <div className="landing-about-layout">
+            <div className="landing-about-text reveal-item">
+              <span className="landing-section-badge">ABOUT US</span>
+              <h2 className="landing-section-title">Delivering Quality Products Across Mindanao Since 2010</h2>
+              <p>
+                Amroding General Merchandise was established in 2010 with a commitment to providing reliable distribution services and quality products to businesses and communities throughout Mindanao. Over the years, we have grown from a local trading business into a trusted distribution partner serving retailers, supermarkets, convenience stores, restaurants, wholesalers, and various commercial establishments.
+              </p>
+              <p>
+                With more than a decade of experience in the distribution industry, we have built a strong reputation for reliability, integrity, and customer satisfaction. Our success is driven by our dedication to delivering quality products, maintaining efficient logistics operations, and building long-term relationships with our customers and business partners.
+              </p>
+              <p>
+                We specialize in the distribution of food, grocery, frozen, and consumer products, ensuring that every item is handled with care and delivered on time. Through our warehouse facilities, transportation fleet, and experienced team, we continue to provide dependable supply chain solutions that help businesses operate smoothly and efficiently.
+              </p>
+
+              <div style={{ marginTop: '24px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Our Mission</h3>
+                <p style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                  To provide high-quality products and reliable distribution services that support the growth and success of our customers while maintaining excellence, integrity, and customer satisfaction in everything we do.
+                </p>
+                
+                <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Our Vision</h3>
+                <p style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>
+                  To become one of the most trusted and respected distribution companies in Mindanao, recognized for outstanding service, operational excellence, and strong partnerships with leading brands and businesses.
+                </p>
+              </div>
+
+              <a href="#services" className="landing-btn-primary" style={{ marginTop: '24px' }}>
+                Explore What We Do
+              </a>
+            </div>
+            <div className="landing-about-visual reveal-item">
+              <div className="landing-about-grid">
+                <div className="landing-about-card">
+                  <TrendingUp size={32} />
+                  <span>Growing Network</span>
+                </div>
+                <div className="landing-about-card">
+                  <Truck size={32} />
+                  <span>Fleet Ready</span>
+                </div>
+                <div className="landing-about-card accent">
+                  <Package size={32} />
+                  <span>1,000+ Products</span>
+                </div>
+                <div className="landing-about-card">
+                  <Users size={32} />
+                  <span>Trusted Partners</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </section>
 
-        <div className="stat-card">
-          <div className="stat-icon green">
-            <DollarSign size={24} strokeWidth={1.75} />
+      {/* ===== SERVICES — Light gray ===== */}
+      <section className="landing-features" id="services" ref={servicesRef}>
+        <div className="landing-section-inner">
+          <div className="landing-section-header reveal-item">
+            <span className="landing-section-badge">OUR PRODUCTS & SERVICES</span>
+            <h2 className="landing-section-title">Complete Distribution Solutions</h2>
           </div>
-          <div className="stat-info">
-            <div className="stat-label">Sales Today</div>
-            <div className="stat-value">{formatCurrency(data.todaySales)}</div>
-            <div className="stat-change positive">
-              <TrendingUp size={12} /> Stock value: {formatCurrency(data.totalStockValue)}
+          <div className="landing-features-grid">
+            {services.map((feature, i) => (
+              <div key={feature.title} className="landing-feature-card reveal-item" style={{ transitionDelay: `${i * 120}ms` }}>
+                <div className="landing-feature-icon">
+                  <feature.icon size={28} />
+                </div>
+                <h3>{feature.title}</h3>
+                <p>{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== WHY CHOOSE US — Dark navy ===== */}
+      <section className="landing-why" id="why" ref={whyRef}>
+        <div className="landing-section-inner">
+          <div className="landing-why-layout">
+            <div className="landing-why-text reveal-item">
+              <span className="landing-section-badge" style={{ background: 'rgba(37,99,235,0.15)', color: 'var(--primary)' }}>WHY CHOOSE US</span>
+              <h2 style={{ color: '#fff', fontSize: '32px', fontWeight: 800, marginBottom: '24px' }}>
+                Why Choose Amroding General Merchandise?
+              </h2>
+              <ul className="landing-why-list" style={{ marginBottom: '24px' }}>
+                <li><CheckCircle2 size={16} color="var(--primary)" /> Serving Mindanao since 2010</li>
+                <li><CheckCircle2 size={16} color="var(--primary)" /> Reliable and timely deliveries</li>
+                <li><CheckCircle2 size={16} color="var(--primary)" /> Professional and experienced team</li>
+                <li><CheckCircle2 size={16} color="var(--primary)" /> Strong distribution and logistics network</li>
+                <li><CheckCircle2 size={16} color="var(--primary)" /> Commitment to quality and customer satisfaction</li>
+                <li><CheckCircle2 size={16} color="var(--primary)" /> Trusted by retailers, wholesalers, and business partners</li>
+                <li><CheckCircle2 size={16} color="var(--primary)" /> Dedicated to building long-term relationships</li>
+              </ul>
+              <p style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.6', fontSize: '14px' }}>
+                For over 15 years, Amroding General Merchandise has remained committed to delivering quality products and exceptional service. As we continue to grow, our focus remains the same: providing reliable distribution solutions and helping businesses succeed by ensuring that quality products reach customers across Mindanao efficiently and consistently.
+              </p>
+            </div>
+            <div className="landing-why-stats reveal-item">
+              {stats.map((stat, i) => (
+                <div key={stat.label} className="landing-why-stat-card reveal-item" style={{ transitionDelay: `${i * 80}ms` }}>
+                  <div className="landing-why-stat-value">{stat.value}</div>
+                  <div className="landing-why-stat-label">{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
+      </section>
 
-        <div className="stat-card">
-          <div className="stat-icon orange">
-            <AlertTriangle size={24} strokeWidth={1.75} />
-          </div>
-          <div className="stat-info">
-            <div className="stat-label">Low Stock Alerts</div>
-            <div className="stat-value">{data.lowStockCount}</div>
-            <div className="stat-change negative">
-              <ArrowDownRight size={12} /> Products need restocking
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon red">
-            <ClipboardList size={24} strokeWidth={1.75} />
-          </div>
-          <div className="stat-info">
-            <div className="stat-label">Pending Orders</div>
-            <div className="stat-value">{data.pendingOrders}</div>
-            <div className="stat-change negative">
-              <Truck size={12} /> Awaiting confirmation
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Row */}
-      <div className="charts-grid">
-        <div className="chart-container">
-          <div className="chart-header">
-            <h3 className="card-title">Sales Overview (Last 7 Days)</h3>
-          </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={salesData.slice(-7)}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8ECF0" />
-              <XAxis dataKey="date" fontSize={12} tick={{ fill: '#7F8C8D' }} />
-              <YAxis fontSize={12} tick={{ fill: '#7F8C8D' }} tickFormatter={(v) => `₱${(v/1000).toFixed(0)}k`} />
-              <Tooltip
-                formatter={(value: any) => [formatCurrency(Number(value) || 0), 'Sales']}
-                contentStyle={{ borderRadius: '8px', border: '1px solid #E8ECF0', fontFamily: 'Plus Jakarta Sans' }}
-              />
-              <Bar dataKey="sales" fill="#0061FF" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-container">
-          <div className="chart-header">
-            <h3 className="card-title">Delivery Status</h3>
-          </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie
-                data={deliveryData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {deliveryData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+      {/* ===== COVERAGE + CTA — White ===== */}
+      <section className="landing-coverage" id="coverage" ref={coverageRef}>
+        <div className="landing-section-inner">
+          <div className="landing-coverage-layout">
+            <div className="landing-coverage-area reveal-item">
+              <span className="landing-section-badge">OUR COVERAGE AREA</span>
+              <h2 className="landing-section-title" style={{ textAlign: 'left' }}>Proudly Serving Mindanao</h2>
+              <ul className="landing-coverage-list">
+                {coverageAreas.map((area) => (
+                  <li key={area}>
+                    <MapPin size={16} />
+                    {area}
+                  </li>
                 ))}
-              </Pie>
-              <Legend
-                verticalAlign="bottom"
-                height={36}
-                formatter={(value) => <span style={{ color: '#2C3E50', fontSize: '13px' }}>{value}</span>}
-              />
-              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #E8ECF0' }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Bottom Row: Low Stock + Recent Orders */}
-      <div className="charts-grid" style={{ marginTop: '0' }}>
-        {/* Low Stock Alerts */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">⚠️ Low Stock Alerts</h3>
-            <span className="badge badge-danger">{data.lowStockProducts.length} items</span>
-          </div>
-          <div className="alert-list">
-            {data.lowStockProducts.length === 0 ? (
-              <p style={{ textAlign: 'center', padding: '20px', color: 'var(--text-tertiary)' }}>
-                All products are well stocked! 🎉
+              </ul>
+            </div>
+            <div className="landing-coverage-cta reveal-item">
+              <span className="landing-section-badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>CONTACT US</span>
+              <h2 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '12px' }}>
+                Get in Touch With Us
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: '1.7' }}>
+                We would love to hear from you! Whether you are looking for a reliable distributor, interested in wholesale orders, or have questions about our products and services, our team is ready to assist you.
               </p>
-            ) : (
-              data.lowStockProducts.slice(0, 5).map((product) => (
-                <div key={product.id} className={`alert-item ${product.stock === 0 ? 'danger' : 'warning'}`}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 'var(--font-base)' }}>{product.name}</div>
-                    <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>
-                      {product.category?.name || 'Uncategorized'}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, color: product.stock <= 5 ? 'var(--danger)' : 'var(--warning)', fontSize: 'var(--font-md)' }}>
-                      {product.stock}
-                    </div>
-                    <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)' }}>
-                      min: {product.minStock}
-                    </div>
+              <div className="landing-contact-items">
+                <div className="landing-contact-item" style={{ alignItems: 'flex-start' }}>
+                  <MapPin size={18} style={{ marginTop: '2px' }} />
+                  <div>
+                    <span style={{ fontWeight: 600, display: 'block', color: 'var(--text-primary)' }}>Amroding General Merchandise</span>
+                    <span style={{ fontSize: '14px' }}>Serving Lanao del Sur, Lanao del Norte, and nearby areas across Mindanao</span>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Recent Orders */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">📋 Recent Orders</h3>
-            <a href="/orders" style={{ fontSize: 'var(--font-sm)', fontWeight: 600 }}>View All →</a>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {data.recentOrders.length === 0 ? (
-              <p style={{ textAlign: 'center', padding: '20px', color: 'var(--text-tertiary)' }}>
-                No orders yet
-              </p>
-            ) : (
-              data.recentOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="alert-item"
-                  style={{ cursor: 'pointer', borderLeft: 'none' }}
-                  onClick={() => router.push(`/orders/${order.id}`)}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 'var(--font-base)' }}>
-                      {order.orderNumber}
-                    </div>
-                    <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>
-                      {order.customer.name}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                    <div style={{ fontWeight: 700, fontSize: 'var(--font-base)' }}>
-                      {formatCurrency(order.totalAmount)}
-                    </div>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <span className={`badge ${statusBadge(order.status)}`}>{order.status}</span>
-                      <span className={`badge ${statusBadge(order.paymentStatus)}`}>{order.paymentStatus}</span>
-                    </div>
-                  </div>
+                <div className="landing-contact-item">
+                  <Mail size={18} />
+                  <span>mail.amerhantbh@gmail.com</span>
                 </div>
-              ))
-            )}
+                <div className="landing-contact-item">
+                  <Star size={18} />
+                  <span>Facebook: Amroding General Merchandise</span>
+                </div>
+                <div className="landing-contact-item">
+                  <Clock size={18} />
+                  <span>Sunday – Saturday | 8:00 AM – 5:00 PM</span>
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
-      </div>
-    </>
+      </section>
+
+      {/* ===== FOOTER — Dark navy ===== */}
+      <footer className="landing-footer">
+        <div className="landing-section-inner">
+          <div className="landing-footer-top">
+            <div className="landing-footer-brand">
+              <div className="landing-nav-logo-icon" style={{ width: '40px', height: '40px' }}>
+                <CarFront size={20} strokeWidth={2} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '16px', color: '#fff' }}>Amroding General Merchandise</div>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginTop: '4px', lineHeight: '1.5' }}>
+                  Distributing quality merchandise<br />with excellence and integrity across Mindanao.
+                </div>
+              </div>
+            </div>
+            <div className="landing-footer-links">
+              <div className="landing-footer-col">
+                <h5>Quick Links</h5>
+                <a href="#about">About Us</a>
+                <a href="#services">Products & Services</a>
+                <a href="#why">Why Choose Us</a>
+                <a href="#coverage">Coverage Area</a>
+              </div>
+              <div className="landing-footer-col">
+                <h5>Contact Us</h5>
+                <a href="#">(063) 123 4567</a>
+                <a href="#">mail.amerhantbh@gmail.com</a>
+                <a href="#">Lanao del Sur, Mindanao</a>
+              </div>
+            </div>
+          </div>
+          <div className="landing-footer-bottom">
+            <span>© {new Date().getFullYear()} Amroding General Merchandise. All Rights Reserved.</span>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
