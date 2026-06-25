@@ -4,6 +4,8 @@ import AuthProvider from '@/components/AuthProvider';
 import AppShell from '@/components/layout/AppShell';
 import { AlertProvider } from '@/components/AlertModal';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
+import NextTopLoader from 'nextjs-toploader';
+import { Toaster } from 'react-hot-toast';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: '/icon.svg',
-    apple: '/icons/icon-192x192.png',
+    apple: '/icons/icon-192x192.jpg',
   },
   appleWebApp: {
     capable: true,
@@ -35,6 +37,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <NextTopLoader color="var(--primary)" showSpinner={false} />
+        <Toaster position="bottom-right" toastOptions={{
+          style: { background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' },
+          success: { iconTheme: { primary: 'var(--success)', secondary: '#fff' } },
+        }} />
         <AlertProvider>
           <AuthProvider>
             <AppShell>{children}</AppShell>

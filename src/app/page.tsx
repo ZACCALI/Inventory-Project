@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Package, ShoppingCart, Truck, BarChart3, ScanBarcode, Receipt,
-  ArrowRight, CheckCircle2, CarFront, Shield, Zap, Users, ChevronRight,
+  ArrowRight, CheckCircle2, Shield, Zap, Users, ChevronRight,
   Phone, Mail, MapPin, Clock, Star, TrendingUp,
 } from 'lucide-react';
 
@@ -54,7 +54,7 @@ const services = [
   { icon: Truck, title: 'Wholesale and Bulk Supply', desc: 'Providing bulk supply options for commercial establishments and businesses.' },
   { icon: ShoppingCart, title: 'Retail Store Supply Solutions', desc: 'Comprehensive supply chain solutions tailored for supermarkets and stores.' },
   { icon: BarChart3, title: 'Warehousing & Inventory', desc: 'Modern facilities for safe storage and precise inventory management.' },
-  { icon: CarFront, title: 'Logistics and Transportation', desc: 'Efficient and timely delivery services across our coverage areas.' },
+  { icon: Truck, title: 'Logistics and Transportation', desc: 'Efficient and timely delivery services across our coverage areas.' },
 ];
 
 const stats = [
@@ -98,7 +98,7 @@ export default function LandingPage() {
         <div className="landing-nav-inner">
           <div className="landing-nav-logo">
             <div className="landing-nav-logo-icon">
-              <CarFront size={22} strokeWidth={2} />
+              <Truck size={22} strokeWidth={2} />
             </div>
             <span>Amroding General Merchandise</span>
           </div>
@@ -120,7 +120,7 @@ export default function LandingPage() {
 
       {/* ===== HERO — White background ===== */}
       <section className="landing-hero" ref={heroRef}>
-        <div className="landing-hero-content reveal-item">
+        <div className="landing-hero-content">
           <span className="landing-hero-welcome">WELCOME TO</span>
           <h1 className="landing-hero-title">
             YOUR TRUSTED<br />DISTRIBUTION PARTNER<br /><span className="landing-hero-highlight">IN MINDANAO</span>
@@ -139,7 +139,7 @@ export default function LandingPage() {
             </a>
           </div>
         </div>
-        <div className="landing-hero-visual reveal-item">
+        <div className="landing-hero-visual">
           <div className="landing-hero-image-wrapper">
             <img src="/images/hero-truck.jpg" alt="Amroding General Merchandise Trucks" className="landing-hero-image" />
           </div>
@@ -332,7 +332,7 @@ export default function LandingPage() {
           <div className="landing-footer-top">
             <div className="landing-footer-brand">
               <div className="landing-nav-logo-icon" style={{ width: '40px', height: '40px' }}>
-                <CarFront size={20} strokeWidth={2} />
+                <Truck size={20} strokeWidth={2} />
               </div>
               <div>
                 <div style={{ fontWeight: 700, fontSize: '16px', color: '#fff' }}>Amroding General Merchandise</div>
