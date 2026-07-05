@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig, RuntimeCaching } from "serwist";
-import { Serwist, NetworkFirst } from "serwist";
+import { Serwist, NetworkFirst, NetworkOnly } from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -12,6 +12,10 @@ declare global {
 declare const self: ServiceWorkerGlobalScope;
 
 const customCache: RuntimeCaching[] = [
+  {
+    matcher: /\/api\/test-ping.*/i,
+    handler: new NetworkOnly(),
+  },
   {
     matcher: /\/api\/auth\/session.*/i,
     handler: new NetworkFirst({

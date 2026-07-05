@@ -80,7 +80,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       }
       // navigator.onLine is true, but Windows virtual adapters can spoof this. Ping to verify.
       try {
-        await fetch('/api/test-ping', { method: 'HEAD', cache: 'no-store' });
+        await fetch(`/api/test-ping?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
         setIsOffline(false);
         handleBackgroundSync();
       } catch (error) {
