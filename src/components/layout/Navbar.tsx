@@ -304,7 +304,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       <div className="navbar-right">
         {/* Sync Status Indicator */}
         <div 
-          className={!isOffline && !isSyncing && pendingSyncCount === 0 ? 'hide-mobile' : ''}
+          className={pendingSyncCount === 0 && !isOffline && !isSyncing ? 'hide-sync-on-mobile' : ''}
           style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '8px', cursor: pendingSyncCount > 0 && !isOffline ? 'pointer' : 'default' }}
           onClick={() => { if (pendingSyncCount > 0 && !isOffline && !isSyncing) processSyncQueue(); }}
           title={isOffline ? 'Offline Mode' : isSyncing ? 'Syncing to Cloud...' : pendingSyncCount > 0 ? `${pendingSyncCount} items waiting to sync` : 'Cloud Sync Active'}

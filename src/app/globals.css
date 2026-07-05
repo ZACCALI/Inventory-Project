@@ -4161,6 +4161,9 @@ p {
 
 /* Hide tooltips completely on mobile touch devices */
 @media (max-width: 768px) {
+  .hide-sync-on-mobile {
+    display: none !important;
+  }
   [data-tooltip]::after {
     display: none !important;
   }
@@ -4328,7 +4331,3 @@ p {
 
 .spin-animation { animation: spin 1s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
-
-@media (max-width: 768px) {
-  .hide-mobile { display: none !important; }
-}
