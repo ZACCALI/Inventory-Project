@@ -307,19 +307,28 @@ export default function InventoryPage() {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, startX, startY, size, size, 0, 0, 500, 500);
-          canvas.toBlob(async (blob) => {
-            if (!blob) return;
-            const uploadData = new FormData(); 
-            uploadData.append('file', blob, 'image.jpg');
-            try {
-              const res = await fetch('/api/upload', { method: 'POST', body: uploadData });
-              if (!res.ok) throw new Error('Upload failed');
-              const { url } = await res.json();
-              setFormData(prev => ({...prev, image: url}));
-            } catch (error) {
-              console.error('Image upload error:', error);
-            }
-          }, 'image/jpeg', 0.7);
+          
+          const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+          if (isOffline) {
+            const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+            setFormData(prev => ({...prev, image: base64Image}));
+            showToast('Photo saved locally for offline mode', 'success');
+          } else {
+            canvas.toBlob(async (blob) => {
+              if (!blob) return;
+              const uploadData = new FormData(); 
+              uploadData.append('file', blob, 'image.jpg');
+              try {
+                const res = await fetch('/api/upload', { method: 'POST', body: uploadData });
+                if (!res.ok) throw new Error('Upload failed');
+                const { url } = await res.json();
+                setFormData(prev => ({...prev, image: url}));
+              } catch (error) {
+                console.error('Image upload error:', error);
+                showToast('Failed to upload image', 'error');
+              }
+            }, 'image/jpeg', 0.7);
+          }
         }
       };
       if (event.target?.result) {
