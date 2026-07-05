@@ -334,7 +334,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
           className="show-mobile"
           style={{ 
             width: '10px', height: '10px', borderRadius: '50%', marginRight: '12px', flexShrink: 0, cursor: 'pointer',
-            backgroundColor: isOffline ? 'var(--error)' : isSyncing ? 'var(--primary)' : pendingSyncCount > 0 ? 'var(--warning)' : 'var(--success)'
+            backgroundColor: isOffline ? 'var(--danger)' : isSyncing ? 'var(--primary)' : pendingSyncCount > 0 ? 'var(--warning)' : 'var(--success)'
           }}
           onClick={() => {
             if (isOffline) toast.error('Offline Mode (No Internet)');
