@@ -9,6 +9,7 @@ import { useAlert } from '@/components/AlertModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useDebounce } from '@/hooks/useDebounce';
+import { addSyncTask } from '@/lib/offlineSync';
 
 import Image from "next/image";
 interface Order {
@@ -292,6 +293,13 @@ export default function OrdersPage() {
     if (!await showConfirm('Archive Order', 'Are you sure you want to archive this order? Note: Stock will NOT be restored. To restore stock, cancel the order first.')) return;
     
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        await addSyncTask('order', 'DELETE', { id });
+        showToast('loading', 'Deleted Offline! Will sync when internet returns.');
+        setOrders(prev => prev.filter(o => o.id !== id));
+        return;
+      }
       const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
       if (res.ok) {
         fetchOrders();
@@ -309,6 +317,13 @@ export default function OrdersPage() {
   const handleArchiveOrder = async (id: string) => {
     if (!await showConfirm('Archive Order', 'Are you sure you want to archive this order?')) return;
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        await addSyncTask('order', 'UPDATE', { id, isArchived: true });
+        showToast('loading', 'Archived Offline! Will sync when internet returns.');
+        setOrders(prev => prev.map(o => o.id === id ? { ...o, isArchived: true } as any : o));
+        return;
+      }
       const res = await fetch(`/api/orders/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -330,6 +345,13 @@ export default function OrdersPage() {
   const handleUnarchiveOrder = async (id: string) => {
     if (!await showConfirm('Unarchive Order', 'Are you sure you want to unarchive this order?')) return;
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        await addSyncTask('order', 'UPDATE', { id, isArchived: false });
+        showToast('loading', 'Unarchived Offline! Will sync when internet returns.');
+        setOrders(prev => prev.map(o => o.id === id ? { ...o, isArchived: false } as any : o));
+        return;
+      }
       const res = await fetch(`/api/orders/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -616,6 +638,17 @@ export default function OrdersPage() {
           uomName: i.uomName,
           multiplier: i.multiplier 
         }));
+      }
+
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        await addSyncTask('order', 'UPDATE', { ...payload, id: editingOrder.id });
+        showToast('loading', 'Saved Offline! Will sync when internet returns.');
+        setOrders(prev => prev.map(o => o.id === editingOrder.id ? { ...o, ...payload } as any : o));
+        setIsEditOpen(false);
+        setEditingOrder(null);
+        setIsSaving(false);
+        return;
       }
 
       const res = await fetch(`/api/orders/${editingOrder.id}`, {

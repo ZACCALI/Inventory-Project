@@ -149,6 +149,13 @@ export default function ExpensesPage() {
   const handleDelete = async (id: string) => {
     if (!await showConfirm('Confirm', 'Are you sure you want to delete this expense log?')) return;
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        await addSyncTask('expense', 'DELETE', { id });
+        showToast('loading', 'Deleted Offline! Will sync when internet returns.');
+        setExpenses(prev => prev.filter(e => e.id !== id));
+        return;
+      }
       const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
       if (res.ok) {
         fetchExpenses();
@@ -166,6 +173,28 @@ export default function ExpensesPage() {
     e.preventDefault();
     setActionLoading(true);
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      
+      if (isOffline) {
+        const action = editId ? 'UPDATE' : 'CREATE';
+        const payload = { 
+          ...formData, 
+          amount: Number(formData.amount),
+          id: editId || `OFF-${Date.now()}` 
+        };
+        await addSyncTask('expense', action, payload);
+        showToast('loading', 'Saved Offline! Will sync when internet returns.');
+        
+        setIsModalOpen(false);
+        if (editId) {
+          setExpenses(prev => prev.map(e => e.id === payload.id ? {...e, ...payload, date: payload.date || new Date().toISOString()} as any : e));
+        } else {
+          setExpenses(prev => [{...payload, date: payload.date || new Date().toISOString(), createdAt: new Date().toISOString()} as any, ...prev]);
+        }
+        setActionLoading(false);
+        return;
+      }
+
       const url = editId ? `/api/expenses/${editId}` : '/api/expenses';
       const method = editId ? 'PUT' : 'POST';
 

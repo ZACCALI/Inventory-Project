@@ -113,6 +113,14 @@ export default function CustomersPage() {
     if (!await showConfirm('Delete Customer', 'Are you sure you want to delete this customer? This action cannot be undone.')) return;
     
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        await addSyncTask('customer', 'DELETE', { id });
+        showToast('loading', 'Deleted Offline! Will sync when internet returns.');
+        setCustomers(prev => prev.filter(c => c.id !== id));
+        return;
+      }
+
       const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
       if (res.ok) {
         fetchCustomers();
