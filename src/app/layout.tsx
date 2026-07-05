@@ -6,9 +6,9 @@ import { AlertProvider } from '@/components/AlertModal';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 import NextTopLoader from 'nextjs-toploader';
 import { Toaster } from 'react-hot-toast';
-import { Inter } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'] });
+const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ['latin'] });
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -38,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={plusJakartaSans.className}>
         <NextTopLoader color="var(--primary)" showSpinner={false} />
         <Toaster position="bottom-right" toastOptions={{
           style: { background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' },

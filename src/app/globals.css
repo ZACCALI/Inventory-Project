@@ -1,10 +1,8 @@
 /* ============================================================
    DistriTrack Design System
-   Font: Plus Jakarta Sans
+   Font: Plus Jakarta Sans (Imported via next/font in layout.tsx)
    Color Palette: Professional Light Theme
    ============================================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 
 /* ============================================================
    CSS Custom Properties (Design Tokens)
