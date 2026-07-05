@@ -11,11 +11,28 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
+const forceCachePlugin = {
+  cacheWillUpdate: async ({ response }: { response: Response }) => {
+    if (response && response.status === 200) {
+      const cloned = response.clone();
+      const headers = new Headers(cloned.headers);
+      headers.delete('cache-control');
+      return new Response(cloned.body, {
+        status: cloned.status,
+        statusText: cloned.statusText,
+        headers: headers
+      });
+    }
+    return response;
+  }
+};
+
 const customCache: RuntimeCaching[] = [
   {
     matcher: /\/api\/auth\/session.*/i,
     handler: new NetworkFirst({
       cacheName: "next-auth-session",
+      plugins: [forceCachePlugin]
     }),
   },
   {
@@ -24,7 +41,8 @@ const customCache: RuntimeCaching[] = [
       cacheName: "app-settings",
       matchOptions: {
         ignoreSearch: true,
-      }
+      },
+      plugins: [forceCachePlugin]
     }),
   },
   ...defaultCache,
