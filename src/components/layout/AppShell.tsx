@@ -133,8 +133,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         onNavigate={() => setMobileSidebarOpen(false)}
         permissions={
           userRole === 'admin' ? ['inventory', 'delivery', 'customers', 'orders', 'history'] 
-          : (userRole === 'staff' ? settings?.staffPermissions?.split(',').map((s:string)=>s.trim()) 
-          : settings?.cashierPermissions?.split(',').map((s:string)=>s.trim())) || []
+          : (userRole === 'staff' ? settings?.staffPermissions?.split(',')?.map((s:string)=>s.trim()) 
+          : settings?.cashierPermissions?.split(',')?.map((s:string)=>s.trim())) || []
         }
       />
 
