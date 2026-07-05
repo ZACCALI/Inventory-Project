@@ -8,7 +8,11 @@ import NextTopLoader from 'nextjs-toploader';
 import { Toaster } from 'react-hot-toast';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 
-const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ['latin'] });
+const plusJakartaSans = Plus_Jakarta_Sans({ 
+  subsets: ['latin'],
+  variable: '--font-plus-jakarta',
+  display: 'swap',
+});
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -38,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={plusJakartaSans.className}>
+      <body className={`${plusJakartaSans.className} ${plusJakartaSans.variable}`}>
         <NextTopLoader color="var(--primary)" showSpinner={false} />
         <Toaster position="bottom-right" toastOptions={{
           style: { background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' },
