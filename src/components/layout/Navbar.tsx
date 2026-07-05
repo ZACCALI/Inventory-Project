@@ -81,6 +81,8 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
     };
 
     const countPending = async () => {
+      // Always ensure the UI reflects the true browser offline state
+      setIsOffline(!navigator.onLine);
       try {
         const count = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count();
         setPendingSyncCount(count);
@@ -311,7 +313,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
           title={isOffline ? 'Offline Mode' : isSyncing ? 'Syncing to Cloud...' : pendingSyncCount > 0 ? `${pendingSyncCount} items waiting to sync` : 'Cloud Sync Active'}
         >
           {isOffline ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--warning)', background: 'var(--warning-light)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--danger)', background: 'var(--danger-light)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
               <CloudOff size={14} /> <span>Offline Mode</span>
             </div>
           ) : isSyncing ? (
