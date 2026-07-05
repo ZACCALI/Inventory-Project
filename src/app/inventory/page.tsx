@@ -248,7 +248,7 @@ export default function InventoryPage() {
           minStock: Number(formData.minStock)
         };
         await addSyncTask('product', action, payload);
-        showToast('Saved Offline! Will sync when internet returns.', 'warning');
+        showToast('loading', 'Saved Offline! Will sync when internet returns.');
         
         // Optimistic UI Update
         if (editingProduct) {
@@ -306,7 +306,7 @@ export default function InventoryPage() {
           if (isOffline) {
             const base64Image = canvas.toDataURL('image/jpeg', 0.7);
             setFormData(prev => ({...prev, image: base64Image}));
-            showToast('Photo saved locally for offline mode', 'success');
+            showToast('success', 'Photo saved locally for offline mode');
           } else {
             canvas.toBlob(async (blob) => {
               if (!blob) return;
@@ -319,7 +319,7 @@ export default function InventoryPage() {
                 setFormData(prev => ({...prev, image: url}));
               } catch (error) {
                 console.error('Image upload error:', error);
-                showToast('Failed to upload image', 'error');
+                showToast('error', 'Failed to upload image');
               }
             }, 'image/jpeg', 0.7);
           }
@@ -341,7 +341,7 @@ export default function InventoryPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('product', 'DELETE', { id });
-        showToast('Deleted Offline! Will sync when internet returns.', 'warning');
+        showToast('loading', 'Deleted Offline! Will sync when internet returns.');
         setProducts(prev => prev.filter(p => p.id !== id));
         return;
       }
@@ -364,7 +364,7 @@ export default function InventoryPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('product', 'UPDATE', { id, isArchived: true });
-        showToast('Archived Offline! Will sync when internet returns.', 'warning');
+        showToast('loading', 'Archived Offline! Will sync when internet returns.');
         setProducts(prev => prev.map(p => p.id === id ? { ...p, isArchived: true } : p));
         return;
       }
@@ -391,7 +391,7 @@ export default function InventoryPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('product', 'UPDATE', { id, isArchived: false });
-        showToast('Unarchived Offline! Will sync when internet returns.', 'warning');
+        showToast('loading', 'Unarchived Offline! Will sync when internet returns.');
         setProducts(prev => prev.map(p => p.id === id ? { ...p, isArchived: false } : p));
         return;
       }

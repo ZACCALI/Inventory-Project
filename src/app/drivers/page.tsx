@@ -120,10 +120,10 @@ export default function DriversPage() {
         const action = editingDriver ? 'UPDATE' : 'CREATE';
         const payload = {
           ...formData,
-          id: editingDriver?.id || \`OFF-\${Date.now()}\`
+          id: editingDriver?.id || `OFF-${Date.now()}`
         };
         await addSyncTask('driver', action, payload);
-        showToast('Saved Offline! Will sync when internet returns.', 'warning');
+        showToast('loading', 'Saved Offline! Will sync when internet returns.');
         
         closeModal();
         if (editingDriver) {
@@ -163,7 +163,7 @@ export default function DriversPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('driver', 'DELETE', { id });
-        showToast('Deleted Offline! Will sync when internet returns.', 'warning');
+        showToast('loading', 'Deleted Offline! Will sync when internet returns.');
         setDrivers(prev => prev.filter(d => d.id !== id));
         return;
       }

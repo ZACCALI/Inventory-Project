@@ -10,6 +10,10 @@ import { useBarcodeScanner } from '@/lib/useBarcodeScanner';
 import { addSyncTask } from '@/lib/offlineSync';
 
 import Image from "next/image";
+interface Product {
+  id: string;
+  name: string;
+  sku: string;
   barcode: string | null;
   price: number;
   costPrice: number;
@@ -501,8 +505,8 @@ export default function CreateOrderPage() {
         
         const offlineOrder = {
           ...payload,
-          id: \`OFFLINE-\${localId}\`,
-          orderNumber: \`OFF-\${Math.floor(Math.random() * 100000)}\`,
+          id: `OFFLINE-${localId}`,
+          orderNumber: `OFF-${Math.floor(Math.random() * 100000)}`,
           createdAt: new Date().toISOString(),
         };
 

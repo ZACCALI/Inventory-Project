@@ -137,7 +137,7 @@ export default function CustomersPage() {
         const payload = { ...currentCustomer, id: currentCustomer.id || `OFF-${Date.now()}` };
         
         await addSyncTask('customer', action, payload);
-        showToast('Saved Offline! Will sync when internet returns.', 'warning');
+        showToast('loading', 'Saved Offline! Will sync when internet returns.');
         
         setIsModalOpen(false);
         // Optimistically update UI

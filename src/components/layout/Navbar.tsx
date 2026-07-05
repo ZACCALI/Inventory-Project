@@ -16,7 +16,8 @@ import {
   CloudOff,
   RefreshCw,
   CheckCircle,
-  X
+  X,
+  Info
 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { processSyncQueue } from '@/lib/offlineSync';
@@ -305,7 +306,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
         <div 
           style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '8px', cursor: pendingSyncCount > 0 && !isOffline ? 'pointer' : 'default' }}
           onClick={() => { if (pendingSyncCount > 0 && !isOffline && !isSyncing) processSyncQueue(); }}
-          title={isOffline ? 'Offline Mode' : isSyncing ? 'Syncing to Cloud...' : pendingSyncCount > 0 ? \`\${pendingSyncCount} items waiting to sync\` : 'Cloud Sync Active'}
+          title={isOffline ? 'Offline Mode' : isSyncing ? 'Syncing to Cloud...' : pendingSyncCount > 0 ? `${pendingSyncCount} items waiting to sync` : 'Cloud Sync Active'}
         >
           {isOffline ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--warning)', background: 'var(--warning-light)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>

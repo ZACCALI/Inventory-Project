@@ -94,7 +94,105 @@ export default function ExpensesPage() {
     }
   };
 
+  // Fetch expense categories from settings
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const settings = await res.json();
+          if (settings.expenseCategories) {
+            const parsed = JSON.parse(settings.expenseCategories);
+            if (Array.isArray(parsed) && parsed.length > 0) setCategories(parsed);
+          }
+        }
+      } catch {}
+    })();
+  }, []);
 
+  // Close filter dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isFilterOpen && !(e.target as Element).closest('.filter-dropdown-container')) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isFilterOpen]);
+
+
+  const openAdd = () => {
+    setEditId(null);
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      amount: '',
+      category: categories[0] || DEFAULT_CATEGORIES[0],
+      description: '',
+      reference: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const openEdit = (expense: Expense) => {
+    setEditId(expense.id);
+    setFormData({
+      date: new Date(expense.date).toISOString().split('T')[0],
+      amount: expense.amount.toString(),
+      category: expense.category,
+      description: expense.description,
+      reference: expense.reference || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!await showConfirm('Confirm', 'Are you sure you want to delete this expense log?')) return;
+    try {
+      const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchExpenses();
+        showAlert('success', 'Expense Deleted', 'The expense record has been permanently removed from the system.');
+      } else {
+        showAlert('error', 'Action Failed', 'Failed to delete expense');
+      }
+    } catch (error) {
+      console.error(error);
+      showAlert('error', 'Action Failed', 'Error deleting expense');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionLoading(true);
+    try {
+      const url = editId ? `/api/expenses/${editId}` : '/api/expenses';
+      const method = editId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (res.ok) {
+        setIsModalOpen(false);
+        fetchExpenses();
+      } else {
+        const err = await res.json();
+        showAlert('error', 'Action Failed', err.error || 'Failed to log expense');
+      }
+    } catch (error) {
+      console.error(error);
+      showAlert('error', 'Action Failed', 'Error saving expense');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+  const todayStr = new Date().toISOString().split('T')[0];
   const todayExpenses = expenses.filter(e => e.date.startsWith(todayStr)).reduce((sum, e) => sum + e.amount, 0);
   
   const monthStr = todayStr.substring(0, 7);
