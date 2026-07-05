@@ -4325,3 +4325,6 @@ p {
 .skeleton-button { height: 36px; width: 100px; border-radius: var(--radius-md); }
 .skeleton-card { height: 120px; border-radius: var(--radius-lg); }
 
+
+.spin-animation { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }

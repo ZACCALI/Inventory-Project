@@ -7,12 +7,9 @@ import { Search, Plus, Trash2, Save, ShoppingBag, User,  X, Truck, CheckCircle2,
 import { formatCurrency } from '@/lib/constants';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useBarcodeScanner } from '@/lib/useBarcodeScanner';
+import { addSyncTask } from '@/lib/offlineSync';
 
 import Image from "next/image";
-interface Product {
-  id: string;
-  name: string;
-  sku: string;
   barcode: string | null;
   price: number;
   costPrice: number;
@@ -490,6 +487,45 @@ export default function CreateOrderPage() {
 
       if (customerIdToUse) payload.customerId = customerIdToUse;
       else if (fallbackCustomerName) payload.customerName = fallbackCustomerName;
+
+      // Handle Offline Mode gracefully
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const localId = await addSyncTask('order', 'CREATE', payload);
+        if (!localId) {
+          showToast('This exact order is already pending sync.', 'warning');
+          setIsSubmitting(false);
+          return;
+        }
+
+        showToast('Saved Offline! Will sync when internet returns.', 'warning');
+        
+        const offlineOrder = {
+          ...payload,
+          id: \`OFFLINE-\${localId}\`,
+          orderNumber: \`OFF-\${Math.floor(Math.random() * 100000)}\`,
+          createdAt: new Date().toISOString(),
+        };
+
+        setLastOrder({
+          ...offlineOrder,
+          totalAmount: finalTotal,
+          subtotal: totalAmount,
+          tendered: paidAmount,
+          change: Math.max(0, paidAmount - finalTotal),
+          discount: discountAmount,
+          discountPercent: discountType === 'percent' ? parsedDiscount : 0,
+          items: validItems.map(i => ({ product: i.product, quantity: Number(i.qty), price: i.cartPrice, uomName: i.uomName, multiplier: i.multiplier })),
+          createdBy: { name: session?.user?.name || 'ADMIN' }
+        });
+
+        setCart([]);
+        setDiscountValue('');
+        setAmountPaid('');
+        setPaymentStatus('unpaid');
+        setIsSubmitting(false);
+        setIsSuccessOpen(true);
+        return;
+      }
 
       const res = await fetch('/api/orders', {
         method: 'POST',

@@ -23,10 +23,40 @@ export interface PendingOrder {
   idempotencyKey: string; // Unique key to prevent duplicate submissions
 }
 
+export interface SyncTask {
+  id?: number;
+  type: 'order' | 'customer' | 'expense' | 'product';
+  action: 'CREATE' | 'UPDATE' | 'DELETE';
+  payload: string; // JSON stringified payload
+  createdAt: number;
+  syncStatus: 'pending' | 'syncing' | 'synced' | 'failed';
+  syncAttempts: number;
+  lastError: string | null;
+  idempotencyKey: string;
+}
+
+export interface OfflineCustomer {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  lastSynced: number;
+}
+
 export const db = new Dexie('distritrack_pos') as Dexie & {
   products: EntityTable<OfflineProduct, 'id'>;
+  customers: EntityTable<OfflineCustomer, 'id'>;
   pendingOrders: EntityTable<PendingOrder, 'id'>;
+  syncQueue: EntityTable<SyncTask, 'id'>;
 };
+
+db.version(3).stores({
+  products: 'id, name, sku, barcode, categoryName',
+  customers: 'id, name',
+  pendingOrders: '++id, createdAt, syncStatus, idempotencyKey',
+  syncQueue: '++id, type, action, syncStatus, createdAt, idempotencyKey'
+});
 
 db.version(2).stores({
   products: 'id, name, sku, barcode, categoryName',

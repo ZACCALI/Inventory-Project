@@ -12,9 +12,14 @@ import {
   Truck,
   Clock,
   AlertTriangle,
-  Info,
+  Cloud,
+  CloudOff,
+  RefreshCw,
+  CheckCircle,
   X
 } from 'lucide-react';
+import { db } from '@/lib/db';
+import { processSyncQueue } from '@/lib/offlineSync';
 import Link from 'next/link';
 
 import Image from "next/image";
@@ -57,8 +62,52 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
   const [pushPermission, setPushPermission] = useState<string>('granted');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [companyName, setCompanyName] = useState('Loading...');
+  const [isOffline, setIsOffline] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+
+  // Monitor Offline Status & Sync Queue
+  useEffect(() => {
+    const checkOnlineStatus = () => {
+      setIsOffline(!navigator.onLine);
+      if (navigator.onLine) {
+        handleBackgroundSync();
+      }
+    };
+
+    const countPending = async () => {
+      try {
+        const count = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count();
+        setPendingSyncCount(count);
+      } catch(e) {}
+    };
+
+    const handleBackgroundSync = async () => {
+      if (isSyncing) return;
+      setIsSyncing(true);
+      try {
+        await processSyncQueue();
+        await countPending();
+      } catch(e) {}
+      setIsSyncing(false);
+    };
+
+    window.addEventListener('online', checkOnlineStatus);
+    window.addEventListener('offline', checkOnlineStatus);
+    checkOnlineStatus();
+    countPending();
+
+    // Poll queue size periodically
+    const syncInterval = setInterval(countPending, 5000);
+    return () => {
+      window.removeEventListener('online', checkOnlineStatus);
+      window.removeEventListener('offline', checkOnlineStatus);
+      clearInterval(syncInterval);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -252,6 +301,31 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       </div>
 
       <div className="navbar-right">
+        {/* Sync Status Indicator */}
+        <div 
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '8px', cursor: pendingSyncCount > 0 && !isOffline ? 'pointer' : 'default' }}
+          onClick={() => { if (pendingSyncCount > 0 && !isOffline && !isSyncing) processSyncQueue(); }}
+          title={isOffline ? 'Offline Mode' : isSyncing ? 'Syncing to Cloud...' : pendingSyncCount > 0 ? \`\${pendingSyncCount} items waiting to sync\` : 'Cloud Sync Active'}
+        >
+          {isOffline ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--warning)', background: 'var(--warning-light)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
+              <CloudOff size={14} /> <span className="hide-mobile">Offline Mode</span>
+            </div>
+          ) : isSyncing ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
+              <RefreshCw size={14} className="spin-animation" /> <span className="hide-mobile">Syncing...</span>
+            </div>
+          ) : pendingSyncCount > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--warning)', background: 'var(--warning-light)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
+              <Cloud size={14} /> <span className="hide-mobile">{pendingSyncCount} Pending</span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
+              <CheckCircle size={14} /> <span className="hide-mobile">Synced</span>
+            </div>
+          )}
+        </div>
+
         <div className="notification-wrapper" ref={notificationsRef} style={{ position: 'relative' }}>
           <button 
             className={`notification-btn ${notificationsOpen ? 'active' : ''}`}
