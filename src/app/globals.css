@@ -2465,10 +2465,9 @@ p {
 
   /* Ensure the full image is visible without being cropped */
   .landing-hero-image {
-    object-fit: contain;
-    height: auto;
+    object-fit: cover;
+    height: 100%;
     width: 100%;
-    min-height: auto;
   }
 
   .landing-hero-image-wrapper::after {
