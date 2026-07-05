@@ -20,7 +20,6 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'Amroding General Merchandise — Inventory Management',
   description: 'Modern inventory and order management system',
-  manifest: '/manifest.json',
   icons: {
     icon: '/icon.svg',
     apple: '/icons/icon-192x192.png',
