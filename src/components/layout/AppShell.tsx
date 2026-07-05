@@ -1,0 +1,153 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Truck } from 'lucide-react';
+import Sidebar from '@/components/layout/Sidebar';
+import Navbar from '@/components/layout/Navbar';
+
+export default function AppShell({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [settings, setSettings] = useState<any>(null);
+
+  const userRole = (session?.user as { role?: string })?.role;
+
+  // Public pages that don't require auth
+  const isPublicPage = pathname === '/login' || pathname === '/';
+
+  // Redirect to login if not authenticated (skip public pages)
+  useEffect(() => {
+    if (status === 'unauthenticated' && !isPublicPage) {
+      router.push('/login');
+    }
+  }, [status, pathname, router, isPublicPage]);
+
+  // Fetch settings once per session
+  useEffect(() => {
+    if (session && !settings) {
+      fetch('/api/settings')
+        .then(res => res.json())
+        .then(data => setSettings(data))
+        .catch(err => console.error('Failed to fetch settings for permissions', err));
+    }
+  }, [session, settings]);
+
+  // Global fix: Prevent mouse scroll from changing number inputs
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement;
+      if (document.activeElement === target && target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'number') {
+        (target as HTMLInputElement).blur();
+      }
+    };
+    
+    // Use capture phase to catch it before it processes
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, []);
+
+  // Dynamic Route Protection
+  useEffect(() => {
+    if (!settings || !userRole || userRole === 'admin' || isPublicPage) return;
+
+    const permissionsStr = userRole === 'staff' ? settings.staffPermissions : settings.cashierPermissions;
+    const permissions = permissionsStr ? permissionsStr.split(',').map((s: string) => s.trim()) : [];
+
+    const pathMappings: Record<string, string> = {
+      '/inventory': 'inventory',
+      '/delivery': 'delivery',
+      '/drivers': 'delivery',
+      '/customers': 'customers',
+      '/orders': 'orders',
+      '/expenses': 'finances', 
+      '/reports': 'reports',
+      '/users': 'users',
+      '/history': 'history',
+    };
+
+    const currentBaseRoute = Object.keys(pathMappings).find(route => pathname.startsWith(route));
+    if (currentBaseRoute) {
+      const requiredPermission = pathMappings[currentBaseRoute];
+      if (['finances', 'reports', 'users'].includes(requiredPermission)) {
+        router.push('/dashboard');
+      } else if (!permissions.includes(requiredPermission)) {
+        router.push('/dashboard');
+      }
+    }
+  }, [pathname, settings, userRole, isPublicPage, router]);
+
+  // Don't show shell on public pages
+  if (isPublicPage) {
+    return <>{children}</>;
+  }
+
+  // Show loading state while checking auth or loading dynamic permissions
+  const isLoadingSettings = session && userRole !== 'admin' && !settings;
+  if (status === 'loading' || isLoadingSettings) {
+    return (
+        <div className="loading-page" style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-md)' }}>
+            <div className="premium-loader-icon" style={{ width: '64px', height: '64px', borderRadius: 'var(--radius-lg)', background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', boxShadow: '0 8px 24px rgba(37,99,235,0.35)' }}>
+              <Truck size={32} color="white" />
+            </div>
+            <p className="premium-loader-text" style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: 'var(--font-md)', letterSpacing: '0.3px' }}>Loading System...</p>
+          </div>
+        </div>
+    );
+  }
+
+  // If not authenticated, return null while redirect happens
+  if (!session) {
+    return null;
+  }
+
+  return (
+    <div className={`app-layout ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      {/* Mobile Sidebar Overlay */}
+      {mobileSidebarOpen && (
+        <div
+          className="sidebar-overlay open"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Sidebar (Desktop & Mobile) */}
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        userRole={userRole}
+        isOpen={mobileSidebarOpen}
+        onNavigate={() => setMobileSidebarOpen(false)}
+        permissions={
+          userRole === 'admin' ? ['inventory', 'delivery', 'customers', 'orders', 'history'] 
+          : (userRole === 'staff' ? settings?.staffPermissions?.split(',').map((s:string)=>s.trim()) 
+          : settings?.cashierPermissions?.split(',').map((s:string)=>s.trim())) || []
+        }
+      />
+
+      {/* Navbar */}
+      <Navbar 
+        onMenuToggle={() => {
+          if (window.innerWidth <= 768) {
+            setMobileSidebarOpen(!mobileSidebarOpen);
+          } else {
+            setSidebarCollapsed(!sidebarCollapsed);
+          }
+        }} 
+      />
+
+      {/* Main Content */}
+      <main className="main-content">
+        <div className="page-container">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}
