@@ -53,7 +53,8 @@ export default function CustomersPage() {
 
   const { data: swrRes } = useSWR(
     session ? `/api/customers?${getQueryString()}` : null,
-    fetcher
+    fetcher,
+    { refreshInterval: 60000 }
   );
 
   useEffect(() => {
@@ -77,15 +78,7 @@ export default function CustomersPage() {
     }
   };
 
-  useEffect(() => {
-    fetchCustomers();
-    const interval = setInterval(() => {
-      fetchCustomers();
-    }, 60000); // Poll every 60 seconds
 
-    return () => clearInterval(interval);
-// eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]);
 
   const openAdd = () => {
     setModalMode('ADD');

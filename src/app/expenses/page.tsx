@@ -1,7 +1,5 @@
 'use client';
 
-'use client';
-
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
@@ -71,7 +69,8 @@ export default function ExpensesPage() {
 
   const { data: swrRes } = useSWR(
     `/api/expenses?${getQueryString()}`,
-    fetcher
+    fetcher,
+    { refreshInterval: 15000 }
   );
 
   useEffect(() => {
@@ -95,14 +94,7 @@ export default function ExpensesPage() {
     }
   };
 
-  // Realtime Polling
-  useEffect(() => {
-    fetchExpenses();
-    const interval = setInterval(() => {
-      fetchExpenses();
-    }, 15000); // 15 seconds
 
-    return () => clearInterval(interval);
   const todayExpenses = expenses.filter(e => e.date.startsWith(todayStr)).reduce((sum, e) => sum + e.amount, 0);
   
   const monthStr = todayStr.substring(0, 7);

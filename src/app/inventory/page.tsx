@@ -61,7 +61,8 @@ export default function InventoryPage() {
   // SWR for instant caching
   const { data: swrProducts } = useSWR(
     status === 'authenticated' ? `/api/products${showArchived ? '?archived=true' : ''}` : null,
-    fetcher
+    fetcher,
+    { refreshInterval: 15000 }
   );
 
   useEffect(() => {
@@ -151,14 +152,7 @@ export default function InventoryPage() {
     }
   }, [fetchDependencies]);
 
-  useEffect(() => {
-    fetchProducts(showArchived);
-    // Realtime Auto-Polling (reduced frequency to save bandwidth)
-    const interval = setInterval(() => {
-      fetchProducts(showArchived);
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [showArchived, fetchProducts]);
+
 
   // Close filter dropdown on outside click
   useEffect(() => {

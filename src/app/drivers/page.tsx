@@ -52,7 +52,7 @@ export default function DriversPage() {
     }
   };
 
-  const { data: swrRes } = useSWR('/api/drivers', fetcher);
+  const { data: swrRes } = useSWR('/api/drivers', fetcher, { refreshInterval: 15000 });
 
   useEffect(() => {
     if (swrRes) {
@@ -79,14 +79,7 @@ export default function DriversPage() {
     }
   };
 
-  useEffect(() => { 
-    fetchDrivers(); 
-    const interval = setInterval(() => {
-      fetchDrivers();
-    }, 15000); // Poll every 15 seconds
 
-    return () => clearInterval(interval);
-  }, []);
 
 
   const filteredDrivers = drivers.filter(d => {
