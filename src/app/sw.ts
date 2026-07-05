@@ -26,6 +26,7 @@ const customCache: RuntimeCaching[] = [
         ignoreSearch: true,
       }
     }),
+  },
   ...defaultCache,
 ];
 
