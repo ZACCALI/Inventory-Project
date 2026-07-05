@@ -2,9 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
   Package, ShoppingCart, Truck, BarChart3, ScanBarcode, Receipt,
+ 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
   ArrowRight, CheckCircle2, Shield, Zap, Users, ChevronRight,
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
   Phone, Mail, MapPin, Clock, Star, TrendingUp,
 } from 'lucide-react';
 
@@ -83,6 +89,29 @@ export default function LandingPage() {
 
   const [isScrolled, setIsScrolled] = useState(false);
 
+  const [settings, setSettings] = useState({
+    name: 'Amroding General Merchandise',
+    email: 'mail.amerhantbh@gmail.com',
+    phone: '(063) 123 4567',
+    address: 'Serving Lanao del Sur, Lanao del Norte, and nearby areas across Mindanao'
+  });
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) {
+          setSettings({
+            name: data.companyName || 'Amroding General Merchandise',
+            email: data.email || 'mail.amerhantbh@gmail.com',
+            phone: data.phone || '(063) 123 4567',
+            address: data.address || 'Serving Lanao del Sur, Lanao del Norte, and nearby areas across Mindanao'
+          });
+        }
+      })
+      .catch(console.error);
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -100,7 +129,7 @@ export default function LandingPage() {
             <div className="landing-nav-logo-icon">
               <Truck size={22} strokeWidth={2} />
             </div>
-            <span>Amroding General Merchandise</span>
+            <span>{settings.name}</span>
           </div>
           <div className="landing-nav-links">
             <a href="#" className="active">Home</a>
@@ -141,7 +170,7 @@ export default function LandingPage() {
         </div>
         <div className="landing-hero-visual">
           <div className="landing-hero-image-wrapper">
-            <img src="/images/hero-truck.jpg" alt="Amroding General Merchandise Trucks" className="landing-hero-image" />
+            <Image src="/images/truck.jpg" alt={`${settings.name} Delivery Trucks`} className="landing-hero-image" style={{ objectPosition: 'center center' }} fill priority />
           </div>
         </div>
       </section>
@@ -171,7 +200,7 @@ export default function LandingPage() {
               <span className="landing-section-badge">ABOUT US</span>
               <h2 className="landing-section-title">Delivering Quality Products Across Mindanao Since 2010</h2>
               <p>
-                Amroding General Merchandise was established in 2010 with a commitment to providing reliable distribution services and quality products to businesses and communities throughout Mindanao. Over the years, we have grown from a local trading business into a trusted distribution partner serving retailers, supermarkets, convenience stores, restaurants, wholesalers, and various commercial establishments.
+                {settings.name} was established in 2010 with a commitment to providing reliable distribution services and quality products to businesses and communities throughout Mindanao. Over the years, we have grown from a local trading business into a trusted distribution partner serving retailers, supermarkets, convenience stores, restaurants, wholesalers, and various commercial establishments.
               </p>
               <p>
                 With more than a decade of experience in the distribution industry, we have built a strong reputation for reliability, integrity, and customer satisfaction. Our success is driven by our dedication to delivering quality products, maintaining efficient logistics operations, and building long-term relationships with our customers and business partners.
@@ -248,7 +277,7 @@ export default function LandingPage() {
             <div className="landing-why-text reveal-item">
               <span className="landing-section-badge" style={{ background: 'rgba(37,99,235,0.15)', color: 'var(--primary)' }}>WHY CHOOSE US</span>
               <h2 style={{ color: '#fff', fontSize: '32px', fontWeight: 800, marginBottom: '24px' }}>
-                Why Choose Amroding General Merchandise?
+                Why Choose {settings.name}?
               </h2>
               <ul className="landing-why-list" style={{ marginBottom: '24px' }}>
                 <li><CheckCircle2 size={16} color="var(--primary)" /> Serving Mindanao since 2010</li>
@@ -260,7 +289,7 @@ export default function LandingPage() {
                 <li><CheckCircle2 size={16} color="var(--primary)" /> Dedicated to building long-term relationships</li>
               </ul>
               <p style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.6', fontSize: '14px' }}>
-                For over 15 years, Amroding General Merchandise has remained committed to delivering quality products and exceptional service. As we continue to grow, our focus remains the same: providing reliable distribution solutions and helping businesses succeed by ensuring that quality products reach customers across Mindanao efficiently and consistently.
+                For over 15 years, {settings.name} has remained committed to delivering quality products and exceptional service. As we continue to grow, our focus remains the same: providing reliable distribution solutions and helping businesses succeed by ensuring that quality products reach customers across Mindanao efficiently and consistently.
               </p>
             </div>
             <div className="landing-why-stats reveal-item">
@@ -303,17 +332,17 @@ export default function LandingPage() {
                 <div className="landing-contact-item" style={{ alignItems: 'flex-start' }}>
                   <MapPin size={18} style={{ marginTop: '2px' }} />
                   <div>
-                    <span style={{ fontWeight: 600, display: 'block', color: 'var(--text-primary)' }}>Amroding General Merchandise</span>
+                    <span style={{ fontWeight: 600, display: 'block', color: 'var(--text-primary)' }}>{settings.name}</span>
                     <span style={{ fontSize: '14px' }}>Serving Lanao del Sur, Lanao del Norte, and nearby areas across Mindanao</span>
                   </div>
                 </div>
                 <div className="landing-contact-item">
                   <Mail size={18} />
-                  <span>mail.amerhantbh@gmail.com</span>
+                  <span>{settings.email}</span>
                 </div>
                 <div className="landing-contact-item">
                   <Star size={18} />
-                  <span>Facebook: Amroding General Merchandise</span>
+                  <span>Facebook: {settings.name}</span>
                 </div>
                 <div className="landing-contact-item">
                   <Clock size={18} />
@@ -335,7 +364,7 @@ export default function LandingPage() {
                 <Truck size={20} strokeWidth={2} />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '16px', color: '#fff' }}>Amroding General Merchandise</div>
+                <div style={{ fontWeight: 700, fontSize: '16px', color: '#fff' }}>{settings.name}</div>
                 <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginTop: '4px', lineHeight: '1.5' }}>
                   Distributing quality merchandise<br />with excellence and integrity across Mindanao.
                 </div>
@@ -351,14 +380,14 @@ export default function LandingPage() {
               </div>
               <div className="landing-footer-col">
                 <h5>Contact Us</h5>
-                <a href="#">(063) 123 4567</a>
-                <a href="#">mail.amerhantbh@gmail.com</a>
-                <a href="#">Lanao del Sur, Mindanao</a>
+                <a href="#">{settings.phone}</a>
+                <a href="#">{settings.email}</a>
+                <a href="#">{settings.address}</a>
               </div>
             </div>
           </div>
           <div className="landing-footer-bottom">
-            <span>© {new Date().getFullYear()} Amroding General Merchandise. All Rights Reserved.</span>
+            <span>© {new Date().getFullYear()} {settings.name}. All Rights Reserved.</span>
           </div>
         </div>
       </footer>

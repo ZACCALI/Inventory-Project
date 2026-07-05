@@ -973,8 +973,8 @@ p {
   opacity: 0;
 }
 
-/* Hover-to-expand (Google Classroom style) — only on desktop */
-@media (min-width: 769px) {
+/* Hover-to-expand (Google Classroom style) - only on desktop and devices with hover support */
+@media (min-width: 769px) and (hover: hover) {
   .sidebar.collapsed:hover {
     width: var(--sidebar-width);
     box-shadow: 8px 0 30px rgba(0, 0, 0, 0.3);
@@ -1099,18 +1099,24 @@ p {
 
 .notification-btn {
   position: relative;
-  background: none;
-  border: none;
-  padding: var(--space-sm);
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  padding: 8px;
   cursor: pointer;
   color: var(--text-secondary);
-  border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none !important;
 }
 
 .notification-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary-light);
+  box-shadow: none !important;
 }
 
 .notification-dot {
@@ -1179,6 +1185,167 @@ p {
   background: var(--border-light);
   margin: var(--space-xs) 0;
 }
+
+/* ============================================================
+   Notification Dropdown
+   ============================================================ */
+.notification-dropdown {
+  width: 320px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--danger);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  height: 16px;
+  min-width: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-card);
+  padding: 0 4px;
+}
+
+.notification-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.notification-item:hover {
+  background: var(--bg-hover);
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notification-icon.low_stock {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.notification-icon.expiry {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.notification-icon.delivery {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-title {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.notification-message {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.notification-time {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+/* Fix #9: System notification icon type */
+.notification-icon.system {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary);
+}
+
+/* Fix #8: Active state for notification bell button */
+.notification-btn.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary-light);
+  box-shadow: none !important;
+}
+
+/* Fix #7: Dismiss button styling */
+.notification-dismiss-btn {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.notification-dismiss-btn:hover {
+  background: var(--bg-hover);
+  color: var(--danger);
+}
+
+/* Unread notification indicator */
+.notification-item-container.unread {
+  background: rgba(37, 99, 235, 0.04);
+  border-left: 3px solid var(--primary);
+}
+
+.notification-item-container.unread .notification-title {
+  font-weight: 700;
+}
+
+/* Fix #10: Mobile responsive notification dropdown */
+@media (max-width: 480px) {
+  .notification-dropdown {
+    width: calc(100vw - 24px);
+    position: fixed !important;
+    right: 12px !important;
+    left: 12px !important;
+    top: 56px !important;
+  }
+}
+
 
 /* ============================================================
    Loading States
@@ -1850,7 +2017,7 @@ p {
   flex-wrap: wrap;
 }
 
-/* Hero Visual — Dashboard Preview */
+/* Hero Visual — Truck Image */
 .landing-hero-visual {
   position: absolute;
   top: 0;
@@ -1858,6 +2025,7 @@ p {
   bottom: 0;
   width: 55%;
   z-index: 1;
+  overflow: hidden;
 }
 
 .landing-hero-image-wrapper {
@@ -2266,30 +2434,56 @@ p {
   .landing-hero {
     flex-direction: column;
     text-align: center;
-    padding: 100px 24px 48px;
-    gap: 40px;
+    padding: 60px 24px 40px;
+    gap: 32px;
   }
 
-  .landing-hero-content { max-width: 600px; }
+  .landing-hero-content { 
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+  }
+  
+  .landing-hero-title {
+    max-width: 100%;
+  }
+
+  .landing-hero-subtitle {
+    max-width: 100%;
+    margin: 0 auto 32px;
+  }
+  
   .landing-hero-actions { justify-content: center; }
 
-  /* Show truck image on tablets as a banner below the text */
+  /* Show truck image on tablets as a full width banner */
   .landing-hero-visual {
     position: relative;
     width: 100%;
-    height: 300px;
-    margin-top: 24px;
+    height: auto;
+    margin-top: 16px;
     border-radius: var(--radius-lg);
     overflow: hidden;
   }
 
+  /* Ensure the full image is visible without being cropped */
+  .landing-hero-image {
+    object-fit: contain;
+    height: auto;
+    width: 100%;
+    min-height: auto;
+  }
+
   .landing-hero-image-wrapper::after {
-    background: linear-gradient(to top, #FFFFFF 0%, rgba(255,255,255,0) 40%);
+    display: none;
   }
 
   .landing-trust-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 24px;
+  }
+
+  .landing-feature-card {
+    width: calc(50% - 12px);
   }
 
   .landing-about-layout,
@@ -2311,14 +2505,52 @@ p {
 }
 
 @media (max-width: 768px) {
-  .landing-hero-title { font-size: 30px; }
-  .landing-section-title { font-size: 26px; }
+  .landing-hero-title { font-size: 28px; margin-bottom: 16px; }
+  .landing-section-title { font-size: 24px; }
 
-  .landing-hero-visual { display: none; }
+  /* Show truck as compact banner on mobile */
+  .landing-hero-visual {
+    height: auto;
+    margin-top: 16px;
+  }
+
+  .landing-hero-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .landing-hero {
+    padding: 60px 16px 24px;
+    gap: 24px;
+    min-height: auto;
+  }
+
+  .landing-hero-subtitle {
+    font-size: 15px;
+    margin-bottom: 24px;
+    max-width: 100%;
+  }
+
+  .landing-hero-actions {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .landing-hero-actions a {
+    width: 100%;
+    text-align: center;
+    max-width: 280px;
+  }
 
   .landing-trust-grid,
   .landing-features-grid {
     grid-template-columns: 1fr;
+  }
+
+  .landing-trust-item {
+    max-width: 100%;
   }
 
   .landing-why-stats {
@@ -2326,14 +2558,55 @@ p {
   }
 
   .landing-about-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
-  .landing-nav-logo span { display: none; }
+  .landing-nav-logo span { 
+    display: block; 
+    font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
 
   .landing-footer-links {
     flex-direction: column;
     gap: 32px;
+  }
+
+  /* Fix feature cards text overflow */
+  .landing-feature-card {
+    width: 100%;
+    padding: 20px 16px;
+  }
+
+  .landing-feature-card h3 {
+    font-size: 16px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .landing-feature-card p {
+    font-size: 14px;
+  }
+
+  /* Fix trust badge text */
+  .landing-trust-item h4 {
+    font-size: 14px;
+  }
+
+  .landing-trust-item p {
+    font-size: 13px;
+  }
+
+  /* Fix section padding */
+  .landing-section {
+    padding: 48px 16px;
+  }
+
+  .landing-inner {
+    padding: 0 16px;
   }
 }
 
@@ -2665,11 +2938,28 @@ p {
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
+    width: var(--sidebar-width) !important;
   }
 
   .sidebar.open {
     transform: translateX(0);
     box-shadow: var(--shadow-xl);
+  }
+
+  /* Force un-collapse on mobile */
+  .sidebar.collapsed .sidebar-logo,
+  .sidebar.collapsed .sidebar-logo-text,
+  .sidebar.collapsed .nav-section-title,
+  .sidebar.collapsed .nav-label,
+  .sidebar.collapsed .nav-badge {
+    display: block !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+  
+  .sidebar.collapsed .sidebar-header {
+    justify-content: flex-start !important;
+    padding: var(--space-md) var(--space-lg) !important;
   }
 
   .sidebar-overlay.open {
@@ -2893,23 +3183,6 @@ p {
     margin-right: 12px;
   }
 
-  .table td:nth-child(1) {
-    justify-content: flex-start;
-    border-bottom: 2px solid var(--border-light);
-    padding-bottom: var(--space-md);
-    margin-bottom: var(--space-sm);
-  }
-
-  .table td:nth-child(1)::before { 
-    display: none; 
-  }
-
-  .table td:nth-child(1) > div {
-    justify-content: flex-start;
-    text-align: left;
-    width: 100%;
-  }
-
   /* Ensure the content inside td fills correctly */
   .table td > div {
     text-align: right;
@@ -2926,6 +3199,41 @@ p {
     position: static;
     box-shadow: none;
     background: transparent;
+  }
+
+  /* Prevent card-view conversion for tables INSIDE the edit order modal */
+  .edit-order-modal .table,
+  .edit-order-modal .table thead,
+  .edit-order-modal .table tbody,
+  .edit-order-modal .table th,
+  .edit-order-modal .table td,
+  .edit-order-modal .table tr {
+    display: revert;
+    width: auto;
+  }
+  .edit-order-modal .table thead tr {
+    position: static;
+  }
+  .edit-order-modal .table tr {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    margin-bottom: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .edit-order-modal .table td {
+    border: none;
+    border-bottom: 1px solid var(--border-light);
+    display: table-cell;
+    text-align: inherit;
+  }
+  .edit-order-modal .table td::before {
+    display: none;
+  }
+  .edit-order-modal .table td:last-child {
+    margin-top: 0;
+    padding-bottom: inherit;
   }
 }
 
@@ -3092,6 +3400,9 @@ p {
     width: 100%;
     margin-top: var(--space-md);
   }
+}
+
+@media (max-width: 768px) {
   .scanner-layout {
     grid-template-columns: 1fr;
   }
@@ -3652,18 +3963,94 @@ p {
   }
 }
 
-.edit-modal-grid {
-  display: grid;
-  grid-template-columns: 1fr 400px;
+/* Edit Order Modal - Responsive Footer */
+.edit-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-@media (max-width: 1024px) {
-  .edit-modal-grid {
-    grid-template-columns: 1fr;
-    overflow-y: auto;
+/* ============================================================
+   Edit Order Modal - Tablet & Mobile Responsive
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Only Edit Order overlays become scrollable containers */
+  .modal-overlay:has(.edit-order-modal) {
+    align-items: flex-start !important;
+    overflow-y: auto !important;
+    padding: 10px !important;
   }
+  
+  /* Only Edit Order modals take full width, no max-height clipping */
+  .modal.edit-order-modal {
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    margin: 0 auto !important;
+    border-radius: var(--radius-xl) !important;
+  }
+  
+  /* The grid stacks to a single column, minmax(0, 1fr) prevents blowout from wide tables */
+  .edit-modal-grid {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: visible !important;
+    overflow: visible !important;
+  }
+  
+  /* Remove border-right from left column and fix overflow */
   .edit-modal-grid > div {
     border-right: none !important;
+    overflow-y: visible !important;
+    overflow: visible !important;
+    min-width: 0; /* Add min-width: 0 to prevent flex/grid blowout */
+  }
+  
+  /* Footer buttons stack on small screens */
+  .edit-modal-footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .edit-modal-footer > * {
+    width: 100%;
+  }
+  .edit-modal-footer > div {
+    display: flex;
+    gap: 10px;
+  }
+  .edit-modal-footer > div > button,
+  .edit-modal-footer > button {
+    flex: 1;
+    justify-content: center;
+  }
+  /* Ensure Customer Order and Date cells right-align their content natively on mobile */
+  .table td[data-label="Customer Order"] > div,
+  .table td[data-label="Date"] > div {
+    text-align: right !important;
+  }
+  .table td[data-label="Customer Order"] .customer-name {
+    justify-content: flex-end !important;
+  }
+
+}
+
+/* Mobile-specific: even smaller screens */
+@media (max-width: 768px) {
+  .edit-order-modal {
+    border-radius: var(--radius-md) !important;
+  }
+  
+  /* Reduce padding inside modal sections */
+  .edit-modal-grid > div {
+    padding: 16px !important;
+  }
+
+
+  
+  /* Center specific text blocks only on mobile */
+  .mobile-text-center {
+    text-align: center !important;
   }
 }
 
@@ -3746,6 +4133,40 @@ p {
   visibility: visible;
   bottom: calc(100% + 8px);
 }
+
+[data-tooltip-position="bottom"]::after {
+  bottom: auto;
+  top: calc(100% + 4px);
+}
+
+[data-tooltip-position="bottom"]:hover::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
+
+/* Fix tooltip clipping for elements on the far right (like Actions buttons) */
+.table td:last-child [data-tooltip]::after,
+.table th:last-child [data-tooltip]::after,
+[data-tooltip-align="right"]::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+/* Ensure tooltips at the far right don't overflow the right edge */
+@media (max-width: 1024px) {
+  .table td:last-child [data-tooltip]::after {
+    right: -10px;
+    transform: none;
+  }
+}
+
+/* Hide tooltips completely on mobile touch devices */
+@media (max-width: 768px) {
+  [data-tooltip]::after {
+    display: none !important;
+  }
+}
 /* Reference Cell Content */
 .reference-cell-content {
   display: flex;
@@ -3768,3 +4189,120 @@ p {
     width: 100%;
   }
 }
+
+/* Responsive Cell Stack for Table Data */
+.responsive-cell-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+@media (max-width: 1024px) {
+  .responsive-cell-stack {
+    align-items: flex-end;
+    text-align: right;
+  }
+}
+
+/* ============================================================
+   Barcode Scanner Mobile Drawer & FAB
+   ============================================================ */
+.mobile-fab-container {
+  display: none;
+}
+.mobile-only-close {
+  display: none !important;
+}
+.mobile-drag-handle {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-fab-container {
+    display: block;
+    position: fixed;
+    bottom: max(32px, env(safe-area-inset-bottom, 32px));
+    left: 24px;
+    right: 24px;
+    z-index: 90;
+  }
+  .mobile-fab {
+    width: 100%;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 100px;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 12px 32px rgba(37, 99, 235, 0.3);
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .mobile-fab:active {
+    transform: scale(0.98);
+  }
+  .scanner-right-panel {
+    position: fixed !important;
+    bottom: -100%;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 85vh;
+    z-index: 100;
+    background: var(--bg-main);
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+    transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 0 !important;
+    max-height: calc(100vh - 100px);
+  }
+  .scanner-right-panel.mobile-open {
+    bottom: 0 !important;
+  }
+  .mobile-drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(2px);
+    z-index: 95;
+  }
+  .mobile-drag-handle {
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    margin: 12px auto;
+  }
+  .mobile-only-close {
+    display: flex !important;
+  }
+}
+
+/* ============================================================
+   Settings Layout Responsive
+   ============================================================ */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: var(--space-lg);
+}
+
+@media (max-width: 900px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .form-row,
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
