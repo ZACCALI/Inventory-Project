@@ -22,6 +22,7 @@ import {
 import { db } from '@/lib/db';
 import { processSyncQueue } from '@/lib/offlineSync';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 import Image from "next/image";
 // ── Fix #11: Proper TypeScript interface ──────────────────────
@@ -304,29 +305,47 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       <div className="navbar-right">
         {/* Sync Status Indicator */}
         <div 
-          className={pendingSyncCount === 0 && !isOffline && !isSyncing ? 'hide-sync-on-mobile' : ''}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '8px', cursor: pendingSyncCount > 0 && !isOffline ? 'pointer' : 'default' }}
+          className="hide-mobile"
+          style={{ display: 'inline-block', marginRight: '8px', cursor: pendingSyncCount > 0 && !isOffline ? 'pointer' : 'default' }}
           onClick={() => { if (pendingSyncCount > 0 && !isOffline && !isSyncing) processSyncQueue(); }}
           title={isOffline ? 'Offline Mode' : isSyncing ? 'Syncing to Cloud...' : pendingSyncCount > 0 ? `${pendingSyncCount} items waiting to sync` : 'Cloud Sync Active'}
         >
           {isOffline ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--warning)', background: 'var(--warning-light)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
-              <CloudOff size={14} /> <span className="hide-mobile">Offline Mode</span>
+              <CloudOff size={14} /> <span>Offline Mode</span>
             </div>
           ) : isSyncing ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
-              <RefreshCw size={14} className="spin-animation" /> <span className="hide-mobile">Syncing...</span>
+              <RefreshCw size={14} className="spin-animation" /> <span>Syncing...</span>
             </div>
           ) : pendingSyncCount > 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--warning)', background: 'var(--warning-light)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
-              <Cloud size={14} /> <span className="hide-mobile">{pendingSyncCount} Pending</span>
+              <Cloud size={14} /> <span>{pendingSyncCount} Pending</span>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
-              <CheckCircle size={14} /> <span className="hide-mobile">Synced</span>
+              <CheckCircle size={14} /> <span>Synced</span>
             </div>
           )}
         </div>
+
+        {/* Mobile Sync Dot */}
+        <div 
+          className="show-mobile"
+          style={{ 
+            width: '10px', height: '10px', borderRadius: '50%', marginRight: '12px', flexShrink: 0, cursor: 'pointer',
+            backgroundColor: isOffline ? 'var(--error)' : isSyncing ? 'var(--primary)' : pendingSyncCount > 0 ? 'var(--warning)' : 'var(--success)'
+          }}
+          onClick={() => {
+            if (isOffline) toast.error('Offline Mode (No Internet)');
+            else if (isSyncing) toast('Syncing to Cloud...', { icon: '🔄' });
+            else if (pendingSyncCount > 0) {
+              toast.success(`${pendingSyncCount} items waiting to sync`);
+              processSyncQueue();
+            }
+            else toast.success('System is Synced!');
+          }}
+        ></div>
 
         <div className="notification-wrapper" ref={notificationsRef} style={{ position: 'relative' }}>
           <button 

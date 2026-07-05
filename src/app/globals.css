@@ -913,6 +913,27 @@ p {
   transition: opacity 0.3s ease;
 }
 
+.hide-mobile {
+  display: inline-block;
+}
+
+.show-mobile {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  .show-mobile {
+    display: flex !important;
+  }
+}
+
+/* ============================================================
+   Components: Modals & Overlays
+   ============================================================ */
+
 /* ============================================================
    Collapsed Sidebar
    ============================================================ */
@@ -2465,9 +2486,10 @@ p {
 
   /* Ensure the full image is visible without being cropped */
   .landing-hero-image {
-    object-fit: cover;
-    height: 100%;
+    object-fit: contain;
+    height: auto;
     width: 100%;
+    min-height: auto;
   }
 
   .landing-hero-image-wrapper::after {
@@ -4160,9 +4182,6 @@ p {
 
 /* Hide tooltips completely on mobile touch devices */
 @media (max-width: 768px) {
-  .hide-sync-on-mobile {
-    display: none !important;
-  }
   [data-tooltip]::after {
     display: none !important;
   }
