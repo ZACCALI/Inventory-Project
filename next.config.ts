@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import withSerwistInit from "@serwist/next";
+import crypto from "crypto";
 
 const withSerwist = withSerwistInit({
   swSrc: "src/app/sw.ts",
@@ -7,6 +8,7 @@ const withSerwist = withSerwistInit({
   reloadOnOnline: true,
   disable: process.env.NODE_ENV === "development",
   register: false,
+  additionalPrecacheEntries: [{ url: "/~offline", revision: crypto.randomUUID() }],
 });
 
 const nextConfig: NextConfig = {
