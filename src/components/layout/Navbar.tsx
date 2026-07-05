@@ -73,16 +73,24 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
 
   // Monitor Offline Status & Sync Queue
   useEffect(() => {
-    const checkOnlineStatus = () => {
-      setIsOffline(!navigator.onLine);
-      if (navigator.onLine) {
+    const checkOnlineStatus = async () => {
+      if (!navigator.onLine) {
+        setIsOffline(true);
+        return;
+      }
+      // navigator.onLine is true, but Windows virtual adapters can spoof this. Ping to verify.
+      try {
+        await fetch('/api/test-ping', { method: 'HEAD', cache: 'no-store' });
+        setIsOffline(false);
         handleBackgroundSync();
+      } catch (error) {
+        setIsOffline(true);
       }
     };
 
     const countPending = async () => {
-      // Always ensure the UI reflects the true browser offline state
-      setIsOffline(!navigator.onLine);
+      // Always ensure the UI reflects the true browser offline state by pinging
+      checkOnlineStatus();
       try {
         const count = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count();
         setPendingSyncCount(count);
