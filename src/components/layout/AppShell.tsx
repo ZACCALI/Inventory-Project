@@ -32,9 +32,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (session && !settings) {
       fetch('/api/settings')
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error('Settings fetch failed');
+          return res.json();
+        })
         .then(data => setSettings(data))
-        .catch(err => console.error('Failed to fetch settings for permissions', err));
+        .catch(err => {
+          console.error('Failed to fetch settings for permissions', err);
+          // Set a fallback to avoid infinite loading on offline mode
+          setSettings({}); 
+        });
     }
   }, [session, settings]);
 

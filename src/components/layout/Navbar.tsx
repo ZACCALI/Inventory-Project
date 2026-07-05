@@ -99,10 +99,16 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
 
     const handleBackgroundSync = async () => {
       if (isSyncing) return;
-      setIsSyncing(true);
+      
       try {
+        const count = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count();
+        if (count === 0) return; // Only sync if there are pending items
+
+        setIsSyncing(true);
         await processSyncQueue();
-        await countPending();
+        
+        const remainingCount = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count();
+        setPendingSyncCount(remainingCount);
       } catch(e) {}
       setIsSyncing(false);
     };
