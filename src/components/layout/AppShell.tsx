@@ -87,34 +87,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Prevent getting stuck on 'Loading System...' if network fails completely
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
-  useEffect(() => {
-    if (status === 'loading' || (session && userRole !== 'admin' && !settings)) {
-      const timer = setTimeout(() => {
-        setLoadingTimeout(true);
-      }, 5000);
-      return () => clearTimeout(timer);
-    } else {
-      setLoadingTimeout(false);
-    }
-  }, [status, session, userRole, settings]);
-
+  // Show loading state while checking auth or loading dynamic permissions
   const isLoadingSettings = session && userRole !== 'admin' && !settings;
   if (status === 'loading' || isLoadingSettings) {
-    if (loadingTimeout && typeof navigator !== 'undefined' && !navigator.onLine) {
-      return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', background: 'var(--bg-main)' }}>
-           <div style={{ textAlign: 'center' }}>
-             <Truck size={48} color="var(--danger)" style={{ marginBottom: '16px' }} />
-             <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>Cannot Connect to Server</h2>
-             <p style={{ color: 'var(--text-secondary)' }}>You are currently offline and the app data couldn't be loaded from cache. Please reconnect to the internet.</p>
-             <button onClick={() => window.location.reload()} style={{ marginTop: '24px', padding: '10px 20px', background: 'var(--primary)', color: 'white', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>Retry</button>
-           </div>
-        </div>
-      );
-    }
-
     return (
         <div className="loading-page" style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-md)' }}>
