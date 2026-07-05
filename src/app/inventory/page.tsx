@@ -116,7 +116,7 @@ export default function InventoryPage() {
       const [catRes, unitRes, settingsRes] = await Promise.all([
         fetch('/api/categories'),
         fetch('/api/units'),
-        fetch(`/api/settings?timestamp=${Date.now()}`)
+        fetch('/api/settings')
       ]);
       const catData = await catRes.json();
       const unitData = await unitRes.json();

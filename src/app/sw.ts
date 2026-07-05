@@ -22,6 +22,9 @@ const customCache: RuntimeCaching[] = [
     matcher: /\/api\/settings.*/i,
     handler: new NetworkFirst({
       cacheName: "app-settings",
+      matchOptions: {
+        ignoreSearch: true,
+      }
     }),
   },
   ...defaultCache,

@@ -81,7 +81,7 @@ export default function SettingsPage() {
   async function fetchSettings() {
     if (typeof document !== 'undefined' && document.hidden) return;
     try {
-      const res = await fetch(`/api/settings?timestamp=${Date.now()}`);
+      const res = await fetch('/api/settings');
       if (res.ok) {
         const data = await res.json();
         setSettings({

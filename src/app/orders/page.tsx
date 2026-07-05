@@ -199,7 +199,7 @@ export default function OrdersPage() {
 
     const fetchSettings = async () => {
       try {
-        const res = await fetch(`/api/settings?timestamp=${Date.now()}`);
+        const res = await fetch('/api/settings');
         const data = await res.json();
         setLockOrderCancel(data.lockOrderCancel ?? true);
         setLockOrderDelete(data.lockOrderDelete ?? true);
