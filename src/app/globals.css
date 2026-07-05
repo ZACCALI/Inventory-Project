@@ -2457,7 +2457,7 @@ p {
   .landing-hero-visual {
     position: relative;
     width: 100%;
-    height: auto;
+    height: 320px; /* Fixed height for absolute image */
     margin-top: 16px;
     border-radius: var(--radius-lg);
     overflow: hidden;
@@ -2508,7 +2508,7 @@ p {
 
   /* Show truck as compact banner on mobile */
   .landing-hero-visual {
-    height: auto;
+    height: 240px; /* Fixed height for absolute image */
     margin-top: 16px;
   }
 

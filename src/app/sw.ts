@@ -13,17 +13,6 @@ declare const self: ServiceWorkerGlobalScope;
 
 const customCache: RuntimeCaching[] = [
   {
-    matcher: ({ request, url }) => {
-      return url.searchParams.has('_rsc') || request.headers.has('RSC');
-    },
-    handler: new NetworkFirst({
-      cacheName: 'next-rsc-payloads',
-      matchOptions: {
-        ignoreSearch: true,
-      }
-    }),
-  },
-  {
     matcher: /\/api\/auth\/session.*/i,
     handler: new NetworkFirst({
       cacheName: "next-auth-session",
