@@ -4306,3 +4306,24 @@ p {
   }
 }
 
+
+/* ============================================================
+   Skeleton Loading Animations
+   ============================================================ */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skeleton {
+  background-color: #E5E7EB;
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-text { height: 16px; margin-bottom: 8px; }
+.skeleton-title { height: 28px; width: 40%; margin-bottom: 16px; }
+.skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; }
+.skeleton-button { height: 36px; width: 100px; border-radius: var(--radius-md); }
+.skeleton-card { height: 120px; border-radius: var(--radius-lg); }
+
