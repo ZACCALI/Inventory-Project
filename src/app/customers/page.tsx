@@ -8,6 +8,7 @@ import { Search, Plus, Phone, MapPin, Edit, Trash2, X,  FileText, ShoppingCart, 
 import { useAlert } from '@/components/AlertModal';
 import { formatCurrency } from '@/lib/constants';
 import { useDebounce } from '@/hooks/useDebounce';
+import { addSyncTask } from '@/lib/offlineSync';
 
 interface Customer {
   id: string;
@@ -136,6 +137,26 @@ export default function CustomersPage() {
     e.preventDefault();
     setActionLoading(true);
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+      if (isOffline) {
+        const action = modalMode === 'ADD' ? 'CREATE' : 'UPDATE';
+        const payload = { ...currentCustomer, id: currentCustomer.id || `OFF-${Date.now()}` };
+        
+        await addSyncTask('customer', action, payload);
+        showToast('Saved Offline! Will sync when internet returns.', 'warning');
+        
+        setIsModalOpen(false);
+        // Optimistically update UI
+        if (modalMode === 'ADD') {
+          setCustomers(prev => [{...payload, _count: {orders: 0}} as any, ...prev]);
+        } else {
+          setCustomers(prev => prev.map(c => c.id === payload.id ? {...c, ...payload} as any : c));
+        }
+        setActionLoading(false);
+        return;
+      }
+
       const url = modalMode === 'ADD' ? '/api/customers' : `/api/customers/${currentCustomer.id}`;
       const method = modalMode === 'ADD' ? 'POST' : 'PUT';
 

@@ -6,6 +6,7 @@ import { fetcher } from '@/lib/fetcher';
 import { useSession } from 'next-auth/react';
 import { Plus, Search, Edit, Trash2, X, Save, Truck,  User, Users, CheckCircle2, List, FileText } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
+import { addSyncTask } from '@/lib/offlineSync';
 
 interface Driver {
   id: string;
@@ -120,6 +121,27 @@ export default function DriversPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+      if (isOffline) {
+        const action = editingDriver ? 'UPDATE' : 'CREATE';
+        const payload = {
+          ...formData,
+          id: editingDriver?.id || \`OFF-\${Date.now()}\`
+        };
+        await addSyncTask('driver', action, payload);
+        showToast('Saved Offline! Will sync when internet returns.', 'warning');
+        
+        closeModal();
+        if (editingDriver) {
+          setDrivers(prev => prev.map(d => d.id === payload.id ? { ...d, ...payload } as unknown as Driver : d));
+        } else {
+          setDrivers(prev => [{ ...payload, createdAt: new Date().toISOString() } as unknown as Driver, ...prev]);
+        }
+        setIsSaving(false);
+        return;
+      }
+
       const method = editingDriver ? 'PUT' : 'POST';
       const url = editingDriver ? `/api/drivers/${editingDriver.id}` : '/api/drivers';
       const res = await fetch(url, {
@@ -145,6 +167,14 @@ export default function DriversPage() {
   const handleDelete = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Are you sure you want to delete ${name}?`)) return;
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        await addSyncTask('driver', 'DELETE', { id });
+        showToast('Deleted Offline! Will sync when internet returns.', 'warning');
+        setDrivers(prev => prev.filter(d => d.id !== id));
+        return;
+      }
+
       const res = await fetch(`/api/drivers/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));

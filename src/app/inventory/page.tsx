@@ -8,6 +8,7 @@ import { Plus, Search, Edit, Trash2, X, Save, Filter, Package, AlertTriangle, XC
 import { formatCurrency } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
+import { addSyncTask } from '@/lib/offlineSync';
 
 import Image from "next/image";
 interface Unit {
@@ -238,9 +239,34 @@ export default function InventoryPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       const method = editingProduct ? 'PUT' : 'POST';
       const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products';
       
+      if (isOffline) {
+        const action = editingProduct ? 'UPDATE' : 'CREATE';
+        const payload = { 
+          ...formData, 
+          id: editingProduct ? editingProduct.id : `OFF-${Date.now()}`,
+          price: Number(formData.price),
+          costPrice: Number(formData.costPrice),
+          stock: Number(formData.stock),
+          minStock: Number(formData.minStock)
+        };
+        await addSyncTask('product', action, payload);
+        showToast('Saved Offline! Will sync when internet returns.', 'warning');
+        
+        // Optimistic UI Update
+        if (editingProduct) {
+          setProducts(prev => prev.map(p => p.id === payload.id ? { ...p, ...payload } as unknown as Product : p));
+        } else {
+          setProducts(prev => [{ ...payload, _count: { orderItems: 0, stockLogs: 0 } } as unknown as Product, ...prev]);
+        }
+        closeModal();
+        setIsSaving(false);
+        return;
+      }
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -309,6 +335,14 @@ export default function InventoryPage() {
       `Permanently delete "${name}"?\n\n(Safe to delete: 0 sales, 0 stock logs.)\n\nThis cannot be undone.`
     )) return;
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        await addSyncTask('product', 'DELETE', { id });
+        showToast('Deleted Offline! Will sync when internet returns.', 'warning');
+        setProducts(prev => prev.filter(p => p.id !== id));
+        return;
+      }
+
       const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const err = await res.json();
@@ -324,6 +358,14 @@ export default function InventoryPage() {
   const handleArchiveProduct = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Are you sure you want to archive ${name}?`)) return;
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        await addSyncTask('product', 'UPDATE', { id, isArchived: true });
+        showToast('Archived Offline! Will sync when internet returns.', 'warning');
+        setProducts(prev => prev.map(p => p.id === id ? { ...p, isArchived: true } : p));
+        return;
+      }
+
       const res = await fetch(`/api/products/${id}`, { 
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -343,6 +385,14 @@ export default function InventoryPage() {
   const handleUnarchiveProduct = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Are you sure you want to unarchive ${name}?`)) return;
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        await addSyncTask('product', 'UPDATE', { id, isArchived: false });
+        showToast('Unarchived Offline! Will sync when internet returns.', 'warning');
+        setProducts(prev => prev.map(p => p.id === id ? { ...p, isArchived: false } : p));
+        return;
+      }
+
       const res = await fetch(`/api/products/${id}`, { 
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
