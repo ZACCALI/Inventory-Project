@@ -70,7 +70,7 @@ export default function DeliveryPage() {
     return params.toString();
   };
 
-  const { data: swrRes } = useSWR(
+  const { data: swrRes, error: swrError } = useSWR(
     `/api/delivery?${getQueryString()}`,
     async (url) => {
       const res = await fetch(url);
@@ -90,8 +90,10 @@ export default function DeliveryPage() {
         setTotalDeliveries(0);
       }
       setLoading(false);
+    } else if (swrError) {
+      setLoading(false);
     }
-  }, [swrRes]);
+  }, [swrRes, swrError]);
 
   async function fetchDeliveries() {
     if (typeof document !== 'undefined' && document.hidden) return;

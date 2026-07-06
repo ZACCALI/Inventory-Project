@@ -48,7 +48,7 @@ export default function UsersPage() {
     return params.toString();
   }, [debouncedSearch, page]);
 
-  const { data: swrRes } = useSWR(
+  const { data: swrRes, error: swrError } = useSWR(
     userRole === 'admin' ? `/api/users?${getQueryString()}` : null,
     async (url) => {
       const res = await fetch(url);
@@ -72,8 +72,10 @@ export default function UsersPage() {
         setTotalUsers(0);
       }
       setLoading(false);
+    } else if (swrError) {
+      setLoading(false);
     }
-  }, [swrRes]);
+  }, [swrRes, swrError]);
 
   const fetchUsers = useCallback(async () => {
     if (typeof document !== 'undefined' && document.hidden) return;
