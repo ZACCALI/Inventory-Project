@@ -686,8 +686,10 @@ export default function InventoryPage() {
                 ))
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
-                    No products found.
+                  <td colSpan={6} style={{ padding: '40px', color: 'var(--text-tertiary)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', textAlign: 'center' }}>
+                      No products found.
+                    </div>
                   </td>
                 </tr>
               ) : (
