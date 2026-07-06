@@ -526,7 +526,7 @@ export default function CreateOrderPage() {
       const payload: any = {
         id: offlineId,
         orderNumber: offlineOrderNumber,
-        customer: customers.find(c => c.id === (fulfillmentMode === 'walkin' ? selectedCustomerId : orderCustomerId)) || { name: 'Unknown' },
+        customer: customers.find(c => c.id === customerIdToUse) || { name: fallbackCustomerName || 'Unknown' },
         createdAt: new Date().toISOString(),
         items: validItems.map(i => ({
           productId: i.product.id,
