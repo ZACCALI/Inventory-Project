@@ -234,6 +234,48 @@ export default function InventoryPage() {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    
+    // 1. Validate Pricing (Safety Feature)
+    const priceNum = Number(formData.price);
+    const costPriceNum = Number(formData.costPrice);
+    if (costPriceNum > 0 && priceNum <= costPriceNum) {
+      showAlert('error', 'Pricing Error', `Base Selling Price (${priceNum}) must be higher than Cost Price (${costPriceNum}).`);
+      setIsSaving(false);
+      return;
+    }
+
+    // 2. Validate Barcode Uniqueness (Against local state to protect offline queue)
+    const allBarcodes: string[] = [];
+    if (formData.barcode) allBarcodes.push(formData.barcode.trim());
+    if (formData.uoms) {
+      for (const u of formData.uoms) {
+        if (u.barcode) {
+          const trimmed = u.barcode.trim();
+          if (allBarcodes.includes(trimmed)) {
+            showAlert('error', 'Barcode Conflict', `The barcode '${trimmed}' is used multiple times. Base unit and Bulk units must have completely unique barcodes.`);
+            setIsSaving(false);
+            return;
+          }
+          allBarcodes.push(trimmed);
+        }
+      }
+    }
+    
+    if (allBarcodes.length > 0) {
+      const existingConflict = products.find(p => {
+        if (editingProduct && p.id === editingProduct.id) return false;
+        if (p.barcode && allBarcodes.includes(p.barcode)) return true;
+        if (p.uoms && p.uoms.some((u: any) => u.barcode && allBarcodes.includes(u.barcode))) return true;
+        return false;
+      });
+      
+      if (existingConflict) {
+        showAlert('error', 'Barcode Conflict', `One of the provided barcodes is already used by another product (${existingConflict.name}).`);
+        setIsSaving(false);
+        return;
+      }
+    }
+
     try {
       let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
