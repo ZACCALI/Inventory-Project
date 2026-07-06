@@ -1058,21 +1058,53 @@ function ManageListModal({ type, items, onClose, onUpdate }: { type: 'category' 
     if (!inputValue.trim()) return;
     setLoading(true);
     try {
-      const url = editingId ? `${apiPath}/${editingId}` : apiPath;
-      const method = editingId ? 'PUT' : 'POST';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: inputValue.trim() })
-      });
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Operation failed');
+      if (!isOffline) {
+        try {
+          const url = editingId ? `${apiPath}/${editingId}` : apiPath;
+          const method = editingId ? 'PUT' : 'POST';
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: inputValue.trim() })
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Operation failed');
+          }
+          setInputValue('');
+          setEditingId(null);
+          onUpdate();
+          return;
+        } catch (fetchErr: unknown) {
+          if (fetchErr instanceof Error && fetchErr.message !== 'Failed to fetch') {
+             throw fetchErr;
+          }
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
       }
-      setInputValue('');
-      setEditingId(null);
-      onUpdate();
+
+      if (isOffline || networkFailed) {
+        const action = editingId ? 'UPDATE' : 'CREATE';
+        const payload = {
+          id: editingId || `OFF-${Date.now()}`,
+          name: inputValue.trim()
+        };
+        const entityName = type === 'category' ? 'category' : 'unit';
+        await addSyncTask(entityName, action, payload);
+        showToast('offline', 'Action queued offline — will sync when connected');
+        
+        setInputValue('');
+        setEditingId(null);
+        // Optimistically update the UI by calling onUpdate, 
+        // though the parent might fail to fetch. We'll just close it or rely on parent's SWR error handling.
+        onUpdate();
+        return;
+      }
     } catch (err: unknown) {
       showAlert('error', 'Action Failed', (err as Error).message);
     } finally {
@@ -1083,12 +1115,34 @@ function ManageListModal({ type, items, onClose, onUpdate }: { type: 'category' 
   const handleDelete = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Delete ${name}?`)) return;
     try {
-      const res = await fetch(`${apiPath}/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to delete');
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`${apiPath}/${id}`, { method: 'DELETE' });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Failed to delete');
+          }
+          onUpdate();
+          return;
+        } catch (fetchErr: unknown) {
+          if (fetchErr instanceof Error && fetchErr.message !== 'Failed to fetch') {
+             throw fetchErr;
+          }
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
       }
-      onUpdate();
+
+      if (isOffline || networkFailed) {
+        const entityName = type === 'category' ? 'category' : 'unit';
+        await addSyncTask(entityName, 'DELETE', { id });
+        showToast('offline', 'Action queued offline — will sync when connected');
+        onUpdate();
+        return;
+      }
     } catch (err: unknown) {
       showAlert('error', 'Action Failed', (err as Error).message);
     }
