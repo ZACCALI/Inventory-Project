@@ -61,7 +61,7 @@ export default function InventoryPage() {
 
   // SWR for instant caching
   const { data: swrProducts, error: swrError } = useSWR(
-    `/api/products${showArchived ? '?archived=true' : ''}`,
+    status === 'authenticated' ? `/api/products${showArchived ? '?archived=true' : ''}` : null,
     fetcher,
     { refreshInterval: 15000 }
   );

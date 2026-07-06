@@ -32,9 +32,16 @@ const customCache: RuntimeCaching[] = [
     }),
   },
   {
-    matcher: /\/api\/(customers|drivers|products|orders|expenses|history).*/i,
+    matcher: /\/api\/(customers|drivers|products|orders|expenses|history|categories|units|reports).*/i,
     handler: new NetworkFirst({
       cacheName: "core-api-data",
+      networkTimeoutSeconds: 3,
+    }),
+  },
+  {
+    matcher: ({ request }) => request.mode === 'navigate',
+    handler: new NetworkFirst({
+      cacheName: "page-navigations",
       networkTimeoutSeconds: 3,
     }),
   },
@@ -45,7 +52,7 @@ const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
-  navigationPreload: true,
+  navigationPreload: false,
   runtimeCaching: customCache,
   fallbacks: {
     entries: [
