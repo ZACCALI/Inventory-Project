@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         data: { name, phone: phone || null, vehicleInfo: vehicleInfo || null }
       });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'CREATE', entity: 'Driver', details: `Created driver ${name}` }
+        data: { userId: user.id, action: 'CREATE', entity: 'Driver', details: `Created driver ${name}`, mode: body.isOfflineSync ? 'offline' : 'online' }
       });
       return newDriver;
     });

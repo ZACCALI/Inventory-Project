@@ -296,7 +296,7 @@ export default function OrdersPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('order', 'DELETE', { id });
-        showToast('loading', 'Deleted Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         setOrders(prev => prev.filter(o => o.id !== id));
         return;
       }
@@ -320,7 +320,7 @@ export default function OrdersPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('order', 'UPDATE', { id, isArchived: true });
-        showToast('loading', 'Archived Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         setOrders(prev => prev.map(o => o.id === id ? { ...o, isArchived: true } as any : o));
         return;
       }
@@ -348,7 +348,7 @@ export default function OrdersPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('order', 'UPDATE', { id, isArchived: false });
-        showToast('loading', 'Unarchived Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         setOrders(prev => prev.map(o => o.id === id ? { ...o, isArchived: false } as any : o));
         return;
       }
@@ -643,7 +643,7 @@ export default function OrdersPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('order', 'UPDATE', { ...payload, id: editingOrder.id });
-        showToast('loading', 'Saved Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         setOrders(prev => prev.map(o => o.id === editingOrder.id ? { ...o, ...payload } as any : o));
         setIsEditOpen(false);
         setEditingOrder(null);

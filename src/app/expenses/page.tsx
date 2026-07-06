@@ -152,7 +152,7 @@ export default function ExpensesPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('expense', 'DELETE', { id });
-        showToast('loading', 'Deleted Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         setExpenses(prev => prev.filter(e => e.id !== id));
         return;
       }
@@ -183,7 +183,7 @@ export default function ExpensesPage() {
           id: editId || `OFF-${Date.now()}` 
         };
         await addSyncTask('expense', action, payload);
-        showToast('loading', 'Saved Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         
         setIsModalOpen(false);
         if (editId) {

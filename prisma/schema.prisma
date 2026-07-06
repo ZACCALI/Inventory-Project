@@ -290,12 +290,14 @@ model AuditLog {
   action    String   // e.g., "CREATE", "UPDATE", "DELETE"
   entity    String   // e.g., "Order", "Expense", "Delivery"
   details   String   // JSON string or plain text description
+  mode      String   @default("online") // "online" or "offline"
   createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([entity])
   @@index([action])
   @@index([createdAt])
+  @@index([mode])
 }
 
 model ProductUOM {

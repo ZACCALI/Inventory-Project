@@ -17,7 +17,7 @@ interface ModalState {
 interface AlertContextType {
   showAlert: (type: ModalState['type'], title: string, message: string) => void;
   showConfirm: (title: string, message: string) => Promise<boolean>;
-  showToast: (type: 'success' | 'error' | 'loading', message: string) => void;
+  showToast: (type: 'success' | 'error' | 'loading' | 'offline', message: string) => void;
 }
 
 const AlertContext = createContext<AlertContextType | null>(null);
@@ -60,10 +60,20 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
     });
   }, [closeWithAnimation]);
 
-  const showToast = useCallback((type: 'success' | 'error' | 'loading', message: string) => {
+  const showToast = useCallback((type: 'success' | 'error' | 'loading' | 'offline', message: string) => {
     if (type === 'success') toast.success(message);
     else if (type === 'error') toast.error(message);
-    else toast.loading(message);
+    else if (type === 'offline' || type === 'loading') {
+      toast(message, {
+        icon: '☁️',
+        duration: 3000,
+        style: {
+          background: 'var(--bg-card, #1e293b)',
+          color: 'var(--text-primary, #f1f5f9)',
+          border: '1px solid var(--warning, #f59e0b)',
+        },
+      });
+    }
   }, []);
 
   const close = () => closeWithAnimation();

@@ -501,7 +501,7 @@ export default function CreateOrderPage() {
           return;
         }
 
-        showToast('Saved Offline! Will sync when internet returns.', 'warning');
+        showToast('offline', 'Action queued offline — will sync when connected');
         
         const offlineOrder = {
           ...payload,

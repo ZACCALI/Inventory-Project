@@ -173,6 +173,7 @@ export async function POST(request: NextRequest) {
           action: 'CREATE',
           entity: 'Product',
           details: `Created product ${name} (SKU: ${sku}) with initial stock ${initialStock}`,
+          mode: body.isOfflineSync ? 'offline' : 'online',
         }
       });
 

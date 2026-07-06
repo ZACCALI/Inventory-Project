@@ -287,6 +287,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           action: 'UPDATE',
           entity: 'Order',
           details: `Updated order ${updatedOrder.orderNumber} ${body.items ? 'Items & Details' : 'Status'}`,
+          mode: bodyRaw.isOfflineSync ? 'offline' : 'online',
         }
       });
 
@@ -313,6 +314,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: 'Only admins can delete/archive orders.' }, { status: 403 });
     }
 
+    let isOfflineSync = false;
+    try { const delBody = await request.clone().json(); isOfflineSync = !!delBody?.isOfflineSync; } catch {}
+
     await prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: { id },
@@ -334,6 +338,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
           action: 'UPDATE',
           entity: order.orderType === 'pos' ? 'Order (POS)' : 'Order (Wholesale)',
           details: `Archived Order ${order.orderNumber}`,
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
     });

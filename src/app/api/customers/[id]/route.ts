@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const customer = await prisma.$transaction(async (tx) => {
       const updated = await tx.customer.update({ where: { id }, data: { name: parsed.data.name, contactPerson: parsed.data.contactPerson, phone: parsed.data.phone, email: parsed.data.email, address: parsed.data.address, customerType: parsed.data.customerType } });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'UPDATE', entity: 'Customer', details: `Updated customer ${updated.name}` }
+        data: { userId: user.id, action: 'UPDATE', entity: 'Customer', details: `Updated customer ${updated.name}`, mode: body.isOfflineSync ? 'offline' : 'online' }
       });
       return updated;
     });
@@ -59,8 +59,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     await prisma.$transaction(async (tx) => {
       await tx.customer.delete({ where: { id } });
+      let isOfflineSync = false;
+      try { const delBody = await request.clone().json(); isOfflineSync = !!delBody?.isOfflineSync; } catch {}
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'DELETE', entity: 'Customer', details: `Deleted customer ${customer.name}` }
+        data: { userId: user.id, action: 'DELETE', entity: 'Customer', details: `Deleted customer ${customer.name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
     });
     return NextResponse.json({ message: 'Deleted' });

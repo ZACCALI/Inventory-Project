@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
           action: 'CREATE',
           entity: 'Customer',
           details: `Created customer ${body.name}`,
+          mode: body.isOfflineSync ? 'offline' : 'online',
         }
       });
       return newCustomer;

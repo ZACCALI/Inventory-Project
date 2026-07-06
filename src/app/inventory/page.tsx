@@ -248,7 +248,7 @@ export default function InventoryPage() {
           minStock: Number(formData.minStock)
         };
         await addSyncTask('product', action, payload);
-        showToast('loading', 'Saved Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         
         // Optimistic UI Update
         if (editingProduct) {
@@ -341,7 +341,7 @@ export default function InventoryPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('product', 'DELETE', { id });
-        showToast('loading', 'Deleted Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         setProducts(prev => prev.filter(p => p.id !== id));
         return;
       }
@@ -364,7 +364,7 @@ export default function InventoryPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('product', 'UPDATE', { id, isArchived: true });
-        showToast('loading', 'Archived Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         setProducts(prev => prev.map(p => p.id === id ? { ...p, isArchived: true } : p));
         return;
       }
@@ -391,7 +391,7 @@ export default function InventoryPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('product', 'UPDATE', { id, isArchived: false });
-        showToast('loading', 'Unarchived Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         setProducts(prev => prev.map(p => p.id === id ? { ...p, isArchived: false } : p));
         return;
       }

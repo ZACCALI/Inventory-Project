@@ -277,6 +277,7 @@ export async function POST(request: NextRequest) {
           action: 'CREATE',
           entity: entityLabel,
           details: `Created ${friendlyLabel} order ${orderNumber} for total ₱${totalAmount}`,
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
 

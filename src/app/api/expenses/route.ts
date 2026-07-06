@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
           action: 'CREATE',
           entity: 'Expense',
           details: `Logged expense: ${description} (₱${parsedAmount})`,
+          mode: bodyRaw.isOfflineSync ? 'offline' : 'online',
         }
       });
 

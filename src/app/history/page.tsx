@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import { Search,   User, Activity, PlusCircle, Trash2, Edit3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search,   User, Activity, PlusCircle, Trash2, Edit3, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 
 interface AuditLog {
@@ -10,6 +10,7 @@ interface AuditLog {
   action: string;
   entity: string;
   details: string;
+  mode: string;
   createdAt: string;
   user: {
     name: string;
@@ -28,12 +29,14 @@ export default function HistoryPage() {
   const debouncedSearch = useDebounce(search, 300);
   const [actionFilter, setActionFilter] = useState('All');
   const [entityFilter, setEntityFilter] = useState('All');
+  const [modeFilter, setModeFilter] = useState('All');
 
   const getQueryString = () => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.append('search', debouncedSearch);
     if (actionFilter !== 'All') params.append('action', actionFilter);
     if (entityFilter !== 'All') params.append('entity', entityFilter);
+    if (modeFilter !== 'All') params.append('mode', modeFilter);
     params.append('page', page.toString());
     params.append('limit', limit.toString());
     return params.toString();
@@ -86,12 +89,12 @@ export default function HistoryPage() {
     }, 60000);
     return () => clearInterval(interval);
 // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, actionFilter, entityFilter, page]);
+  }, [debouncedSearch, actionFilter, entityFilter, modeFilter, page]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, actionFilter, entityFilter]);
+  }, [debouncedSearch, actionFilter, entityFilter, modeFilter]);
 
 
   const getActionColor = (action: string) => {
@@ -231,6 +234,19 @@ export default function HistoryPage() {
               <option value="User Security">User Security</option>
               <option value="Settings">Settings</option>
             </select>
+
+            <select 
+              id="history-mode-filter"
+              name="modeFilter"
+              aria-label="Filter history by mode"
+              className="form-select" 
+              value={modeFilter} 
+              onChange={e => setModeFilter(e.target.value)}
+            >
+              <option value="All">All Modes</option>
+              <option value="online">Online</option>
+              <option value="offline">Offline</option>
+            </select>
           </div>
         </div>
 
@@ -293,7 +309,27 @@ export default function HistoryPage() {
                       <span className="badge badge-neutral">{log.entity}</span>
                     </td>
                     <td data-label="Details" style={{ color: 'var(--text-primary)' }}>
-                      {log.details}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>{log.details}</span>
+                        {log.mode === 'offline' && (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(245, 158, 11, 0.1)',
+                            color: 'var(--warning)',
+                            border: '1px solid rgba(245, 158, 11, 0.2)',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0
+                          }}>
+                            <WifiOff size={10} /> OFFLINE
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

@@ -41,6 +41,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           action: 'UPDATE',
           entity: 'Expense',
           details: `Updated expense: ${description} (₱${amount})`,
+          mode: bodyRaw.isOfflineSync ? 'offline' : 'online',
         }
       });
 
@@ -63,6 +64,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     if (error) return error;
 
     const { id } = await params;
+    let isOfflineSync = false;
+    try { const delBody = await _request.json(); isOfflineSync = !!delBody?.isOfflineSync; } catch {}
 
     await prisma.$transaction(async (tx) => {
       const expense = await tx.expense.findUnique({ where: { id } });
@@ -76,6 +79,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
           action: 'DELETE',
           entity: 'Expense',
           details: `Deleted expense: ${expense.description} (₱${expense.amount})`,
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
     });

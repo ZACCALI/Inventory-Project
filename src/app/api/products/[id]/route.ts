@@ -147,6 +147,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           action: 'UPDATE',
           entity: 'Product',
           details: `Updated product ${updated.name} (SKU: ${updated.sku})`,
+          mode: body.isOfflineSync ? 'offline' : 'online',
         }
       });
 
@@ -167,6 +168,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     const { id } = await params;
     
+    const product = await prisma.product.findUnique({ where: { id } });
+    let isOfflineSync = false;
+    try { const delBody = await request.clone().json(); isOfflineSync = !!delBody?.isOfflineSync; } catch {}
+
     await prisma.$transaction(async (tx) => {
       // 1. Verify Cleanup Mode
       const settings = await tx.systemSettings.findUnique({ where: { id: "1" } });
@@ -199,6 +204,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
           action: 'DELETE',
           entity: 'Product',
           details: `Hard deleted product ${prod.name} (SKU: ${prod.sku})`,
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
     });

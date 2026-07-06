@@ -123,7 +123,7 @@ export default function DriversPage() {
           id: editingDriver?.id || `OFF-${Date.now()}`
         };
         await addSyncTask('driver', action, payload);
-        showToast('loading', 'Saved Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         
         closeModal();
         if (editingDriver) {
@@ -163,7 +163,7 @@ export default function DriversPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('driver', 'DELETE', { id });
-        showToast('loading', 'Deleted Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         setDrivers(prev => prev.filter(d => d.id !== id));
         return;
       }

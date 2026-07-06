@@ -37,6 +37,11 @@ export async function GET(request: NextRequest) {
       where.entity = { startsWith: entityFilter };
     }
 
+    const modeFilter = request.nextUrl.searchParams.get('mode') || '';
+    if (modeFilter && modeFilter !== 'All') {
+      where.mode = modeFilter;
+    }
+
     const [logs, total] = await Promise.all([
       prisma.auditLog.findMany({
         where,

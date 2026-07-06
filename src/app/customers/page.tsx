@@ -116,7 +116,7 @@ export default function CustomersPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
         await addSyncTask('customer', 'DELETE', { id });
-        showToast('loading', 'Deleted Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         setCustomers(prev => prev.filter(c => c.id !== id));
         return;
       }
@@ -145,7 +145,7 @@ export default function CustomersPage() {
         const payload = { ...currentCustomer, id: currentCustomer.id || `OFF-${Date.now()}` };
         
         await addSyncTask('customer', action, payload);
-        showToast('loading', 'Saved Offline! Will sync when internet returns.');
+        showToast('offline', 'Action queued offline — will sync when connected');
         
         setIsModalOpen(false);
         // Optimistically update UI

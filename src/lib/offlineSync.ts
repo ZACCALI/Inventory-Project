@@ -61,7 +61,7 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
       payload.idempotencyKey = task.idempotencyKey;
 
       let endpoint = '';
-      let method = task.action === 'CREATE' ? 'POST' : task.action === 'UPDATE' ? 'PATCH' : 'DELETE';
+      let method = task.action === 'CREATE' ? 'POST' : task.action === 'UPDATE' ? 'PUT' : 'DELETE';
 
       if (task.type === 'order') endpoint = task.action === 'CREATE' ? '/api/orders' : `/api/orders/${payload.id}`;
       else if (task.type === 'customer') endpoint = task.action === 'CREATE' ? '/api/customers' : `/api/customers/${payload.id}`;
