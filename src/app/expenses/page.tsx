@@ -67,7 +67,7 @@ export default function ExpensesPage() {
     return params.toString();
   };
 
-  const { data: swrRes } = useSWR(
+  const { data: swrRes, error: swrError } = useSWR(
     `/api/expenses?${getQueryString()}`,
     fetcher,
     { refreshInterval: 15000 }
@@ -77,8 +77,10 @@ export default function ExpensesPage() {
     if (swrRes) {
       setExpenses(swrRes);
       setLoading(false);
+    } else if (swrError) {
+      setLoading(false);
     }
-  }, [swrRes]);
+  }, [swrRes, swrError]);
 
   const fetchExpenses = async () => {
     if (typeof document !== 'undefined' && document.hidden) return;

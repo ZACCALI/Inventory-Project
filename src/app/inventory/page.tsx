@@ -59,7 +59,7 @@ export default function InventoryPage() {
   const [showArchived, setShowArchived] = useState(false);
 
   // SWR for instant caching
-  const { data: swrProducts } = useSWR(
+  const { data: swrProducts, error: swrError } = useSWR(
     status === 'authenticated' ? `/api/products${showArchived ? '?archived=true' : ''}` : null,
     fetcher,
     { refreshInterval: 15000 }
@@ -69,8 +69,10 @@ export default function InventoryPage() {
     if (swrProducts) {
       setProducts(swrProducts);
       setLoading(false);
+    } else if (swrError) {
+      setLoading(false);
     }
-  }, [swrProducts]);
+  }, [swrProducts, swrError]);
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);

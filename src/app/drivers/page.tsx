@@ -52,14 +52,16 @@ export default function DriversPage() {
     }
   };
 
-  const { data: swrRes } = useSWR('/api/drivers', fetcher, { refreshInterval: 15000 });
+  const { data: swrRes, error: swrError } = useSWR('/api/drivers', fetcher, { refreshInterval: 15000 });
 
   useEffect(() => {
     if (swrRes) {
       setDrivers(Array.isArray(swrRes) ? swrRes : []);
       setLoading(false);
+    } else if (swrError) {
+      setLoading(false);
     }
-  }, [swrRes]);
+  }, [swrRes, swrError]);
 
   const fetchDrivers = async () => {
     if (typeof document !== 'undefined' && document.hidden) return;

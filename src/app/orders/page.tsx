@@ -107,7 +107,7 @@ export default function OrdersPage() {
     return params.toString();
   };
 
-  const { data: swrRes } = useSWR(
+  const { data: swrRes, error: swrError } = useSWR(
     session ? `/api/orders?${getQueryString()}` : null,
     async (url) => {
       const res = await fetch(url);
@@ -127,8 +127,10 @@ export default function OrdersPage() {
         setTotalOrders(0);
       }
       setLoading(false);
+    } else if (swrError) {
+      setLoading(false);
     }
-  }, [swrRes]);
+  }, [swrRes, swrError]);
 
   useEffect(() => { 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

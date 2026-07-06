@@ -42,7 +42,7 @@ export default function HistoryPage() {
     return params.toString();
   };
 
-  const { data: swrRes } = useSWR(
+  const { data: swrRes, error: swrError } = useSWR(
     `/api/history?${getQueryString()}`,
     async (url) => {
       const res = await fetch(url);
@@ -62,8 +62,10 @@ export default function HistoryPage() {
         setTotalCount(0);
       }
       setLoading(false);
+    } else if (swrError) {
+      setLoading(false);
     }
-  }, [swrRes]);
+  }, [swrRes, swrError]);
 
   const fetchLogs = async () => {
     if (typeof document !== 'undefined' && document.hidden) return;

@@ -51,7 +51,7 @@ export default function CustomersPage() {
     return params.toString();
   };
 
-  const { data: swrRes } = useSWR(
+  const { data: swrRes, error: swrError } = useSWR(
     session ? `/api/customers?${getQueryString()}` : null,
     fetcher,
     { refreshInterval: 60000 }
@@ -61,8 +61,10 @@ export default function CustomersPage() {
     if (swrRes) {
       setCustomers(swrRes);
       setLoading(false);
+    } else if (swrError) {
+      setLoading(false);
     }
-  }, [swrRes]);
+  }, [swrRes, swrError]);
 
   const fetchCustomers = async () => {
     if (typeof document !== 'undefined' && document.hidden) return;
