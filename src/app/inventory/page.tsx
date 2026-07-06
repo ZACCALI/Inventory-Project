@@ -396,14 +396,12 @@ export default function InventoryPage() {
         if (ctx) {
           ctx.drawImage(img, startX, startY, size, size, 0, 0, 500, 500);
           
-          const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-          if (isOffline) {
-            const base64Image = canvas.toDataURL('image/jpeg', 0.7);
-            setFormData(prev => ({...prev, image: base64Image}));
-            showToast('success', 'Photo saved locally for offline mode');
-          } else {
-            canvas.toBlob(async (blob) => {
-              if (!blob) return;
+          canvas.toBlob(async (blob) => {
+            if (!blob) return;
+            const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+            let networkFailed = false;
+
+            if (!isOffline) {
               const uploadData = new FormData(); 
               uploadData.append('file', blob, 'image.jpg');
               try {
@@ -411,12 +409,19 @@ export default function InventoryPage() {
                 if (!res.ok) throw new Error('Upload failed');
                 const { url } = await res.json();
                 setFormData(prev => ({...prev, image: url}));
+                return;
               } catch (error) {
-                console.error('Image upload error:', error);
-                showToast('error', 'Failed to upload image');
+                console.warn('Image upload network error, falling back to offline mode:', error);
+                networkFailed = true;
               }
-            }, 'image/jpeg', 0.7);
-          }
+            }
+
+            if (isOffline || networkFailed) {
+              const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+              setFormData(prev => ({...prev, image: base64Image}));
+              showToast('success', 'Photo saved locally for offline mode');
+            }
+          }, 'image/jpeg', 0.7);
         }
       };
       if (event.target?.result) {
