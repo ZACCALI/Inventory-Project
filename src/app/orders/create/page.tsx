@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { Search, Plus, Trash2, Save, ShoppingBag, User,  X, Truck, CheckCircle2, AlertCircle, Minus, Camera, ScanLine, Receipt, Printer, ShoppingCart,       AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { Html5Qrcode } from 'html5-qrcode';
+import { db } from '@/lib/db';
 import { useBarcodeScanner } from '@/lib/useBarcodeScanner';
 import { addSyncTask } from '@/lib/offlineSync';
 
@@ -250,26 +251,81 @@ export default function CreateOrderPage() {
 
   // Load Data
   useEffect(() => {
-    const loadData = () => {
-      fetch('/api/products?limit=1000').then(res => res.json()).then(data => {
-        if (Array.isArray(data)) {
-          setProducts(data);
-          const cats = Array.from(new Set(data.filter((p: Product) => p.category?.name).map((p: Product) => p.category?.name)));
-          setCategories(['All', ...(cats as string[])]);
+    const loadData = async () => {
+      try {
+        let fetchedProducts = [];
+        let fetchedCustomers = [];
+        let fetchedDrivers = [];
+
+        try {
+          const [prodRes, custRes, drivRes, setRes] = await Promise.all([
+            fetch('/api/products?limit=1000'),
+            fetch('/api/customers?limit=1000'),
+            fetch('/api/drivers?limit=1000'),
+            fetch('/api/settings')
+          ]);
+
+          if (prodRes.ok) fetchedProducts = await prodRes.json();
+          if (custRes.ok) fetchedCustomers = await custRes.json();
+          if (drivRes.ok) fetchedDrivers = await drivRes.json();
+          
+          if (setRes.ok) {
+            const data = await setRes.json();
+            if (data && !data.error) {
+              setLockOrderDate(data.lockOrderDate ?? true);
+              if (data.companyName) setCompanyName(data.companyName);
+            }
+          }
+        } catch (e) {
+          console.warn('Network error during initial load', e);
         }
-      });
-      fetch('/api/customers?limit=1000').then(res => res.json()).then(data => {
-        if (Array.isArray(data)) setCustomers(data);
-      });
-      fetch('/api/drivers?limit=1000').then(res => res.json()).then(data => {
-        if (Array.isArray(data)) setDrivers(data);
-      });
-      fetch('/api/settings').then(res => res.json()).then(data => {
-        if (data && !data.error) {
-          setLockOrderDate(data.lockOrderDate ?? true);
-          if (data.companyName) setCompanyName(data.companyName);
+
+        // Apply offline tasks
+        try {
+          const pendingTasks = await db.syncQueue
+            .where('syncStatus')
+            .anyOf(['pending', 'failed'])
+            .toArray();
+
+          for (const task of pendingTasks) {
+            try {
+              const payload = JSON.parse(task.payload);
+              if (task.type === 'product') {
+                if (task.action === 'DELETE') fetchedProducts = fetchedProducts.filter(p => p.id !== payload.id);
+                else if (task.action === 'UPDATE') fetchedProducts = fetchedProducts.map(p => p.id === payload.id ? { ...p, ...payload } : p);
+                else if (task.action === 'CREATE') {
+                  if (!fetchedProducts.find(p => p.id === payload.id)) fetchedProducts.unshift(payload);
+                }
+              } else if (task.type === 'customer') {
+                if (task.action === 'DELETE') fetchedCustomers = fetchedCustomers.filter(c => c.id !== payload.id);
+                else if (task.action === 'UPDATE') fetchedCustomers = fetchedCustomers.map(c => c.id === payload.id ? { ...c, ...payload } : c);
+                else if (task.action === 'CREATE') {
+                  if (!fetchedCustomers.find(c => c.id === payload.id)) fetchedCustomers.unshift(payload);
+                }
+              } else if (task.type === 'driver') {
+                if (task.action === 'DELETE') fetchedDrivers = fetchedDrivers.filter(d => d.id !== payload.id);
+                else if (task.action === 'UPDATE') fetchedDrivers = fetchedDrivers.map(d => d.id === payload.id ? { ...d, ...payload } : d);
+                else if (task.action === 'CREATE') {
+                  if (!fetchedDrivers.find(d => d.id === payload.id)) fetchedDrivers.unshift(payload);
+                }
+              }
+            } catch (e) {}
+          }
+        } catch (err) {
+          console.error('Failed to apply offline tasks to POS', err);
         }
-      });
+
+        if (Array.isArray(fetchedProducts)) {
+          setProducts(fetchedProducts);
+          const cats = Array.from(new Set(fetchedProducts.filter(p => p.category?.name).map(p => p.category?.name)));
+          setCategories(['All', ...cats]);
+        }
+        if (Array.isArray(fetchedCustomers)) setCustomers(fetchedCustomers);
+        if (Array.isArray(fetchedDrivers)) setDrivers(fetchedDrivers);
+
+      } catch (error) {
+        console.error('Failed to load POS data', error);
+      }
     };
 
     loadData();

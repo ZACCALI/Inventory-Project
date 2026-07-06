@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useDebounce } from '@/hooks/useDebounce';
 import { addSyncTask } from '@/lib/offlineSync';
+import { db } from '@/lib/db';
 
 import Image from "next/image";
 interface Order {
@@ -118,15 +119,47 @@ export default function OrdersPage() {
   );
 
   useEffect(() => {
-    if (swrRes) {
-      if (Array.isArray(swrRes.data)) {
-        setOrders(swrRes.data);
+    const applyOfflineTasks = async () => {
+      if (!swrRes) return;
+      
+      try {
+        const pendingTasks = await db.syncQueue
+          .where('type')
+          .equals('order')
+          .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
+          .toArray();
+
+        let modifiedOrders = Array.isArray(swrRes.data) ? [...swrRes.data] : [];
+
+        for (const task of pendingTasks) {
+          try {
+            const payload = JSON.parse(task.payload);
+            
+            if (task.action === 'DELETE') {
+              modifiedOrders = modifiedOrders.filter(o => o.id !== payload.id);
+            } else if (task.action === 'UPDATE') {
+              modifiedOrders = modifiedOrders.map(o => o.id === payload.id ? { ...o, ...payload } : o);
+            } else if (task.action === 'CREATE') {
+              if (!modifiedOrders.find(o => o.id === payload.id)) {
+                modifiedOrders.unshift(payload as unknown as Order);
+              }
+            }
+          } catch (e) {}
+        }
+        
+        setOrders(modifiedOrders);
         setTotalOrders(swrRes.totalCount);
-      } else {
-        setOrders([]);
-        setTotalOrders(0);
+      } catch (err) {
+        console.error('Failed to apply offline tasks', err);
+        setOrders(Array.isArray(swrRes.data) ? swrRes.data : []);
+        setTotalOrders(swrRes.totalCount);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
+    };
+
+    if (swrRes) {
+      applyOfflineTasks();
     } else if (swrError) {
       setLoading(false);
     }

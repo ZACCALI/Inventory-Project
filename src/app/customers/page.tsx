@@ -9,6 +9,7 @@ import { useAlert } from '@/components/AlertModal';
 import { formatCurrency } from '@/lib/constants';
 import { useDebounce } from '@/hooks/useDebounce';
 import { addSyncTask } from '@/lib/offlineSync';
+import { db } from '@/lib/db';
 
 interface Customer {
   id: string;
@@ -58,9 +59,45 @@ export default function CustomersPage() {
   );
 
   useEffect(() => {
+    const applyOfflineTasks = async () => {
+      if (!swrRes) return;
+      
+      try {
+        const pendingTasks = await db.syncQueue
+          .where('type')
+          .equals('customer')
+          .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
+          .toArray();
+
+        let modifiedCustomers = [...swrRes];
+
+        for (const task of pendingTasks) {
+          try {
+            const payload = JSON.parse(task.payload);
+            
+            if (task.action === 'DELETE') {
+              modifiedCustomers = modifiedCustomers.filter(c => c.id !== payload.id);
+            } else if (task.action === 'UPDATE') {
+              modifiedCustomers = modifiedCustomers.map(c => c.id === payload.id ? { ...c, ...payload } : c);
+            } else if (task.action === 'CREATE') {
+              if (!modifiedCustomers.find(c => c.id === payload.id)) {
+                modifiedCustomers.unshift({ ...payload, _count: { orders: 0 } } as unknown as Customer);
+              }
+            }
+          } catch (e) {}
+        }
+        
+        setCustomers(modifiedCustomers);
+      } catch (err) {
+        console.error('Failed to apply offline tasks', err);
+        setCustomers(swrRes);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (swrRes) {
-      setCustomers(swrRes);
-      setLoading(false);
+      applyOfflineTasks();
     } else if (swrError) {
       setLoading(false);
     }

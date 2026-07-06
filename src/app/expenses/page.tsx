@@ -9,6 +9,7 @@ import { formatCurrency } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
 import { addSyncTask } from '@/lib/offlineSync';
+import { db } from '@/lib/db';
 
 interface Expense {
   id: string;
@@ -74,9 +75,45 @@ export default function ExpensesPage() {
   );
 
   useEffect(() => {
+    const applyOfflineTasks = async () => {
+      if (!swrRes) return;
+      
+      try {
+        const pendingTasks = await db.syncQueue
+          .where('type')
+          .equals('expense')
+          .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
+          .toArray();
+
+        let modifiedExpenses = Array.isArray(swrRes) ? [...swrRes] : [];
+
+        for (const task of pendingTasks) {
+          try {
+            const payload = JSON.parse(task.payload);
+            
+            if (task.action === 'DELETE') {
+              modifiedExpenses = modifiedExpenses.filter(e => e.id !== payload.id);
+            } else if (task.action === 'UPDATE') {
+              modifiedExpenses = modifiedExpenses.map(e => e.id === payload.id ? { ...e, ...payload } : e);
+            } else if (task.action === 'CREATE') {
+              if (!modifiedExpenses.find(e => e.id === payload.id)) {
+                modifiedExpenses.unshift(payload as unknown as Expense);
+              }
+            }
+          } catch (e) {}
+        }
+        
+        setExpenses(modifiedExpenses);
+      } catch (err) {
+        console.error('Failed to apply offline tasks', err);
+        setExpenses(Array.isArray(swrRes) ? swrRes : []);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (swrRes) {
-      setExpenses(swrRes);
-      setLoading(false);
+      applyOfflineTasks();
     } else if (swrError) {
       setLoading(false);
     }

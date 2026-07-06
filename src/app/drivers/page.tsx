@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { Plus, Search, Edit, Trash2, X, Save, Truck,  User, Users, CheckCircle2, List, FileText } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
 import { addSyncTask } from '@/lib/offlineSync';
+import { db } from '@/lib/db';
 
 interface Driver {
   id: string;
@@ -55,9 +56,45 @@ export default function DriversPage() {
   const { data: swrRes, error: swrError } = useSWR('/api/drivers', fetcher, { refreshInterval: 15000 });
 
   useEffect(() => {
+    const applyOfflineTasks = async () => {
+      if (!swrRes) return;
+      
+      try {
+        const pendingTasks = await db.syncQueue
+          .where('type')
+          .equals('driver')
+          .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
+          .toArray();
+
+        let modifiedDrivers = Array.isArray(swrRes) ? [...swrRes] : [];
+
+        for (const task of pendingTasks) {
+          try {
+            const payload = JSON.parse(task.payload);
+            
+            if (task.action === 'DELETE') {
+              modifiedDrivers = modifiedDrivers.filter(d => d.id !== payload.id);
+            } else if (task.action === 'UPDATE') {
+              modifiedDrivers = modifiedDrivers.map(d => d.id === payload.id ? { ...d, ...payload } : d);
+            } else if (task.action === 'CREATE') {
+              if (!modifiedDrivers.find(d => d.id === payload.id)) {
+                modifiedDrivers.unshift(payload as unknown as Driver);
+              }
+            }
+          } catch (e) {}
+        }
+        
+        setDrivers(modifiedDrivers);
+      } catch (err) {
+        console.error('Failed to apply offline tasks', err);
+        setDrivers(Array.isArray(swrRes) ? swrRes : []);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (swrRes) {
-      setDrivers(Array.isArray(swrRes) ? swrRes : []);
-      setLoading(false);
+      applyOfflineTasks();
     } else if (swrError) {
       setLoading(false);
     }
