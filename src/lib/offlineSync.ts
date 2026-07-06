@@ -82,6 +82,49 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
       if (res.ok) {
         await db.syncQueue.update(task.id!, { syncStatus: 'synced' });
         synced++;
+        
+        // --- OFFLINE ID REMAPPING ---
+        // If this was a CREATE task, the server just generated a real database ID.
+        // We need to find any subsequent tasks in the queue that are still referencing 
+        // the temporary offline ID (e.g. OFF-1234) and update them to use the real ID.
+        if (task.action === 'CREATE') {
+          try {
+            const createdEntity = await res.json();
+            const realId = createdEntity.id;
+            const tempId = payload.id;
+            
+            if (realId && tempId && String(tempId).startsWith('OFF-')) {
+              const pendingTasks = await db.syncQueue
+                .where('syncStatus')
+                .anyOf(['pending', 'failed'])
+                .toArray();
+                
+              for (const pt of pendingTasks) {
+                try {
+                  const ptPayload = JSON.parse(pt.payload);
+                  let modified = false;
+                  
+                  // Remap primary ID for UPDATE/DELETE tasks
+                  if (ptPayload.id === tempId) {
+                    ptPayload.id = realId;
+                    modified = true;
+                  }
+                  
+                  // Remap common foreign keys in other tasks
+                  if (ptPayload.categoryId === tempId) { ptPayload.categoryId = realId; modified = true; }
+                  if (ptPayload.productId === tempId) { ptPayload.productId = realId; modified = true; }
+                  if (ptPayload.customerId === tempId) { ptPayload.customerId = realId; modified = true; }
+                  
+                  if (modified) {
+                    await db.syncQueue.update(pt.id!, { payload: JSON.stringify(ptPayload) });
+                  }
+                } catch (e) {}
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to remap offline IDs', e);
+          }
+        }
       } else {
         const err = await res.json().catch(() => ({ error: 'Unknown error' }));
         await db.syncQueue.update(task.id!, {
