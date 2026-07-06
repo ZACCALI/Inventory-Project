@@ -253,9 +253,12 @@ export default function CreateOrderPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        let fetchedProducts = [];
-        let fetchedCustomers = [];
-        let fetchedDrivers = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let fetchedProducts: any[] = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let fetchedCustomers: any[] = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let fetchedDrivers: any[] = [];
 
         try {
           const [prodRes, custRes, drivRes, setRes] = await Promise.all([
