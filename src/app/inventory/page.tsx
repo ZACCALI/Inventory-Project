@@ -9,6 +9,7 @@ import { formatCurrency } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
 import { addSyncTask } from '@/lib/offlineSync';
+import { db } from '@/lib/db';
 
 import Image from "next/image";
 interface Unit {
@@ -66,9 +67,48 @@ export default function InventoryPage() {
   );
 
   useEffect(() => {
+    const applyOfflineTasks = async () => {
+      if (!swrProducts) return;
+      
+      try {
+        let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+        
+        // If online, we still apply them just in case they haven't synced yet to preserve optimistic UI
+        const pendingTasks = await db.syncQueue
+          .where('type')
+          .equals('product')
+          .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
+          .toArray();
+
+        let modifiedProducts = [...swrProducts];
+
+        for (const task of pendingTasks) {
+          try {
+            const payload = JSON.parse(task.payload);
+            
+            if (task.action === 'DELETE') {
+              modifiedProducts = modifiedProducts.filter(p => p.id !== payload.id);
+            } else if (task.action === 'UPDATE') {
+              modifiedProducts = modifiedProducts.map(p => p.id === payload.id ? { ...p, ...payload } : p);
+            } else if (task.action === 'CREATE') {
+              if (!modifiedProducts.find(p => p.id === payload.id)) {
+                modifiedProducts.unshift({ ...payload, _count: { orderItems: 0, stockLogs: 0 } } as unknown as Product);
+              }
+            }
+          } catch (e) {}
+        }
+        
+        setProducts(modifiedProducts);
+      } catch (err) {
+        console.error('Failed to apply offline tasks', err);
+        setProducts(swrProducts);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (swrProducts) {
-      setProducts(swrProducts);
-      setLoading(false);
+      applyOfflineTasks();
     } else if (swrError) {
       setLoading(false);
     }
