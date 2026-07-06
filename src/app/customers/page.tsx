@@ -113,20 +113,31 @@ export default function CustomersPage() {
     if (!await showConfirm('Delete Customer', 'Are you sure you want to delete this customer? This action cannot be undone.')) return;
     
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      if (isOffline) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            fetchCustomers();
+            return;
+          } else {
+            const data = await res.json();
+            showAlert('error', 'Action Failed', data.error || 'Failed to delete');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         await addSyncTask('customer', 'DELETE', { id });
         showToast('offline', 'Action queued offline — will sync when connected');
         setCustomers(prev => prev.filter(c => c.id !== id));
         return;
-      }
-
-      const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchCustomers();
-      } else {
-        const data = await res.json();
-        showAlert('error', 'Action Failed', data.error || 'Failed to delete');
       }
     } catch (error) {
       console.error(error);
@@ -138,9 +149,36 @@ export default function CustomersPage() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
 
-      if (isOffline) {
+      if (!isOffline) {
+        try {
+          const url = modalMode === 'ADD' ? '/api/customers' : `/api/customers/${currentCustomer.id}`;
+          const method = modalMode === 'ADD' ? 'POST' : 'PUT';
+
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentCustomer)
+          });
+
+          if (res.ok) {
+            setIsModalOpen(false);
+            fetchCustomers();
+            return;
+          } else {
+            const err = await res.json();
+            showAlert('error', 'Action Failed', err.error || 'Failed to save customer');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         const action = modalMode === 'ADD' ? 'CREATE' : 'UPDATE';
         const payload = { ...currentCustomer, id: currentCustomer.id || `OFF-${Date.now()}` };
         
@@ -156,23 +194,6 @@ export default function CustomersPage() {
         }
         setActionLoading(false);
         return;
-      }
-
-      const url = modalMode === 'ADD' ? '/api/customers' : `/api/customers/${currentCustomer.id}`;
-      const method = modalMode === 'ADD' ? 'POST' : 'PUT';
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(currentCustomer)
-      });
-
-      if (res.ok) {
-        setIsModalOpen(false);
-        fetchCustomers();
-      } else {
-        const err = await res.json();
-        showAlert('error', 'Action Failed', err.error || 'Failed to save customer');
       }
     } catch (error) {
       console.error(error);

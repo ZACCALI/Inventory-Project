@@ -233,11 +233,36 @@ export default function InventoryPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
       const method = editingProduct ? 'PUT' : 'POST';
       const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products';
       
-      if (isOffline) {
+      if (!isOffline) {
+        try {
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+          });
+          
+          if (res.ok) {
+            await fetchProducts();
+            closeModal();
+            return;
+          } else {
+            const errorData = await res.json();
+            showAlert('error', 'Action Failed', errorData.error || 'Failed to save product');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         const action = editingProduct ? 'UPDATE' : 'CREATE';
         const payload = { 
           ...formData, 
@@ -260,21 +285,6 @@ export default function InventoryPage() {
         setIsSaving(false);
         return;
       }
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        showAlert('error', 'Action Failed', errorData.error || 'Failed to save product');
-        return;
-      }
-      
-      await fetchProducts();
-      closeModal();
     } catch (error) {
       console.error('Save error', error);
       showAlert('error', 'Action Failed', 'An unexpected error occurred.');
@@ -338,20 +348,32 @@ export default function InventoryPage() {
       `Permanently delete "${name}"?\n\n(Safe to delete: 0 sales, 0 stock logs.)\n\nThis cannot be undone.`
     )) return;
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      if (isOffline) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            await fetchProducts(showArchived);
+            return;
+          } else {
+            const err = await res.json();
+            showAlert('error', 'Action Failed', err.error || 'Failed to delete');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         await addSyncTask('product', 'DELETE', { id });
         showToast('offline', 'Action queued offline — will sync when connected');
         setProducts(prev => prev.filter(p => p.id !== id));
         return;
       }
-
-      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to delete');
-      }
-      await fetchProducts(showArchived);
     } catch (error: unknown) {
       console.error('Delete error', error);
       showAlert('error', 'Action Failed', (error as Error).message);
@@ -361,24 +383,36 @@ export default function InventoryPage() {
   const handleArchiveProduct = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Are you sure you want to archive ${name}?`)) return;
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      if (isOffline) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/products/${id}`, { 
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isArchived: true }),
+          });
+          if (res.ok) {
+            await fetchProducts(showArchived);
+            return;
+          } else {
+            const err = await res.json();
+            showAlert('error', 'Action Failed', err.error || 'Failed to archive');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         await addSyncTask('product', 'UPDATE', { id, isArchived: true });
         showToast('offline', 'Action queued offline — will sync when connected');
         setProducts(prev => prev.map(p => p.id === id ? { ...p, isArchived: true } : p));
         return;
       }
-
-      const res = await fetch(`/api/products/${id}`, { 
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isArchived: true }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to archive');
-      }
-      await fetchProducts(showArchived);
     } catch (error: unknown) {
       console.error('Archive error', error);
       showAlert('error', 'Action Failed', (error as Error).message);
@@ -388,24 +422,36 @@ export default function InventoryPage() {
   const handleUnarchiveProduct = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Are you sure you want to unarchive ${name}?`)) return;
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      if (isOffline) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/products/${id}`, { 
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isArchived: false }),
+          });
+          if (res.ok) {
+            await fetchProducts(showArchived);
+            return;
+          } else {
+            const err = await res.json();
+            showAlert('error', 'Action Failed', err.error || 'Failed to unarchive');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         await addSyncTask('product', 'UPDATE', { id, isArchived: false });
         showToast('offline', 'Action queued offline — will sync when connected');
         setProducts(prev => prev.map(p => p.id === id ? { ...p, isArchived: false } : p));
         return;
       }
-
-      const res = await fetch(`/api/products/${id}`, { 
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isArchived: false }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to unarchive');
-      }
-      await fetchProducts(showArchived);
     } catch (error: unknown) {
       console.error('Unarchive error', error);
       showAlert('error', 'Action Failed', (error as Error).message);

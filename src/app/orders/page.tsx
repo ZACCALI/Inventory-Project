@@ -293,20 +293,32 @@ export default function OrdersPage() {
     if (!await showConfirm('Archive Order', 'Are you sure you want to archive this order? Note: Stock will NOT be restored. To restore stock, cancel the order first.')) return;
     
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      if (isOffline) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            fetchOrders();
+            showToast('success', 'Order successfully archived.');
+            return;
+          } else {
+            const data = await res.json();
+            showAlert('error', 'Action Failed', data.error || 'Failed to delete order.');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         await addSyncTask('order', 'DELETE', { id });
         showToast('offline', 'Action queued offline — will sync when connected');
         setOrders(prev => prev.filter(o => o.id !== id));
         return;
-      }
-      const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchOrders();
-        showToast('success', 'Order successfully archived.');
-      } else {
-        const data = await res.json();
-        showAlert('error', 'Action Failed', data.error || 'Failed to delete order.');
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
@@ -317,24 +329,36 @@ export default function OrdersPage() {
   const handleArchiveOrder = async (id: string) => {
     if (!await showConfirm('Archive Order', 'Are you sure you want to archive this order?')) return;
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      if (isOffline) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/orders/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isArchived: true }),
+          });
+          if (res.ok) {
+            fetchOrders();
+            showToast('success', 'Order successfully archived.');
+            return;
+          } else {
+            const data = await res.json();
+            showAlert('error', 'Action Failed', data.error || 'Failed to archive order.');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         await addSyncTask('order', 'UPDATE', { id, isArchived: true });
         showToast('offline', 'Action queued offline — will sync when connected');
         setOrders(prev => prev.map(o => o.id === id ? { ...o, isArchived: true } as any : o));
         return;
-      }
-      const res = await fetch(`/api/orders/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isArchived: true }),
-      });
-      if (res.ok) {
-        fetchOrders();
-        showToast('success', 'Order successfully archived.');
-      } else {
-        const data = await res.json();
-        showAlert('error', 'Action Failed', data.error || 'Failed to archive order.');
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
@@ -345,24 +369,36 @@ export default function OrdersPage() {
   const handleUnarchiveOrder = async (id: string) => {
     if (!await showConfirm('Unarchive Order', 'Are you sure you want to unarchive this order?')) return;
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      if (isOffline) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/orders/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isArchived: false }),
+          });
+          if (res.ok) {
+            fetchOrders();
+            showToast('success', 'Order successfully unarchived.');
+            return;
+          } else {
+            const data = await res.json();
+            showAlert('error', 'Action Failed', data.error || 'Failed to unarchive order.');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         await addSyncTask('order', 'UPDATE', { id, isArchived: false });
         showToast('offline', 'Action queued offline — will sync when connected');
         setOrders(prev => prev.map(o => o.id === id ? { ...o, isArchived: false } as any : o));
         return;
-      }
-      const res = await fetch(`/api/orders/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isArchived: false }),
-      });
-      if (res.ok) {
-        fetchOrders();
-        showToast('success', 'Order successfully unarchived.');
-      } else {
-        const data = await res.json();
-        showAlert('error', 'Action Failed', data.error || 'Failed to unarchive order.');
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
@@ -640,8 +676,54 @@ export default function OrdersPage() {
         }));
       }
 
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      if (isOffline) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/orders/${editingOrder.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (res.ok) {
+            // Sync payment records: fetch existing payments and create a record for the difference
+            if (['paid', 'partial'].includes(editForm.paymentStatus) && parsedAmount > 0) {
+              try {
+                const payRes = await fetch(`/api/orders/${editingOrder.id}/payments`);
+                const existingPayments = payRes.ok ? await payRes.json() : [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const existingTotal = Array.isArray(existingPayments) ? existingPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) : 0;
+                const difference = parsedAmount - existingTotal;
+
+                if (difference > 0.01) {
+                  await fetch(`/api/orders/${editingOrder.id}/payments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: difference, method: paymentMethod.toLowerCase(), notes: 'Payment recorded via order edit' }),
+                  });
+                }
+              } catch {
+                // Payment sync failed silently — the order itself is already saved
+              }
+            }
+
+            await fetchOrders();
+            setIsEditOpen(false);
+            setEditingOrder(null);
+            return;
+          } else {
+            const err = await res.json();
+            showAlert('error', 'Action Failed', err.error || 'Failed to update order');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         await addSyncTask('order', 'UPDATE', { ...payload, id: editingOrder.id });
         showToast('offline', 'Action queued offline — will sync when connected');
         setOrders(prev => prev.map(o => o.id === editingOrder.id ? { ...o, ...payload } as any : o));
@@ -650,42 +732,6 @@ export default function OrdersPage() {
         setIsSaving(false);
         return;
       }
-
-      const res = await fetch(`/api/orders/${editingOrder.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        showAlert('error', 'Action Failed', err.error || 'Failed to update order');
-        return;
-      }
-
-      // Sync payment records: fetch existing payments and create a record for the difference
-      if (['paid', 'partial'].includes(editForm.paymentStatus) && parsedAmount > 0) {
-        try {
-          const payRes = await fetch(`/api/orders/${editingOrder.id}/payments`);
-          const existingPayments = payRes.ok ? await payRes.json() : [];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const existingTotal = Array.isArray(existingPayments) ? existingPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) : 0;
-          const difference = parsedAmount - existingTotal;
-
-          if (difference > 0.01) {
-            await fetch(`/api/orders/${editingOrder.id}/payments`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ amount: difference, method: paymentMethod.toLowerCase(), notes: 'Payment recorded via order edit' }),
-            });
-          }
-        } catch {
-          // Payment sync failed silently — the order itself is already saved
-        }
-      }
-
-      await fetchOrders();
-      setIsEditOpen(false);
-      setEditingOrder(null);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       showAlert('error', 'Action Failed', 'An unexpected error occurred.');

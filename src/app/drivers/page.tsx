@@ -114,9 +114,33 @@ export default function DriversPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
 
-      if (isOffline) {
+      if (!isOffline) {
+        try {
+          const method = editingDriver ? 'PUT' : 'POST';
+          const url = editingDriver ? `/api/drivers/${editingDriver.id}` : '/api/drivers';
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            showAlert('error', 'Action Failed', err.error || 'Failed to save');
+            return;
+          }
+          await fetchDrivers();
+          closeModal();
+          return;
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         const action = editingDriver ? 'UPDATE' : 'CREATE';
         const payload = {
           ...formData,
@@ -134,21 +158,6 @@ export default function DriversPage() {
         setIsSaving(false);
         return;
       }
-
-      const method = editingDriver ? 'PUT' : 'POST';
-      const url = editingDriver ? `/api/drivers/${editingDriver.id}` : '/api/drivers';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        showAlert('error', 'Action Failed', err.error || 'Failed to save');
-        return;
-      }
-      await fetchDrivers();
-      closeModal();
     } catch (error) {
       console.error('Save error', error);
       showAlert('error', 'Action Failed', 'An unexpected error occurred.');
@@ -160,20 +169,33 @@ export default function DriversPage() {
   const handleDelete = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Are you sure you want to delete ${name}?`)) return;
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      if (isOffline) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/drivers/${id}`, { method: 'DELETE' });
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to delete');
+          }
+          await fetchDrivers();
+          return;
+        } catch (fetchErr: unknown) {
+          if (fetchErr instanceof Error && fetchErr.message !== 'Failed to fetch') {
+            throw fetchErr; // Re-throw legitimate API errors caught above
+          }
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         await addSyncTask('driver', 'DELETE', { id });
         showToast('offline', 'Action queued offline — will sync when connected');
         setDrivers(prev => prev.filter(d => d.id !== id));
         return;
       }
-
-      const res = await fetch(`/api/drivers/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to delete');
-      }
-      await fetchDrivers();
     } catch (error: unknown) {
       showAlert('error', 'Action Failed', (error as Error).message);
     }

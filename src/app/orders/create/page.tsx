@@ -492,8 +492,57 @@ export default function CreateOrderPage() {
       if (customerIdToUse) payload.customerId = customerIdToUse;
       else if (fallbackCustomerName) payload.customerName = fallbackCustomerName;
 
-      // Handle Offline Mode gracefully
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            const orderResult = await res.json();
+            
+            // Save order details for receipt printing
+            setLastOrder({
+              ...orderResult,
+              totalAmount: finalTotal,
+              subtotal: totalAmount,
+              tendered: paidAmount,
+              change: Math.max(0, paidAmount - finalTotal),
+              discount: discountAmount,
+              discountPercent: discountType === 'percent' ? parsedDiscount : 0,
+              items: validItems.map(i => ({ product: i.product, quantity: Number(i.qty), price: i.cartPrice, uomName: i.uomName, multiplier: i.multiplier })),
+              createdAt: orderResult.createdAt || new Date().toISOString(),
+              createdBy: { name: session?.user?.name || 'ADMIN' }
+            });
+
+            // Clear cart and open success modal
+            setCart([]);
+            setDiscountValue('');
+            setAmountPaid('');
+            setPaymentStatus('unpaid');
+            setIsSubmitting(false);
+            setIsSuccessOpen(true);
+            return;
+          } else {
+            const errorData = await res.json();
+            throw new Error(errorData.error || 'Failed to create order');
+          }
+        } catch (fetchErr: any) {
+          if (fetchErr.message === 'Failed to fetch' || fetchErr.name === 'TypeError') {
+            console.warn('Network error detected, falling back to offline mode', fetchErr);
+            networkFailed = true;
+          } else {
+            throw fetchErr;
+          }
+        }
+      }
+
+      if (isOffline || networkFailed) {
         const localId = await addSyncTask('order', 'CREATE', payload);
         if (!localId) {
           showToast('This exact order is already pending sync.', 'warning');
@@ -530,41 +579,6 @@ export default function CreateOrderPage() {
         setIsSuccessOpen(true);
         return;
       }
-
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to create order');
-      }
-      
-      const orderResult = await res.json();
-      
-      // Save order details for receipt printing
-      setLastOrder({
-        ...orderResult,
-        totalAmount: finalTotal,
-        subtotal: totalAmount,
-        tendered: paidAmount,
-        change: Math.max(0, paidAmount - finalTotal),
-        discount: discountAmount,
-        discountPercent: discountType === 'percent' ? parsedDiscount : 0,
-        items: validItems.map(i => ({ product: i.product, quantity: Number(i.qty), price: i.cartPrice, uomName: i.uomName, multiplier: i.multiplier })),
-        createdAt: orderResult.createdAt || new Date().toISOString(),
-        createdBy: { name: session?.user?.name || 'ADMIN' }
-      });
-
-      // Clear cart and open success modal
-      setCart([]);
-      setDiscountValue('');
-      setAmountPaid('');
-      setPaymentStatus('unpaid');
-      setIsSubmitting(false);
-      setIsSuccessOpen(true);
     } catch (err: unknown) {
       showToast((err as Error).message, 'error');
       setIsSubmitting(false);

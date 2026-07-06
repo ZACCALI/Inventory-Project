@@ -149,19 +149,31 @@ export default function ExpensesPage() {
   const handleDelete = async (id: string) => {
     if (!await showConfirm('Confirm', 'Are you sure you want to delete this expense log?')) return;
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      if (isOffline) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            fetchExpenses();
+            showAlert('success', 'Expense Deleted', 'The expense record has been permanently removed from the system.');
+            return;
+          } else {
+            showAlert('error', 'Action Failed', 'Failed to delete expense');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         await addSyncTask('expense', 'DELETE', { id });
         showToast('offline', 'Action queued offline — will sync when connected');
         setExpenses(prev => prev.filter(e => e.id !== id));
         return;
-      }
-      const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchExpenses();
-        showAlert('success', 'Expense Deleted', 'The expense record has been permanently removed from the system.');
-      } else {
-        showAlert('error', 'Action Failed', 'Failed to delete expense');
       }
     } catch (error) {
       console.error(error);
@@ -173,9 +185,36 @@ export default function ExpensesPage() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      
-      if (isOffline) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      const url = editId ? `/api/expenses/${editId}` : '/api/expenses';
+      const method = editId ? 'PUT' : 'POST';
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+    
+          if (res.ok) {
+            setIsModalOpen(false);
+            fetchExpenses();
+            return;
+          } else {
+            const err = await res.json();
+            showAlert('error', 'Action Failed', err.error || 'Failed to log expense');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
         const action = editId ? 'UPDATE' : 'CREATE';
         const payload = { 
           ...formData, 
@@ -193,23 +232,6 @@ export default function ExpensesPage() {
         }
         setActionLoading(false);
         return;
-      }
-
-      const url = editId ? `/api/expenses/${editId}` : '/api/expenses';
-      const method = editId ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (res.ok) {
-        setIsModalOpen(false);
-        fetchExpenses();
-      } else {
-        const err = await res.json();
-        showAlert('error', 'Action Failed', err.error || 'Failed to log expense');
       }
     } catch (error) {
       console.error(error);
