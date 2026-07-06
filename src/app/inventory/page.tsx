@@ -354,7 +354,8 @@ export default function InventoryPage() {
           price: Number(formData.price),
           costPrice: Number(formData.costPrice),
           stock: Number(formData.stock),
-          minStock: Number(formData.minStock)
+          minStock: Number(formData.minStock),
+          category: formData.categoryId ? categories.find(c => c.id === formData.categoryId) : null
         };
         await addSyncTask('product', action, payload);
         showToast('offline', 'Action queued offline — will sync when connected');

@@ -114,6 +114,17 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
                   if (ptPayload.categoryId === tempId) { ptPayload.categoryId = realId; modified = true; }
                   if (ptPayload.productId === tempId) { ptPayload.productId = realId; modified = true; }
                   if (ptPayload.customerId === tempId) { ptPayload.customerId = realId; modified = true; }
+                  if (ptPayload.deliveryDriverId === tempId) { ptPayload.deliveryDriverId = realId; modified = true; }
+                  
+                  // Remap nested items (e.g. order items)
+                  if (Array.isArray(ptPayload.items)) {
+                    for (const item of ptPayload.items) {
+                      if (item.productId === tempId) {
+                        item.productId = realId;
+                        modified = true;
+                      }
+                    }
+                  }
                   
                   if (modified) {
                     await db.syncQueue.update(pt.id!, { payload: JSON.stringify(ptPayload) });

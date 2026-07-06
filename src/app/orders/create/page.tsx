@@ -518,13 +518,20 @@ export default function CreateOrderPage() {
       const validItems = cart.filter(i => typeof i.qty === 'number' && i.qty > 0);
       
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const offlineOrderNumber = `OFF-${Math.floor(Math.random() * 100000)}`;
+      const offlineId = `OFFLINE-${Date.now()}`;
       const payload: any = {
+        id: offlineId,
+        orderNumber: offlineOrderNumber,
+        customer: customers.find(c => c.id === (fulfillmentMode === 'walkin' ? selectedCustomerId : orderCustomerId)) || { name: 'Unknown' },
+        createdAt: new Date().toISOString(),
         items: validItems.map(i => ({
           productId: i.product.id,
           quantity: i.qty,
           price: i.cartPrice,
           uomName: i.uomName || undefined,
-          multiplier: i.multiplier
+          multiplier: i.multiplier,
+          product: { name: i.product.name, sku: i.product.sku }
         })),
         totalAmount: finalTotal,
         discount: discountAmount, // Backend expects flat absolute amount, which we calculated
