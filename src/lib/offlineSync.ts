@@ -43,7 +43,7 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
   const pending = await db.syncQueue
     .where('syncStatus')
     .anyOf(['pending', 'failed'])
-    .and(t => t.syncAttempts < 3) // Max 3 retries
+    .and(t => t.syncAttempts < 15) // Max 15 retries
     .toArray();
 
   let synced = 0;

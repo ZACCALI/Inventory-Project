@@ -258,7 +258,8 @@ export default function HistoryPage() {
                 <th>User</th>
                 <th>Action</th>
                 <th>Module</th>
-                <th style={{ width: '40%' }}>Details</th>
+                <th>Mode</th>
+                <th style={{ width: '30%' }}>Details</th>
               </tr>
             </thead>
             <tbody>
@@ -269,12 +270,13 @@ export default function HistoryPage() {
                     <td><div className="skeleton" style={{ height: '20px', width: '70%' }} /></td>
                     <td><div className="skeleton" style={{ height: '20px', width: '50%' }} /></td>
                     <td><div className="skeleton" style={{ height: '20px', width: '60%' }} /></td>
+                    <td><div className="skeleton" style={{ height: '20px', width: '40%' }} /></td>
                     <td><div className="skeleton" style={{ height: '20px', width: '80%' }} /></td>
                   </tr>
                 ))
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
                     No history logs found matching your criteria.
                   </td>
                 </tr>
@@ -308,28 +310,43 @@ export default function HistoryPage() {
                     <td data-label="Module">
                       <span className="badge badge-neutral">{log.entity}</span>
                     </td>
+                    <td data-label="Mode">
+                      {log.mode === 'offline' ? (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          background: 'rgba(245, 158, 11, 0.1)',
+                          color: 'var(--warning)',
+                          border: '1px solid rgba(245, 158, 11, 0.2)',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          <WifiOff size={12} /> OFFLINE
+                        </span>
+                      ) : (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          background: 'rgba(16, 185, 129, 0.1)',
+                          color: 'var(--success)',
+                          border: '1px solid rgba(16, 185, 129, 0.2)',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          <Wifi size={12} /> ONLINE
+                        </span>
+                      )}
+                    </td>
                     <td data-label="Details" style={{ color: 'var(--text-primary)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>{log.details}</span>
-                        {log.mode === 'offline' && (
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            fontSize: '10px',
-                            fontWeight: 600,
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            background: 'rgba(245, 158, 11, 0.1)',
-                            color: 'var(--warning)',
-                            border: '1px solid rgba(245, 158, 11, 0.2)',
-                            whiteSpace: 'nowrap',
-                            flexShrink: 0
-                          }}>
-                            <WifiOff size={10} /> OFFLINE
-                          </span>
-                        )}
-                      </div>
+                      <span>{log.details}</span>
                     </td>
                   </tr>
                 ))
