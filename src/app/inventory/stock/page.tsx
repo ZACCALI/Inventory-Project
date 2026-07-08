@@ -111,7 +111,7 @@ export default function StockInOutPage() {
               date: new Date(task.createdAt).toISOString(),
               product: productMatch?.name || 'Unknown Offline Product',
               sku: productMatch?.sku || '',
-              category: productMatch?.categoryName || 'Uncategorized',
+              category: productMatch?.category?.name || 'Uncategorized',
               type: payload.type,
               quantity: payload.quantity,
               reference: payload.reason || (payload.type === 'IN' ? 'Offline Stock Delivery' : 'Offline Stock Out'),
