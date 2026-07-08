@@ -68,8 +68,6 @@ export default function InventoryPage() {
 
   useEffect(() => {
     const applyOfflineTasks = async () => {
-      if (!swrProducts) return;
-      
       try {
         let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
         
@@ -80,7 +78,7 @@ export default function InventoryPage() {
           .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
           .toArray();
 
-        let modifiedProducts = [...swrProducts];
+        let modifiedProducts = swrProducts ? [...swrProducts] : [];
 
         for (const task of pendingTasks) {
           try {
@@ -107,9 +105,8 @@ export default function InventoryPage() {
       }
     };
 
-    if (swrProducts) {
+    if (swrProducts || swrError) {
       applyOfflineTasks();
-    } else if (swrError) {
       setLoading(false);
     }
   }, [swrProducts, swrError]);
@@ -165,8 +162,30 @@ export default function InventoryPage() {
       const unitData = await unitRes.json();
       const settingsData = await settingsRes.json();
       
-      setCategories(Array.isArray(catData) ? catData : []);
-      setUnits(Array.isArray(unitData) ? unitData : []);
+      let finalCats = Array.isArray(catData) ? catData : [];
+      let finalUnits = Array.isArray(unitData) ? unitData : [];
+
+      try {
+        const pendingTasks = await db.syncQueue
+          .where('syncStatus')
+          .anyOf(['pending', 'failed'])
+          .toArray();
+          
+        for (const task of pendingTasks) {
+          if (task.action === 'CREATE') {
+            if (task.type === 'category') {
+              finalCats.push(JSON.parse(task.payload));
+            } else if (task.type === 'unit') {
+              finalUnits.push(JSON.parse(task.payload));
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to apply offline tasks to categories/units', e);
+      }
+
+      setCategories(finalCats);
+      setUnits(finalUnits);
       if (settingsData && settingsData.cleanupMode) {
         setCleanupMode(true);
       } else {

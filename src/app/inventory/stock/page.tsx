@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
+import { db } from '@/lib/db';
+import { addSyncTask } from '@/lib/offlineSync';
 import { useSession } from 'next-auth/react';
 import {   Search, ArrowDownRight, ArrowUpRight, Clock, X, Trash2, ChevronDown, Package, Edit, Save, Filter,    AlertTriangle } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
@@ -246,16 +248,18 @@ export default function StockInOutPage() {
     
     if (modalType === 'IN') {
        try {
-         const res = await fetch(`/api/batches?productId=${product.id}`);
+         let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+         if (isOffline) throw new Error('Offline');
+         
+         const res = await fetch(`/api/batches?productId=${product.id}&all=true`);
          if (res.ok) {
            const batches = await res.json();
            setFormData({ ...formData, sku: product.sku, batchNumber: String(batches.length + 1) });
          } else {
            setFormData({ ...formData, sku: product.sku });
          }
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
        } catch (e) {
-         setFormData({ ...formData, sku: product.sku });
+         setFormData({ ...formData, sku: product.sku, batchNumber: `OFF-BATCH-${Math.floor(Math.random() * 10000)}` });
        }
     } else {
        setFormData({ ...formData, sku: product.sku });
@@ -310,31 +314,58 @@ export default function StockInOutPage() {
       const actionText = modalType === 'IN' ? 'Received' : 'Issued';
       const formattedReason = `${formData.reason} (${actionText} ${formData.quantity} ${selectedUomName})`;
 
-      const moveRes = await fetch('/api/stock/movement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId: selectedProduct.id,
-          type: modalType,
-          quantity: finalQuantity,
-          reason: formattedReason,
-          source: determineSource,
-          expiryDate: modalType === 'IN' ? formData.expiryDate : undefined,
-          batchNumber: modalType === 'IN' ? formData.batchNumber : undefined,
-          userId: session?.user?.id
-        })
-      });
+      const payload: any = {
+        productId: selectedProduct.id,
+        type: modalType,
+        quantity: finalQuantity,
+        reason: formattedReason,
+        source: determineSource,
+        expiryDate: modalType === 'IN' ? formData.expiryDate : undefined,
+        batchNumber: modalType === 'IN' ? formData.batchNumber : undefined,
+        userId: session?.user?.id
+      };
 
-      if (moveRes.ok) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const moveRes = await fetch('/api/stock/movement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (moveRes.ok) {
+            setIsModalOpen(false);
+            fetchLogs();
+            fetchStats();
+            fetchProducts();
+            return;
+          } else {
+            const error = await moveRes.json();
+            showAlert('error', 'Action Failed', 'Error: ' + error.error);
+            return;
+          }
+        } catch (error) {
+          console.warn('Network error detected, falling back to offline mode', error);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
+        payload.id = `OFF-${Date.now()}`;
+        await addSyncTask('stock', 'CREATE', payload);
         setIsModalOpen(false);
+        showAlert('success', 'Action queued offline', 'Your stock movement will sync when you reconnect.');
+        
+        // Optimistic UI refresh
         fetchLogs();
         fetchStats();
         fetchProducts();
-      } else {
-        const error = await moveRes.json();
-        showAlert('error', 'Action Failed', 'Error: ' + error.error);
+        return;
       }
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     } catch (error) {
       showAlert('error', 'Action Failed', 'Failed to process stock movement');
     } finally {

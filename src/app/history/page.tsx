@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { Search,   User, Activity, PlusCircle, Trash2, Edit3, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
+import { db } from '@/lib/db';
 
 interface AuditLog {
   id: string;
@@ -53,17 +54,47 @@ export default function HistoryPage() {
   );
 
   useEffect(() => {
-    if (swrRes) {
-      if (Array.isArray(swrRes.data)) {
-        setLogs(swrRes.data);
-        setTotalCount(swrRes.totalCount);
-      } else {
-        setLogs([]);
-        setTotalCount(0);
+    const applyOfflineTasks = async () => {
+      let finalLogs: AuditLog[] = [];
+      let finalCount = 0;
+
+      if (swrRes && Array.isArray(swrRes.data)) {
+        finalLogs = [...swrRes.data];
+        finalCount = swrRes.totalCount || 0;
       }
+
+      try {
+        const pendingTasks = await db.syncQueue
+          .where('syncStatus')
+          .anyOf(['pending', 'failed'])
+          .toArray();
+
+        // Sort descending so newest is first
+        pendingTasks.sort((a, b) => b.createdAt - a.createdAt);
+
+        const mockLogs: AuditLog[] = pendingTasks.map(task => ({
+          id: `mock-${task.id}`,
+          action: task.action,
+          entity: task.type.charAt(0).toUpperCase() + task.type.slice(1),
+          details: `Pending offline action (${task.action} ${task.type})`,
+          mode: 'offline (pending)',
+          createdAt: new Date(task.createdAt).toISOString(),
+          user: { name: 'Offline User', role: 'ADMIN' }
+        }));
+
+        finalLogs = [...mockLogs, ...finalLogs];
+        finalCount += mockLogs.length;
+      } catch (e) {
+        console.error('Failed to parse offline tasks for history', e);
+      }
+
+      setLogs(finalLogs);
+      setTotalCount(finalCount);
       setLoading(false);
-    } else if (swrError) {
-      setLoading(false);
+    };
+
+    if (swrRes || swrError) {
+      applyOfflineTasks();
     }
   }, [swrRes, swrError]);
 

@@ -9,18 +9,23 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get('productId');
+    const all = searchParams.get('all') === 'true';
+
+    let whereClause: any = {
+      product: { isArchived: false }
+    };
+    
+    if (productId) {
+      whereClause.productId = productId;
+    }
+    
+    if (!all) {
+      whereClause.stock = { gt: 0 };
+      whereClause.expiryDate = { not: null };
+    }
 
     const batches = await prisma.batch.findMany({
-      where: productId ? {
-        productId,
-        stock: { gt: 0 },
-        expiryDate: { not: null },
-        product: { isArchived: false }
-      } : {
-        stock: { gt: 0 },
-        expiryDate: { not: null },
-        product: { isArchived: false }
-      },
+      where: whereClause,
       include: {
         product: {
           include: {
