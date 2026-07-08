@@ -106,20 +106,23 @@ export default function StockInOutPage() {
           if (task.type === 'stock' && task.action === 'CREATE') {
             const payload = JSON.parse(task.payload);
             const productMatch = products.find(p => p.id === payload.productId);
-            finalLogs.unshift({
-              id: task.id?.toString() || `OFF-${Date.now()}`,
-              date: new Date(task.createdAt).toISOString(),
-              product: productMatch?.name || 'Unknown Offline Product',
-              sku: productMatch?.sku || '',
-              category: productMatch?.category?.name || 'Uncategorized',
-              type: payload.type,
-              quantity: payload.quantity,
-              reference: payload.reason || (payload.type === 'IN' ? 'Offline Stock Delivery' : 'Offline Stock Out'),
-              source: payload.source,
-              user: 'Offline User',
-              productId: payload.productId,
-              isVoided: false
-            });
+            // Don't duplicate entries already in the server list
+            if (!finalLogs.find(l => l.id === task.id?.toString())) {
+              finalLogs.unshift({
+                id: task.id?.toString() || `OFF-${Date.now()}`,
+                date: new Date(task.createdAt).toISOString(),
+                product: productMatch?.name || 'Unknown Offline Product',
+                sku: productMatch?.sku || '',
+                category: productMatch?.category?.name || 'Uncategorized',
+                type: payload.type,
+                quantity: payload.quantity,
+                reference: payload.reason || (payload.type === 'IN' ? 'Offline Stock Delivery' : 'Offline Stock Out'),
+                source: payload.source,
+                user: 'Offline User',
+                productId: payload.productId,
+                isVoided: false
+              });
+            }
           }
         }
       } catch (e) {
@@ -130,10 +133,16 @@ export default function StockInOutPage() {
       setLoading(false);
     };
 
-    if (swrRes || !swrRes) {
-      applyOfflineTasks();
-    }
+    applyOfflineTasks();
   }, [swrRes, products]);
+
+  // Stop skeleton after 2s if we're offline with no cache
+  useEffect(() => {
+    if (!swrRes) {
+      const t = setTimeout(() => setLoading(false), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [swrRes]);
 
   const fetchLogs = async () => {
     if (typeof document !== 'undefined' && document.hidden) return;
@@ -403,10 +412,20 @@ export default function StockInOutPage() {
         setIsModalOpen(false);
         showAlert('success', 'Action queued offline', 'Your stock movement will sync when you reconnect.');
         
-        // Optimistic UI refresh
-        fetchLogs();
-        fetchStats();
-        fetchProducts();
+        // Optimistically update product stock count
+        setProducts(prev => prev.map(p => {
+          if (p.id !== selectedProduct.id) return p;
+          const delta = modalType === 'IN' ? finalQuantity : -finalQuantity;
+          return { ...p, stock: Math.max(0, (p.stock || 0) + delta) };
+        }));
+
+        // Optimistically update stats cards
+        setStats(prev => ({
+          ...prev,
+          totalIn: modalType === 'IN' ? prev.totalIn + finalQuantity : prev.totalIn,
+          totalOut: modalType === 'OUT' ? prev.totalOut + finalQuantity : prev.totalOut,
+          logCount: prev.logCount + 1
+        }));
         return;
       }
 
@@ -433,26 +452,45 @@ export default function StockInOutPage() {
       const actionText = editingLog.type === 'IN' ? 'Received' : 'Issued';
       const formattedReason = `${editFormData.reason} (${actionText} ${editFormData.quantity} ${selectedUomName})`;
 
-      const moveRes = await fetch(`/api/stock/movement/${editingLog.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          quantity: finalQuantity,
-          reason: formattedReason,
-          productId: editFormData.productId,
-          expiryDate: editExpiryDate || undefined,
-          userId: session?.user?.id
-        })
-      });
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
 
-      if (moveRes.ok) {
+      if (!isOffline) {
+        try {
+          const moveRes = await fetch(`/api/stock/movement/${editingLog.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              quantity: finalQuantity,
+              reason: formattedReason,
+              productId: editFormData.productId,
+              expiryDate: editExpiryDate || undefined,
+              userId: session?.user?.id
+            })
+          });
+
+          if (moveRes.ok) {
+            setIsEditModalOpen(false);
+            fetchLogs();
+            fetchStats();
+            fetchProducts();
+            return;
+          } else {
+            const error = await moveRes.json();
+            showAlert('error', 'Action Failed', 'Error: ' + error.error);
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
+        await addSyncTask('stock', 'UPDATE', { id: editingLog.id, quantity: finalQuantity, reason: formattedReason, productId: editFormData.productId, expiryDate: editExpiryDate || undefined });
         setIsEditModalOpen(false);
-        fetchLogs();
-        fetchStats();
-        fetchProducts();
-      } else {
-        const error = await moveRes.json();
-        showAlert('error', 'Action Failed', 'Error: ' + error.error);
+        showToast('offline', 'Edit queued offline — will sync when connected');
+        setLogs(prev => prev.map(l => l.id === editingLog.id ? { ...l, quantity: finalQuantity, reference: formattedReason } : l));
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
@@ -465,16 +503,34 @@ export default function StockInOutPage() {
   const handleVoidLog = async (id: string, type: string) => {
     if (!await showConfirm('Void Stock Log', `Are you sure you want to void this ${type} stock log? This will reverse the stock change.`)) return;
     
+    let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+    let networkFailed = false;
+
     try {
-      const res = await fetch(`/api/stock/movement/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        showToast('success', 'Stock log has been voided and stock restored.');
-        fetchLogs();
-        fetchStats();
-        fetchProducts();
-      } else {
-        const error = await res.json();
-        showAlert('error', 'Action Failed', 'Failed to void: ' + error.error);
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/stock/movement/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            showToast('success', 'Stock log has been voided and stock restored.');
+            fetchLogs();
+            fetchStats();
+            fetchProducts();
+            return;
+          } else {
+            const error = await res.json();
+            showAlert('error', 'Action Failed', 'Failed to void: ' + error.error);
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
+        await addSyncTask('stock', 'DELETE', { id, type });
+        showToast('offline', 'Void queued offline — will sync when connected');
+        setLogs(prev => prev.filter(l => l.id !== id));
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {

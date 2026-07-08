@@ -7,6 +7,8 @@ import { useSession } from 'next-auth/react';
 import { AlertTriangle, Search, Filter, Calendar, Minus, X, Package } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
+import { addSyncTask } from '@/lib/offlineSync';
+import { db } from '@/lib/db';
 import Image from "next/image";
 interface Batch {
   id: string;
@@ -78,10 +80,27 @@ export default function ExpiryTrackingPage() {
   const { data: swrRes } = useSWR('/api/batches', fetcher);
 
   useEffect(() => {
-    if (swrRes) {
-      setBatches(Array.isArray(swrRes) ? swrRes : []);
+    const applyOfflineTasks = async () => {
+      let finalBatches: Batch[] = Array.isArray(swrRes) ? [...swrRes] : [];
+      try {
+        const pendingTasks = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).toArray();
+        for (const task of pendingTasks) {
+          if (task.type === 'batch' && task.action === 'UPDATE') {
+            const p = JSON.parse(task.payload);
+            finalBatches = finalBatches.map(b => b.id === p.id ? { ...b, ...p } : b);
+          }
+          if (task.type === 'stock' && task.action === 'CREATE') {
+            const p = JSON.parse(task.payload);
+            if (p.type === 'OUT' && p.forceBatchId) {
+              finalBatches = finalBatches.map(b => b.id === p.forceBatchId ? { ...b, stock: Math.max(0, b.stock - p.quantity) } : b);
+            }
+          }
+        }
+      } catch (e) { console.warn('Failed to merge offline batch tasks', e); }
+      setBatches(finalBatches);
       setLoading(false);
-    }
+    };
+    applyOfflineTasks();
   }, [swrRes]);
 
   const fetchBatches = async () => {
@@ -183,26 +202,45 @@ export default function ExpiryTrackingPage() {
     
     setActionLoading(true);
     try {
-      const moveRes = await fetch('/api/stock/movement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId: reviewBatch.productId,
-          forceBatchId: reviewBatch.id,
-          type: 'OUT',
-          quantity: qtyToDispose,
-          reason: 'Expired (Discarded)',
-          source: 'EXPIRY_TRACKING',
-          userId: session?.user?.id
-        })
-      });
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
 
-      if (moveRes.ok) {
+      if (!isOffline) {
+        try {
+          const moveRes = await fetch('/api/stock/movement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productId: reviewBatch.productId,
+              forceBatchId: reviewBatch.id,
+              type: 'OUT',
+              quantity: qtyToDispose,
+              reason: 'Expired (Discarded)',
+              source: 'EXPIRY_TRACKING',
+              userId: session?.user?.id
+            })
+          });
+
+          if (moveRes.ok) {
+            setIsModalOpen(false);
+            fetchBatches();
+            return;
+          } else {
+            const err = await moveRes.json();
+            showAlert('error', 'Action Failed', 'Error: ' + err.error);
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
+        await addSyncTask('stock', 'CREATE', { productId: reviewBatch.productId, forceBatchId: reviewBatch.id, type: 'OUT', quantity: qtyToDispose, reason: 'Expired (Discarded)', source: 'EXPIRY_TRACKING', userId: session?.user?.id });
         setIsModalOpen(false);
-        fetchBatches();
-      } else {
-        const err = await moveRes.json();
-        showAlert('error', 'Action Failed', 'Error: ' + err.error);
+        showToast('offline', 'Disposal queued offline — will sync when connected');
+        setBatches(prev => prev.map(b => b.id === reviewBatch.id ? { ...b, stock: Math.max(0, b.stock - qtyToDispose) } : b));
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
@@ -220,17 +258,36 @@ export default function ExpiryTrackingPage() {
     }
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/batches/${reviewBatch.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expiryDate: newExpiryDate, batchNumber: newBatchNumber })
-      });
-      if (res.ok) {
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/batches/${reviewBatch.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expiryDate: newExpiryDate, batchNumber: newBatchNumber })
+          });
+          if (res.ok) {
+            setIsModalOpen(false);
+            fetchBatches();
+            return;
+          } else {
+            const err = await res.json();
+            showAlert('error', 'Action Failed', 'Error: ' + err.error);
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
+        await addSyncTask('batch', 'UPDATE', { id: reviewBatch.id, expiryDate: newExpiryDate, batchNumber: newBatchNumber });
         setIsModalOpen(false);
-        fetchBatches();
-      } else {
-        const err = await res.json();
-        showAlert('error', 'Action Failed', 'Error: ' + err.error);
+        showToast('offline', 'Update queued offline — will sync when connected');
+        setBatches(prev => prev.map(b => b.id === reviewBatch.id ? { ...b, expiryDate: newExpiryDate, batchNumber: newBatchNumber } : b));
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
@@ -248,25 +305,43 @@ export default function ExpiryTrackingPage() {
     if (!await showConfirm('Confirm', `Are you sure you want to dispose ${batch.stock} ${batch.product.unit || 'pcs'} of ${batch.product.name}?`)) return;
     
     try {
-      const moveRes = await fetch('/api/stock/movement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId: batch.productId,
-          forceBatchId: batch.id,
-          type: 'OUT',
-          quantity: batch.stock,
-          reason: 'Expired (Discarded)',
-          source: 'EXPIRY_TRACKING',
-          userId: session?.user?.id
-        })
-      });
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
 
-      if (moveRes.ok) {
-        fetchBatches();
-      } else {
-        const err = await moveRes.json();
-        showAlert('error', 'Action Failed', 'Error: ' + err.error);
+      if (!isOffline) {
+        try {
+          const moveRes = await fetch('/api/stock/movement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productId: batch.productId,
+              forceBatchId: batch.id,
+              type: 'OUT',
+              quantity: batch.stock,
+              reason: 'Expired (Discarded)',
+              source: 'EXPIRY_TRACKING',
+              userId: session?.user?.id
+            })
+          });
+
+          if (moveRes.ok) {
+            fetchBatches();
+            return;
+          } else {
+            const err = await moveRes.json();
+            showAlert('error', 'Action Failed', 'Error: ' + err.error);
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
+      }
+
+      if (isOffline || networkFailed) {
+        await addSyncTask('stock', 'CREATE', { productId: batch.productId, forceBatchId: batch.id, type: 'OUT', quantity: batch.stock, reason: 'Expired (Discarded)', source: 'EXPIRY_TRACKING', userId: session?.user?.id });
+        showToast('offline', 'Disposal queued offline — will sync when connected');
+        setBatches(prev => prev.map(b => b.id === batch.id ? { ...b, stock: 0 } : b));
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {

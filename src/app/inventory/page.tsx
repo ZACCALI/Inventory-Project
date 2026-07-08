@@ -67,23 +67,26 @@ export default function InventoryPage() {
   );
 
   useEffect(() => {
+    // If both undefined, we're offline with no cache - stop skeleton after 2s
+    if (!swrProducts && !swrError) {
+      const t = setTimeout(() => setLoading(false), 2000);
+      return () => clearTimeout(t);
+    }
+
     const applyOfflineTasks = async () => {
       try {
-        let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-        
-        // If online, we still apply them just in case they haven't synced yet to preserve optimistic UI
         const pendingTasks = await db.syncQueue
-          .where('type')
-          .equals('product')
-          .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
+          .where('syncStatus')
+          .anyOf(['pending', 'failed'])
           .toArray();
 
         let modifiedProducts = swrProducts ? [...swrProducts] : [];
 
+        // Apply pending product CRUD tasks
         for (const task of pendingTasks) {
+          if (task.type !== 'product') continue;
           try {
             const payload = JSON.parse(task.payload);
-            
             if (task.action === 'DELETE') {
               modifiedProducts = modifiedProducts.filter(p => p.id !== payload.id);
             } else if (task.action === 'UPDATE') {
@@ -95,11 +98,24 @@ export default function InventoryPage() {
             }
           } catch (e) {}
         }
+
+        // Apply pending stock movements to adjust local product stock counts
+        for (const task of pendingTasks) {
+          if (task.type !== 'stock' || task.action !== 'CREATE') continue;
+          try {
+            const sp = JSON.parse(task.payload);
+            modifiedProducts = modifiedProducts.map(p => {
+              if (p.id !== sp.productId) return p;
+              const delta = sp.type === 'IN' ? sp.quantity : -sp.quantity;
+              return { ...p, stock: Math.max(0, (p.stock || 0) + delta) };
+            });
+          } catch (e) {}
+        }
         
         setProducts(modifiedProducts);
       } catch (err) {
         console.error('Failed to apply offline tasks', err);
-        setProducts(swrProducts);
+        if (swrProducts) setProducts(swrProducts);
       } finally {
         setLoading(false);
       }
@@ -107,7 +123,6 @@ export default function InventoryPage() {
 
     if (swrProducts || swrError) {
       applyOfflineTasks();
-      setLoading(false);
     }
   }, [swrProducts, swrError]);
 
@@ -172,12 +187,19 @@ export default function InventoryPage() {
           .toArray();
           
         for (const task of pendingTasks) {
+          const p = JSON.parse(task.payload);
           if (task.action === 'CREATE') {
-            if (task.type === 'category') {
-              finalCats.push(JSON.parse(task.payload));
-            } else if (task.type === 'unit') {
-              finalUnits.push(JSON.parse(task.payload));
+            if (task.type === 'category' && !finalCats.find((c: any) => c.id === p.id)) {
+              finalCats.push(p);
+            } else if (task.type === 'unit' && !finalUnits.find((u: any) => u.id === p.id)) {
+              finalUnits.push(p);
             }
+          } else if (task.action === 'UPDATE') {
+            if (task.type === 'category') finalCats = finalCats.map((c: any) => c.id === p.id ? { ...c, ...p } : c);
+            else if (task.type === 'unit') finalUnits = finalUnits.map((u: any) => u.id === p.id ? { ...u, ...p } : u);
+          } else if (task.action === 'DELETE') {
+            if (task.type === 'category') finalCats = finalCats.filter((c: any) => c.id !== p.id);
+            else if (task.type === 'unit') finalUnits = finalUnits.filter((u: any) => u.id !== p.id);
           }
         }
       } catch (e) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
 import { useSession } from 'next-auth/react';
@@ -52,17 +52,43 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const { data: dashData, isLoading: isDashLoading } = useSWR<DashboardData>(
+  const { data: dashData, isLoading: isDashLoading, error: dashError, mutate: mutateDash } = useSWR<DashboardData>(
     status === 'authenticated' ? '/api/reports?type=dashboard' : null,
     fetcher,
     { refreshInterval: 60000 }
   );
 
-  const { data: salesResult, isLoading: isSalesLoading } = useSWR(
+  const { data: salesResult, isLoading: isSalesLoading, error: salesError, mutate: mutateSales } = useSWR(
     status === 'authenticated' ? '/api/reports?type=sales' : null,
     fetcher,
     { refreshInterval: 60000 }
   );
+
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [pendingDeltas, setPendingDeltas] = useState({ products: 0, stockIn: 0, orders: 0 });
+
+  useEffect(() => {
+    const update = () => setIsOfflineMode(!navigator.onLine);
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
+  }, []);
+
+  useEffect(() => {
+    const computeDeltas = async () => {
+      try {
+        const { db } = await import('@/lib/db');
+        const pending = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).toArray();
+        setPendingDeltas({
+          products: pending.filter(t => t.type === 'product' && t.action === 'CREATE').length,
+          stockIn: pending.filter(t => t.type === 'stock' && t.action === 'CREATE' && JSON.parse(t.payload).type === 'IN').reduce((s, t) => s + (JSON.parse(t.payload).quantity || 0), 0),
+          orders: pending.filter(t => t.type === 'order' && t.action === 'CREATE').length,
+        });
+      } catch (e) { /* ignore */ }
+    };
+    computeDeltas();
+  }, [isOfflineMode]);
 
   const data = dashData;
   const salesData = salesResult?.dailySales || [];
@@ -121,8 +147,15 @@ export default function DashboardPage() {
 
   if (!data) {
     return (
-      <div className="loading-page">
-        <p>Failed to load dashboard data</p>
+      <div className="loading-page" style={{ textAlign: 'center', padding: '40px 20px' }}>
+        <p style={{ marginBottom: '12px', color: 'var(--text-muted)' }}>{isOfflineMode ? '📡 You are offline.' : 'Failed to load dashboard data.'}</p>
+        <button
+          className="btn btn-outline"
+          onClick={() => { mutateDash(); mutateSales(); }}
+          style={{ fontSize: '14px' }}
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -154,6 +187,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Offline Banner */}
+      {(isOfflineMode || dashError) && (
+        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>⚠️ Offline Mode — Showing last cached data</span>
+          <button onClick={() => { mutateDash(); mutateSales(); }} className="btn btn-outline" style={{ fontSize: '12px', padding: '4px 12px' }}>Retry</button>
+        </div>
+      )}
       {/* Stats Grid */}
       <div className="stats-grid-3">
         <div className="stat-card">
@@ -162,9 +202,9 @@ export default function DashboardPage() {
           </div>
           <div className="stat-info">
             <div className="stat-label">Total Products</div>
-            <div className="stat-value">{data.totalProducts}</div>
+            <div className="stat-value">{data.totalProducts}{pendingDeltas.products > 0 && <span style={{ fontSize: '13px', color: 'var(--warning)', marginLeft: '6px' }}>+{pendingDeltas.products} pending</span>}</div>
             <div className="stat-change positive">
-              <ArrowUpRight size={12} style={{flexShrink: 0}} /> <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{data.totalStock} items stock</span>
+              <ArrowUpRight size={12} style={{flexShrink: 0}} /> <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{data.totalStock}{pendingDeltas.stockIn > 0 ? ` (+${pendingDeltas.stockIn} offline)` : ''} items stock</span>
             </div>
           </div>
         </div>

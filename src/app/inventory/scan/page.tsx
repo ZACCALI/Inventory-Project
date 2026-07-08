@@ -8,6 +8,8 @@ import { formatCurrency } from '@/lib/constants';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useAlert } from '@/components/AlertModal';
 import { useBarcodeScanner } from '@/lib/useBarcodeScanner';
+import { addSyncTask } from '@/lib/offlineSync';
+import { db } from '@/lib/db';
 
 import Image from "next/image";
 const pluralize = (str: string, qty: number) => {
@@ -168,6 +170,18 @@ export default function BarcodeScannerPage() {
     const timer = setTimeout(async () => {
       setIsSearchingFallback(true);
       try {
+        // Offline: use local Dexie cache
+        const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+        if (isOffline) {
+          const allProducts = await db.products.toArray();
+          const q = fallbackQuery.toLowerCase();
+          const results = allProducts
+            .filter((p: any) => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q))
+            .slice(0, 5);
+          setFallbackResults(results);
+          setShowFallbackDropdown(results.length > 0);
+          return;
+        }
         const res = await fetch(`/api/products?search=${encodeURIComponent(fallbackQuery)}&limit=5`);
         if (res.ok) {
           const data = await res.json();
@@ -312,6 +326,12 @@ export default function BarcodeScannerPage() {
       } catch (err) {
         errorCount++;
         failedItems.push(item);
+        // Queue offline for automatic sync when reconnected
+        try {
+          await addSyncTask('stock', 'CREATE', payload);
+        } catch (syncErr) {
+          console.warn('Failed to queue audit item for offline sync', syncErr);
+        }
       }
     }
     
@@ -324,9 +344,9 @@ export default function BarcodeScannerPage() {
       });
       
       if (errorCount === items.filter(i => (i.scannedQty - i.stock) !== 0).length) {
-        showAlert('error', 'Network Error', `Could not save audit because you are offline or the server is unreachable. Your list has been preserved. Please check your connection and try again.`);
+        showAlert('error', 'Network Error', `Could not save audit online. ${errorCount} items have been queued offline and will sync automatically when you reconnect.`);
       } else {
-        showAlert('error', 'Partial Save', `Some stock discrepancies were adjusted, but ${errorCount} items failed to save. They remain in the list.`);
+        showAlert('error', 'Partial Save', `Some stock discrepancies were adjusted, but ${errorCount} items failed online and were queued offline for automatic sync.`);
       }
       setAuditItems(itemsToKeep);
     } else {
@@ -402,6 +422,31 @@ export default function BarcodeScannerPage() {
 
     try {
       setNotFoundCode('');
+
+      // Offline: use local Dexie products cache
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        try {
+          const allProducts = await db.products.toArray();
+          const found = allProducts.find((p: any) =>
+            p.barcode === code || p.sku === code ||
+            p.uoms?.some((u: any) => u.barcode === code)
+          );
+          if (found) {
+            setLastScanned({ ...(found as any), status: 'success' });
+            setIsMobileDrawerOpen(true);
+          } else {
+            setLastScanned(null);
+            setNotFoundCode(code);
+            setIsMobileDrawerOpen(true);
+          }
+        } catch (cacheErr) {
+          console.warn('Offline cache lookup failed', cacheErr);
+          showAlert('error', 'Offline', 'Could not look up product. No local cache available.');
+        }
+        return;
+      }
+
       const res = await fetch(`/api/products/scan?code=${encodeURIComponent(code)}`);
       if (res.ok) {
         const product = await res.json();
