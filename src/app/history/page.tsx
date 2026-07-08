@@ -75,7 +75,7 @@ export default function HistoryPage() {
         const mockLogs: AuditLog[] = pendingTasks.map(task => ({
           id: `mock-${task.id}`,
           action: task.action,
-          entity: task.type.charAt(0).toUpperCase() + task.type.slice(1),
+          entity: task.type === 'stock' ? 'Stock Movement' : task.type.charAt(0).toUpperCase() + task.type.slice(1),
           details: `Pending offline action (${task.action} ${task.type})`,
           mode: 'offline (pending)',
           createdAt: new Date(task.createdAt).toISOString(),

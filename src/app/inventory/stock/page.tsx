@@ -90,11 +90,50 @@ export default function StockInOutPage() {
   const { data: swrRes } = useSWR('/api/stock/movement', fetcher);
 
   useEffect(() => {
-    if (swrRes) {
-      setLogs(Array.isArray(swrRes) ? swrRes : []);
+    const applyOfflineTasks = async () => {
+      let finalLogs: StockLog[] = [];
+      if (swrRes) {
+        finalLogs = Array.isArray(swrRes) ? [...swrRes] : [];
+      }
+      
+      try {
+        const pendingTasks = await db.syncQueue
+          .where('syncStatus')
+          .anyOf(['pending', 'failed'])
+          .toArray();
+          
+        for (const task of pendingTasks) {
+          if (task.type === 'stock' && task.action === 'CREATE') {
+            const payload = JSON.parse(task.payload);
+            const productMatch = products.find(p => p.id === payload.productId);
+            finalLogs.unshift({
+              id: task.id?.toString() || `OFF-${Date.now()}`,
+              date: new Date(task.createdAt).toISOString(),
+              product: productMatch?.name || 'Unknown Offline Product',
+              sku: productMatch?.sku || '',
+              category: productMatch?.categoryName || 'Uncategorized',
+              type: payload.type,
+              quantity: payload.quantity,
+              reference: payload.reason || (payload.type === 'IN' ? 'Offline Stock Delivery' : 'Offline Stock Out'),
+              source: payload.source,
+              user: 'Offline User',
+              productId: payload.productId,
+              isVoided: false
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to merge offline stock tasks', e);
+      }
+      
+      setLogs(finalLogs);
       setLoading(false);
+    };
+
+    if (swrRes || !swrRes) {
+      applyOfflineTasks();
     }
-  }, [swrRes]);
+  }, [swrRes, products]);
 
   const fetchLogs = async () => {
     if (typeof document !== 'undefined' && document.hidden) return;
@@ -248,18 +287,23 @@ export default function StockInOutPage() {
     
     if (modalType === 'IN') {
        try {
-         let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-         if (isOffline) throw new Error('Offline');
+         const pendingBatches = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).toArray();
+         const offlineCount = pendingBatches.filter(t => t.type === 'stock' && t.action === 'CREATE' && JSON.parse(t.payload).productId === product.id).length;
          
-         const res = await fetch(`/api/batches?productId=${product.id}&all=true`);
-         if (res.ok) {
-           const batches = await res.json();
-           setFormData({ ...formData, sku: product.sku, batchNumber: String(batches.length + 1) });
-         } else {
-           setFormData({ ...formData, sku: product.sku });
+         let serverCount = 0;
+         let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+         
+         if (!isOffline) {
+           const res = await fetch(`/api/batches?productId=${product.id}&all=true`).catch(() => null);
+           if (res && res.ok) {
+             const batches = await res.json();
+             serverCount = batches.length;
+           }
          }
+         
+         setFormData({ ...formData, sku: product.sku, batchNumber: String(serverCount + offlineCount + 1) });
        } catch (e) {
-         setFormData({ ...formData, sku: product.sku, batchNumber: `OFF-BATCH-${Math.floor(Math.random() * 10000)}` });
+         setFormData({ ...formData, sku: product.sku, batchNumber: '1' });
        }
     } else {
        setFormData({ ...formData, sku: product.sku });

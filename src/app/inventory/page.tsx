@@ -154,13 +154,13 @@ export default function InventoryPage() {
   const fetchDependencies = useCallback(async () => {
     try {
       const [catRes, unitRes, settingsRes] = await Promise.all([
-        fetch('/api/categories'),
-        fetch('/api/units'),
-        fetch('/api/settings')
+        fetch('/api/categories').catch(() => ({ ok: false, json: async () => [] })),
+        fetch('/api/units').catch(() => ({ ok: false, json: async () => [] })),
+        fetch('/api/settings').catch(() => ({ ok: false, json: async () => ({}) }))
       ]);
-      const catData = await catRes.json();
-      const unitData = await unitRes.json();
-      const settingsData = await settingsRes.json();
+      const catData = await (catRes as any).json();
+      const unitData = await (unitRes as any).json();
+      const settingsData = await (settingsRes as any).json();
       
       let finalCats = Array.isArray(catData) ? catData : [];
       let finalUnits = Array.isArray(unitData) ? unitData : [];
