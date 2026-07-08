@@ -52,7 +52,7 @@ export default function SettingsPage() {
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  const { data: swrRes } = useSWR('/api/settings', fetcher);
+  const { data: swrRes, error: swrError } = useSWR('/api/settings', fetcher, { revalidateOnFocus: true });
 
   useEffect(() => {
     if (swrRes) {
@@ -77,6 +77,16 @@ export default function SettingsPage() {
       });
     }
   }, [swrRes]);
+
+  // Offline banner state
+  const [isOffline, setIsOffline] = useState(false);
+  useEffect(() => {
+    const update = () => setIsOffline(!navigator.onLine);
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
+  }, []);
 
   async function fetchSettings() {
     if (typeof document !== 'undefined' && document.hidden) return;
@@ -109,6 +119,11 @@ export default function SettingsPage() {
 
   async function saveSettings(e: React.FormEvent) {
     e.preventDefault();
+    // Settings changes require the server — block offline
+    if (isOffline) {
+      showAlert('error', 'You are Offline', 'Settings cannot be saved while offline. Your local view has been updated but changes will NOT be persisted until you reconnect and save again.');
+      return;
+    }
     setIsSavingSettings(true);
     try {
       const res = await fetch('/api/settings', {
@@ -123,15 +138,21 @@ export default function SettingsPage() {
         const err = await res.json().catch(() => ({ error: 'Failed to save settings.' }));
         showAlert('error', 'Action Failed', err.error || 'Failed to save settings.');
       }
-    } catch (e) { 
-      console.error(e); 
-      showAlert('error', 'Action Failed', 'Error saving settings.'); 
+    } catch (e) {
+      console.error(e);
+      const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+      showAlert('error', 'Action Failed', offline ? 'You are offline. Settings were not saved. Please reconnect and try again.' : 'Error saving settings.');
     }
     finally { setIsSavingSettings(false); }
   };
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files || !e.target.files[0]) return;
+    // Avatar upload requires server
+    if (isOffline) {
+      showAlert('error', 'You are Offline', 'Photo uploads require an internet connection. Please reconnect and try again.');
+      return;
+    }
     const file = e.target.files[0];
     const formData = new FormData();
     formData.append('file', file);
@@ -147,7 +168,8 @@ export default function SettingsPage() {
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch(err) {
-      showAlert('error', 'Upload Error', 'An unexpected error occurred.');
+      const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+      showAlert('error', 'Upload Error', offline ? 'You are offline. Cannot upload photos without an internet connection.' : 'An unexpected error occurred.');
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -162,6 +184,11 @@ export default function SettingsPage() {
     const userId = session.user.id;
     if (!userId) {
       showAlert('error', 'Session Error', 'User ID is missing from session. Please sign out and sign in again.');
+      return;
+    }
+    // Profile update requires the server
+    if (isOffline) {
+      showAlert('error', 'You are Offline', 'Profile changes cannot be saved while offline. Please reconnect and try again.');
       return;
     }
     setIsUpdatingProfile(true);
@@ -180,7 +207,8 @@ export default function SettingsPage() {
       }
     } catch (e) {
       console.error(e);
-      showAlert('error', 'Action Failed', 'An unexpected error occurred while updating the profile.');
+      const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+      showAlert('error', 'Action Failed', offline ? 'You are offline. Profile was not saved.' : 'An unexpected error occurred while updating the profile.');
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -201,7 +229,11 @@ export default function SettingsPage() {
       showAlert('error', 'Unauthorized', 'You must be logged in to update your password.');
       return;
     }
-
+    // Password change requires the server
+    if (isOffline) {
+      showAlert('error', 'You are Offline', 'Passwords cannot be changed while offline. Please reconnect and try again.');
+      return;
+    }
     setIsUpdatingPassword(true);
     try {
       const res = await fetch(`/api/users/${session.user.id}/password`, {
@@ -222,7 +254,8 @@ export default function SettingsPage() {
       }
     } catch (e) {
       console.error(e);
-      showAlert('error', 'Action Failed', 'An unexpected error occurred while updating the password.');
+      const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+      showAlert('error', 'Action Failed', offline ? 'You are offline. Password was not changed.' : 'An unexpected error occurred while updating the password.');
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -245,6 +278,18 @@ export default function SettingsPage() {
           <p className="page-subtitle">Configure your distribution inventory system preferences</p>
         </div>
       </div>
+
+      {/* Offline Banner */}
+      {(isOffline || swrError) && (
+        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '20px' }}>⚠️</span>
+          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>
+            {isOffline
+              ? 'You are offline — settings shown are from the last sync. Changes (save, profile update, password change) will be blocked until you reconnect.'
+              : 'Could not load settings from server. Showing defaults. Check your connection.'}
+          </span>
+        </div>
+      )}
 
       <div className="settings-layout">
         

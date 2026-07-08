@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import { Search,   User, Activity, PlusCircle, Trash2, Edit3, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'lucide-react';
+import { Search, User, Activity, PlusCircle, Trash2, Edit3, ChevronLeft, ChevronRight, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { db } from '@/lib/db';
+import { useSession } from 'next-auth/react';
 
 interface AuditLog {
   id: string;
@@ -20,6 +21,7 @@ interface AuditLog {
 }
 
 export default function HistoryPage() {
+  const { data: session } = useSession();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -44,16 +46,42 @@ export default function HistoryPage() {
   };
 
   const { data: swrRes, error: swrError } = useSWR(
-    `/api/history?${getQueryString()}`,
+    session ? `/api/history?${getQueryString()}` : null,
     async (url) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       return { data, totalCount: parseInt(res.headers.get('X-Total-Count') || '0', 10) };
-    }
+    },
+    { refreshInterval: 60000 }
   );
 
+  // Full-offline with no prior cache: show syncQueue tasks immediately after 2s
   useEffect(() => {
+    if (!swrRes && !swrError) {
+      const t = setTimeout(async () => {
+        try {
+          const pendingTasks = await db.syncQueue
+            .where('syncStatus').anyOf(['pending', 'failed'])
+            .toArray();
+          pendingTasks.sort((a, b) => b.createdAt - a.createdAt);
+          const mockLogs: AuditLog[] = pendingTasks.map(task => ({
+            id: `mock-${task.id}`,
+            action: task.action,
+            entity: task.type === 'stock' ? 'Stock Movement' : task.type.charAt(0).toUpperCase() + task.type.slice(1),
+            details: `Pending offline action (${task.action} ${task.type})`,
+            mode: 'offline (pending)',
+            createdAt: new Date(task.createdAt).toISOString(),
+            user: { name: 'Offline User', role: 'ADMIN' }
+          }));
+          setLogs(mockLogs);
+          setTotalCount(mockLogs.length);
+        } catch (e) { console.error(e); }
+        setLoading(false);
+      }, 2000);
+      return () => clearTimeout(t);
+    }
+
     const applyOfflineTasks = async () => {
       let finalLogs: AuditLog[] = [];
       let finalCount = 0;
@@ -69,7 +97,6 @@ export default function HistoryPage() {
           .anyOf(['pending', 'failed'])
           .toArray();
 
-        // Sort descending so newest is first
         pendingTasks.sort((a, b) => b.createdAt - a.createdAt);
 
         const mockLogs: AuditLog[] = pendingTasks.map(task => ({
@@ -118,7 +145,9 @@ export default function HistoryPage() {
   useEffect(() => {
     fetchLogs();
     const interval = setInterval(() => {
-      fetchLogs();
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        fetchLogs();
+      }
     }, 60000);
     return () => clearInterval(interval);
 // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -165,6 +194,18 @@ export default function HistoryPage() {
           <p className="page-subtitle">Audit log of all user activities and system changes</p>
         </div>
       </div>
+
+      {/* Offline Banner */}
+      {(!navigator.onLine || swrError) && (
+        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <AlertTriangle size={16} color="#92400e" />
+          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>
+            {!navigator.onLine
+              ? '⚠️ You are offline — showing pending offline actions only. Server audit logs will load when reconnected.'
+              : '⚠️ Could not load audit logs. Check your connection.'}
+          </span>
+        </div>
+      )}
 
       {loading ? (
         <div className="stats-grid">

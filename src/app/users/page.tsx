@@ -53,16 +53,22 @@ export default function UsersPage() {
     async (url) => {
       const res = await fetch(url);
       if (res.status === 403) {
-        router.push('/');
+        if (typeof navigator !== 'undefined' && navigator.onLine) router.push('/');
         throw new Error('Forbidden');
       }
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       return { data, totalCount: parseInt(res.headers.get('X-Total-Count') || '0', 10) };
-    }
+    },
+    { refreshInterval: 30000 }
   );
 
+  // Stop skeleton after 2s if offline with no cache
   useEffect(() => {
+    if (!swrRes && !swrError) {
+      const t = setTimeout(() => setLoading(false), 2000);
+      return () => clearTimeout(t);
+    }
     if (swrRes) {
       if (Array.isArray(swrRes.data)) {
         setUsers(swrRes.data);
@@ -71,10 +77,8 @@ export default function UsersPage() {
         setUsers([]);
         setTotalUsers(0);
       }
-      setLoading(false);
-    } else if (swrError) {
-      setLoading(false);
     }
+    setLoading(false);
   }, [swrRes, swrError]);
 
   const fetchUsers = useCallback(async () => {
@@ -115,6 +119,11 @@ export default function UsersPage() {
       setError('Password must be at least 8 characters');
       return;
     }
+    // User creation requires the server — block offline
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setError('You are offline. User accounts cannot be created without a server connection. Please reconnect and try again.');
+      return;
+    }
     setCreating(true);
     try {
       const res = await fetch('/api/users', {
@@ -131,13 +140,19 @@ export default function UsersPage() {
         setError(data.error || 'Failed to create user');
       }
     } catch {
-      setError('Network error');
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      setError(isOffline ? 'You are offline. Please reconnect and try again.' : 'Network error — could not reach server.');
     } finally {
       setCreating(false);
     }
   }
 
   async function handleDelete(id: string) {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setDeleteConfirm(null);
+      showAlert('error', 'You are Offline', 'User accounts cannot be deleted while offline. Please reconnect and try again.');
+      return;
+    }
     try {
       const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -151,7 +166,8 @@ export default function UsersPage() {
       }
     } catch {
       setDeleteConfirm(null);
-      showAlert('error', 'Action Failed', 'Failed to communicate with server');
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      showAlert('error', 'Action Failed', isOffline ? 'You are offline. Please reconnect and try again.' : 'Failed to communicate with server.');
     }
   }
 
@@ -160,6 +176,10 @@ export default function UsersPage() {
     setError('');
     if (!editFormData.name || !editFormData.email || !editFormData.role) {
       setError('Name, email, and role are required');
+      return;
+    }
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setError('You are offline. User changes cannot be saved without a server connection. Please reconnect and try again.');
       return;
     }
     setEditing(true);
@@ -178,7 +198,8 @@ export default function UsersPage() {
         setError(data.error || 'Failed to update user');
       }
     } catch {
-      setError('Network error');
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      setError(isOffline ? 'You are offline. Please reconnect and try again.' : 'Network error — could not reach server.');
     } finally {
       setEditing(false);
     }
@@ -193,6 +214,8 @@ export default function UsersPage() {
     cashier: '#059669',
   };
 
+  const isPageOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
   return (
     <>
       <div className="page-header">
@@ -206,6 +229,18 @@ export default function UsersPage() {
           </button>
         </div>
       </div>
+
+      {/* Offline Banner */}
+      {(isPageOffline || swrError) && (
+        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <AlertTriangle size={16} color="#92400e" />
+          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>
+            {isPageOffline
+              ? '⚠️ You are offline — showing last cached data. User changes (create, edit, delete) require an internet connection.'
+              : '⚠️ Could not load user data. Check your connection.'}
+          </span>
+        </div>
+      )}
 
       {loading ? (
         <div className="stats-grid-3" style={{ marginBottom: '24px' }}>
