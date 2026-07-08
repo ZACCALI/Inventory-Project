@@ -38,8 +38,17 @@ export default function ReportsPage() {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { showAlert, showToast } = useAlert();
 
-  const { data: monthlyRes, isLoading: isMonthlyLoading } = useSWR('/api/reports?type=monthly', fetcher, { refreshInterval: 60000 });
-  const { data: bestRes, isLoading: isBestLoading } = useSWR('/api/reports?type=bestsellers', fetcher, { refreshInterval: 60000 });
+  const { data: monthlyRes, isLoading: isMonthlyLoading, error: monthlyError } = useSWR('/api/reports?type=monthly', fetcher, { refreshInterval: 60000 });
+  const { data: bestRes, isLoading: isBestLoading, error: bestError } = useSWR('/api/reports?type=bestsellers', fetcher, { refreshInterval: 60000 });
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const update = () => setIsOffline(!navigator.onLine);
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
+  }, []);
 
   useEffect(() => {
     if (monthlyRes) {
@@ -131,6 +140,10 @@ export default function ReportsPage() {
   };
 
   const handleDownloadInventory = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      showAlert('error', 'You are offline', 'Cannot download reports while offline. Please reconnect and try again.');
+      return;
+    }
     setLoadingReport('inventory');
     try {
       const res = await fetch('/api/products');
@@ -189,6 +202,10 @@ export default function ReportsPage() {
   };
 
   const handleDownloadStockLogs = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      showAlert('error', 'You are offline', 'Cannot download reports while offline. Please reconnect and try again.');
+      return;
+    }
     setLoadingReport('stocklogs');
     try {
       const res = await fetch('/api/stock/movement');
@@ -226,6 +243,10 @@ export default function ReportsPage() {
   };
 
   const handleDownloadExpiry = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      showAlert('error', 'You are offline', 'Cannot download reports while offline. Please reconnect and try again.');
+      return;
+    }
     setLoadingReport('expiry');
     try {
       const res = await fetch('/api/batches');
@@ -274,6 +295,10 @@ export default function ReportsPage() {
   };
 
   const handleDownloadOrders = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      showAlert('error', 'You are offline', 'Cannot download reports while offline. Please reconnect and try again.');
+      return;
+    }
     setLoadingReport('orders');
     try {
       const res = await fetch('/api/orders');
@@ -383,6 +408,16 @@ export default function ReportsPage() {
           </button>
         </div>
       </div>
+
+      {/* Offline Banner */}
+      {(isOffline || monthlyError || bestError) && (
+        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <AlertTriangle size={16} color="#92400e" />
+          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>
+            {isOffline ? '⚠️ You are offline — showing last cached data. Charts and downloads may be unavailable.' : 'Data may be outdated. Check your connection.'}
+          </span>
+        </div>
+      )}
 
       {/* KPI Stats */}
       <div className="stats-grid-3">

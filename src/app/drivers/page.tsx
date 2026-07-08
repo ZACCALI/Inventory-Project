@@ -41,24 +41,36 @@ export default function DriversPage() {
     setLoadingTransactions(true);
     setDriverTransactions([]);
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        // Show pending offline deliveries from syncQueue
+        setDriverTransactions([]);
+        return;
+      }
       const res = await fetch(`/api/drivers/${driverId}/deliveries`);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setDriverTransactions(data);
     } catch (error) {
       console.error('Failed to fetch transactions', error);
-      showAlert('error', 'Action Failed', 'Could not load transactions.');
+      // Don't show hard error modal offline — just show empty list
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (!isOffline) showToast('offline', 'Could not load transactions. You appear to be offline.');
     } finally {
       setLoadingTransactions(false);
     }
   };
 
-  const { data: swrRes, error: swrError } = useSWR('/api/drivers', fetcher, { refreshInterval: 15000 });
+  const { data: swrRes, error: swrError } = useSWR(session ? '/api/drivers' : null, fetcher, { refreshInterval: 15000 });
 
+  // Stop skeleton after 2s if offline with no cache
   useEffect(() => {
+    if (!swrRes && !swrError) {
+      const t = setTimeout(() => setLoading(false), 2000);
+      return () => clearTimeout(t);
+    }
+
     const applyOfflineTasks = async () => {
-      if (!swrRes) return;
-      
       try {
         const pendingTasks = await db.syncQueue
           .where('type')
@@ -71,7 +83,6 @@ export default function DriversPage() {
         for (const task of pendingTasks) {
           try {
             const payload = JSON.parse(task.payload);
-            
             if (task.action === 'DELETE') {
               modifiedDrivers = modifiedDrivers.filter(d => d.id !== payload.id);
             } else if (task.action === 'UPDATE') {
@@ -87,16 +98,14 @@ export default function DriversPage() {
         setDrivers(modifiedDrivers);
       } catch (err) {
         console.error('Failed to apply offline tasks', err);
-        setDrivers(Array.isArray(swrRes) ? swrRes : []);
+        if (swrRes) setDrivers(Array.isArray(swrRes) ? swrRes : []);
       } finally {
         setLoading(false);
       }
     };
 
-    if (swrRes) {
+    if (swrRes || swrError) {
       applyOfflineTasks();
-    } else if (swrError) {
-      setLoading(false);
     }
   }, [swrRes, swrError]);
 

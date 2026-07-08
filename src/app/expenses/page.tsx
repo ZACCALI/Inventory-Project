@@ -74,10 +74,14 @@ export default function ExpensesPage() {
     { refreshInterval: 15000 }
   );
 
+  // Stop skeleton after 2s if offline with no cache
   useEffect(() => {
+    if (!swrRes && !swrError) {
+      const t = setTimeout(() => setLoading(false), 2000);
+      return () => clearTimeout(t);
+    }
+
     const applyOfflineTasks = async () => {
-      if (!swrRes) return;
-      
       try {
         const pendingTasks = await db.syncQueue
           .where('type')
@@ -90,7 +94,6 @@ export default function ExpensesPage() {
         for (const task of pendingTasks) {
           try {
             const payload = JSON.parse(task.payload);
-            
             if (task.action === 'DELETE') {
               modifiedExpenses = modifiedExpenses.filter(e => e.id !== payload.id);
             } else if (task.action === 'UPDATE') {
@@ -106,16 +109,14 @@ export default function ExpensesPage() {
         setExpenses(modifiedExpenses);
       } catch (err) {
         console.error('Failed to apply offline tasks', err);
-        setExpenses(Array.isArray(swrRes) ? swrRes : []);
+        if (swrRes) setExpenses(Array.isArray(swrRes) ? swrRes : []);
       } finally {
         setLoading(false);
       }
     };
 
-    if (swrRes) {
+    if (swrRes || swrError) {
       applyOfflineTasks();
-    } else if (swrError) {
-      setLoading(false);
     }
   }, [swrRes, swrError]);
 
@@ -640,7 +641,7 @@ export default function ExpensesPage() {
                   style={{ flex: 1, height: '40px', borderRadius: '10px' }}
                   value={newCategoryName}
                   onChange={e => setNewCategoryName(e.target.value)}
-                  onKeyDown={e => {
+                  onKeyDown={async e => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
                       const trimmed = newCategoryName.trim();
@@ -648,7 +649,9 @@ export default function ExpensesPage() {
                         const updated = [...categories, trimmed];
                         setCategories(updated);
                         setNewCategoryName('');
-                        fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expenseCategories: JSON.stringify(updated) }) });
+                        try {
+                          await fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expenseCategories: JSON.stringify(updated) }) });
+                        } catch (err) { console.warn('Category save failed (offline?)', err); }
                       }
                     }
                   }}
@@ -657,13 +660,15 @@ export default function ExpensesPage() {
                   type="button"
                   className="btn btn-primary"
                   style={{ height: '40px', borderRadius: '10px', padding: '0 16px' }}
-                  onClick={() => {
+                  onClick={async () => {
                     const trimmed = newCategoryName.trim();
                     if (trimmed && !categories.includes(trimmed)) {
                       const updated = [...categories, trimmed];
                       setCategories(updated);
                       setNewCategoryName('');
-                      fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expenseCategories: JSON.stringify(updated) }) });
+                      try {
+                        await fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expenseCategories: JSON.stringify(updated) }) });
+                      } catch (err) { console.warn('Category save failed (offline?)', err); }
                     }
                   }}
                 >
@@ -682,7 +687,9 @@ export default function ExpensesPage() {
                         if (!await showConfirm('Delete Category', `Are you sure you want to remove "${cat}" from the category list?`)) return;
                         const updated = categories.filter((_, i) => i !== idx);
                         setCategories(updated);
-                        fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expenseCategories: JSON.stringify(updated) }) });
+                        try {
+                          await fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expenseCategories: JSON.stringify(updated) }) });
+                        } catch (err) { console.warn('Category delete failed (offline?)', err); }
                         showToast('success', `Category "${cat}" has been removed.`);
                       }}
                       style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '4px', borderRadius: '6px' }}

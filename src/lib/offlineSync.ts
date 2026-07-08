@@ -72,6 +72,7 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
       else if (task.type === 'unit') endpoint = task.action === 'CREATE' ? '/api/units' : `/api/units/${payload.id}`;
       else if (task.type === 'stock') endpoint = task.action === 'CREATE' ? '/api/stock/movement' : `/api/stock/movement/${payload.id}`;
       else if (task.type === 'batch') endpoint = `/api/batches/${payload.id}`;
+      else if (task.type === 'delivery') endpoint = `/api/delivery/${payload.id}`;
 
       if (!endpoint) throw new Error('Unknown sync task type');
 

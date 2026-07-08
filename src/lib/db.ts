@@ -25,7 +25,7 @@ export interface PendingOrder {
 
 export interface SyncTask {
   id?: number;
-  type: 'order' | 'customer' | 'expense' | 'product' | 'driver' | 'category' | 'unit' | 'stock' | 'batch';
+  type: 'order' | 'customer' | 'expense' | 'product' | 'driver' | 'category' | 'unit' | 'stock' | 'batch' | 'delivery';
   action: 'CREATE' | 'UPDATE' | 'DELETE';
   payload: string; // JSON stringified payload
   createdAt: number;

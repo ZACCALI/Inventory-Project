@@ -280,7 +280,12 @@ export default function CreateOrderPage() {
             }
           }
         } catch (e) {
-          console.warn('Network error during initial load', e);
+          console.warn('Network error during initial load, falling back to local cache', e);
+          // Fall back to Dexie local cache
+          try {
+            const cachedProducts = await db.products.toArray();
+            if (cachedProducts.length > 0) fetchedProducts = cachedProducts;
+          } catch (cacheErr) { console.warn('No product cache', cacheErr); }
         }
 
         // Apply offline tasks
@@ -332,7 +337,11 @@ export default function CreateOrderPage() {
     };
 
     loadData();
-    const interval = setInterval(loadData, 15000); // Poll every 15 seconds
+    const interval = setInterval(() => {
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        loadData();
+      }
+    }, 15000); // Poll every 15 seconds (online only)
     
     return () => clearInterval(interval);
   }, []);

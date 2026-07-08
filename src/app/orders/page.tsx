@@ -118,7 +118,13 @@ export default function OrdersPage() {
     }
   );
 
+  // Stop skeleton after 2s if offline with no cache
   useEffect(() => {
+    if (!swrRes && !swrError) {
+      const t = setTimeout(() => setLoading(false), 2000);
+      return () => clearTimeout(t);
+    }
+
     const applyOfflineTasks = async () => {
       if (!swrRes) return;
       
@@ -158,10 +164,8 @@ export default function OrdersPage() {
       }
     };
 
-    if (swrRes) {
+    if (swrRes || swrError) {
       applyOfflineTasks();
-    } else if (swrError) {
-      setLoading(false);
     }
   }, [swrRes, swrError]);
 
@@ -248,8 +252,10 @@ export default function OrdersPage() {
     fetchSettings();
 
     const interval = setInterval(() => {
-      fetchOrders();
-    }, 60000); // Poll every 60 seconds
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        fetchOrders();
+      }
+    }, 60000); // Poll every 60 seconds (online only)
 
     return () => clearInterval(interval);
 // eslint-disable-next-line react-hooks/exhaustive-deps

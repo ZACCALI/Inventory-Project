@@ -58,10 +58,14 @@ export default function CustomersPage() {
     { refreshInterval: 60000 }
   );
 
+  // Stop skeleton after 2s if offline with no cache
   useEffect(() => {
+    if (!swrRes && !swrError) {
+      const t = setTimeout(() => setLoading(false), 2000);
+      return () => clearTimeout(t);
+    }
+
     const applyOfflineTasks = async () => {
-      if (!swrRes) return;
-      
       try {
         const pendingTasks = await db.syncQueue
           .where('type')
@@ -69,12 +73,11 @@ export default function CustomersPage() {
           .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
           .toArray();
 
-        let modifiedCustomers = [...swrRes];
+        let modifiedCustomers = swrRes ? [...swrRes] : [];
 
         for (const task of pendingTasks) {
           try {
             const payload = JSON.parse(task.payload);
-            
             if (task.action === 'DELETE') {
               modifiedCustomers = modifiedCustomers.filter(c => c.id !== payload.id);
             } else if (task.action === 'UPDATE') {
@@ -90,16 +93,14 @@ export default function CustomersPage() {
         setCustomers(modifiedCustomers);
       } catch (err) {
         console.error('Failed to apply offline tasks', err);
-        setCustomers(swrRes);
+        if (swrRes) setCustomers(swrRes);
       } finally {
         setLoading(false);
       }
     };
 
-    if (swrRes) {
+    if (swrRes || swrError) {
       applyOfflineTasks();
-    } else if (swrError) {
-      setLoading(false);
     }
   }, [swrRes, swrError]);
 
@@ -128,11 +129,26 @@ export default function CustomersPage() {
   const fetchCustomerHistory = async (id: string) => {
     setHistoryLoading(true);
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isOffline) {
+        // Show offline pending orders from syncQueue
+        const pending = await db.syncQueue
+          .where('type').equals('order')
+          .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
+          .toArray();
+        const offlineOrders = pending
+          .map(t => { try { return JSON.parse(t.payload); } catch { return null; } })
+          .filter(p => p && p.customerId === id);
+        setCustomerOrders(offlineOrders);
+        return;
+      }
       const res = await fetch(`/api/orders?customerId=${id}`);
       const data = await res.json();
       if (Array.isArray(data)) setCustomerOrders(data);
     } catch (error) {
       console.error(error);
+      // Silently fail — show empty list rather than crash
+      setCustomerOrders([]);
     } finally {
       setHistoryLoading(false);
     }

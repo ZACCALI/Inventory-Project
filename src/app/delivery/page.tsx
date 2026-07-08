@@ -5,6 +5,9 @@ import useSWR from 'swr';
 import { Truck, MapPin, Calendar, Search, X, Filter, CheckCircle2, Clock, Image as Phone } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
+import { addSyncTask } from '@/lib/offlineSync';
+import { db } from '@/lib/db';
+import { useSession } from 'next-auth/react';
 
 interface Delivery {
   id: string;
@@ -32,6 +35,7 @@ export default function DeliveryPage() {
  
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { showAlert, showConfirm, showToast } = useAlert();
+  const { data: session } = useSession();
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,27 +75,53 @@ export default function DeliveryPage() {
   };
 
   const { data: swrRes, error: swrError } = useSWR(
-    `/api/delivery?${getQueryString()}`,
+    session ? `/api/delivery?${getQueryString()}` : null,
     async (url) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       return { data, totalCount: parseInt(res.headers.get('X-Total-Count') || '0', 10) };
-    }
+    },
+    { refreshInterval: 30000 }
   );
 
+  // Skeleton timeout + syncQueue merge for deliveries
   useEffect(() => {
-    if (swrRes) {
-      if (Array.isArray(swrRes.data)) {
-        setDeliveries(swrRes.data);
-        setTotalDeliveries(swrRes.totalCount);
-      } else {
-        setDeliveries([]);
-        setTotalDeliveries(0);
+    if (!swrRes && !swrError) {
+      const t = setTimeout(() => setLoading(false), 2000);
+      return () => clearTimeout(t);
+    }
+
+    const applyOfflineTasks = async () => {
+      try {
+        const pendingTasks = await db.syncQueue
+          .where('type').equals('delivery')
+          .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
+          .toArray();
+
+        let modifiedDeliveries = swrRes?.data && Array.isArray(swrRes.data) ? [...swrRes.data] : [];
+
+        for (const task of pendingTasks) {
+          try {
+            const payload = JSON.parse(task.payload);
+            if (task.action === 'UPDATE') {
+              modifiedDeliveries = modifiedDeliveries.map(d => d.id === payload.id ? { ...d, ...payload } : d);
+            }
+          } catch (e) {}
+        }
+
+        setDeliveries(modifiedDeliveries);
+        setTotalDeliveries(swrRes?.totalCount || modifiedDeliveries.length);
+      } catch (err) {
+        console.error(err);
+        if (swrRes?.data && Array.isArray(swrRes.data)) setDeliveries(swrRes.data);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    } else if (swrError) {
-      setLoading(false);
+    };
+
+    if (swrRes || swrError) {
+      applyOfflineTasks();
     }
   }, [swrRes, swrError]);
 
@@ -127,22 +157,43 @@ export default function DeliveryPage() {
         deliveredAt: formData.status === 'delivered' ? new Date().toISOString() : undefined
       };
 
-      const res = await fetch(`/api/delivery/${selectedDelivery.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
 
-      if (res.ok) {
-        setSelectedDelivery(null);
-        fetchDeliveries();
-        if (formData.status === 'failed' || formData.status === 'cancelled') {
-           showAlert('warning', 'Action Required: Return Stock', 'The delivery is marked as failed, but the stock is still technically reserved. Once the driver physically returns the items to the warehouse, you must go to the Orders page and manually Cancel the order to release the stock back into available inventory.');
-        } else {
-           showAlert('success', 'Status Updated', 'Delivery status successfully updated.');
+      if (!isOffline) {
+        try {
+          const res = await fetch(`/api/delivery/${selectedDelivery.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            setSelectedDelivery(null);
+            if (typeof navigator !== 'undefined' && navigator.onLine) fetchDeliveries();
+            if (formData.status === 'failed' || formData.status === 'cancelled') {
+              showAlert('warning', 'Action Required: Return Stock', 'The delivery is marked as failed, but the stock is still technically reserved. Once the driver physically returns the items to the warehouse, you must go to the Orders page and manually Cancel the order to release the stock back into available inventory.');
+            } else {
+              showAlert('success', 'Status Updated', 'Delivery status successfully updated.');
+            }
+            return;
+          } else {
+            showAlert('error', 'Action Failed', 'Failed to update delivery');
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error, falling back to offline', fetchErr);
+          networkFailed = true;
         }
-      } else {
-        showAlert('error', 'Action Failed', 'Failed to update delivery');
+      }
+
+      if (isOffline || networkFailed) {
+        await addSyncTask('delivery', 'UPDATE', { ...payload, id: selectedDelivery.id });
+        showToast('offline', 'Delivery update queued offline — will sync when connected');
+        // Optimistic update
+        setDeliveries(prev => prev.map(d => d.id === selectedDelivery.id ? { ...d, ...payload } : d));
+        setSelectedDelivery(null);
+        return;
       }
     } catch (error) {
       console.error(error);
@@ -167,7 +218,9 @@ export default function DeliveryPage() {
     fetchDeliveries();
     fetchDrivers();
     const interval = setInterval(() => {
-      fetchDeliveries();
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        fetchDeliveries();
+      }
     }, 60000);
     
     return () => clearInterval(interval);
