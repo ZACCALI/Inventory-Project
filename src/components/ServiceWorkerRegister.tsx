@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useSWRConfig } from 'swr';
+import { usePrefetchCache } from '@/lib/prefetchCache';
 
 /**
  * Converts a base64 URL-encoded string to a Uint8Array.
@@ -20,61 +22,34 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
 
 /**
  * Subscribe to push notifications after service worker registration.
- * Requests permission, subscribes via VAPID, and sends subscription to server.
  */
 async function subscribeToPush(registration: ServiceWorkerRegistration) {
   try {
-    // Check if push is supported
-    if (!('PushManager' in window)) {
-      console.log('Push notifications not supported');
-      return;
-    }
-
-    // Check if already subscribed
+    if (!('PushManager' in window)) return;
     const existingSubscription = await registration.pushManager.getSubscription();
     if (existingSubscription) {
-      // Already subscribed — ensure server knows about it
       await sendSubscriptionToServer(existingSubscription);
       return;
     }
-
-    // Check if permission is already denied to avoid browser warnings
-    if (Notification.permission === 'denied') {
-      return;
-    }
-
-    // Request notification permission
+    if (Notification.permission === 'denied') return;
     const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      return;
-    }
+    if (permission !== 'granted') return;
 
-    // Fetch VAPID public key from server
     const vapidRes = await fetch('/api/push-subscription/vapid-key');
-    if (!vapidRes.ok) {
-      console.log('Push not configured on server');
-      return;
-    }
+    if (!vapidRes.ok) return;
     const { publicKey } = await vapidRes.json();
     if (!publicKey) return;
 
-    // Subscribe to push
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(publicKey)
     });
-
-    // Send subscription to server
     await sendSubscriptionToServer(subscription);
-    console.log('Push notification subscription successful');
   } catch (err) {
     console.error('Push subscription failed:', err);
   }
 }
 
-/**
- * Send the push subscription to the server for storage.
- */
 async function sendSubscriptionToServer(subscription: PushSubscription) {
   try {
     await fetch('/api/push-subscription', {
@@ -89,6 +64,20 @@ async function sendSubscriptionToServer(subscription: PushSubscription) {
 
 export default function ServiceWorkerRegister() {
   const { data: session } = useSession();
+  const { mutate } = useSWRConfig();
+
+  // Trigger background cache prefetch after login
+  usePrefetchCache();
+
+  // Listen for sync events and invalidate all SWR caches for instant UI refresh
+  useEffect(() => {
+    const handleSynced = () => {
+      // Revalidate all cached SWR keys so every open page refreshes immediately
+      mutate(() => true, undefined, { revalidate: true });
+    };
+    window.addEventListener('distritrack:synced', handleSynced);
+    return () => window.removeEventListener('distritrack:synced', handleSynced);
+  }, [mutate]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -96,14 +85,10 @@ export default function ServiceWorkerRegister() {
         .register('/sw.js')
         .then((registration) => {
           console.log('SW registered:', registration.scope);
-
-          // Only subscribe to push if user is logged in
           if (session?.user) {
-            // Wait for the service worker to be ready
             if (registration.active) {
               subscribeToPush(registration);
             } else {
-              // Wait for the service worker to activate
               registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
                 if (newWorker) {

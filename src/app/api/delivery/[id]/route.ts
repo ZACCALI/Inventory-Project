@@ -20,7 +20,7 @@ export async function PUT(
       return NextResponse.json({ error: firstError.message }, { status: 400 });
     }
 
-    const { status, driverId, driverName, driverPhone, proofPhoto, deliveredAt } = parsed.data;
+    const { status, driverId, driverName, driverPhone, proofPhoto, deliveredAt, isOfflineSync } = parsed.data as any;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
@@ -54,7 +54,7 @@ export async function PUT(
       }
 
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'UPDATE', entity: 'Delivery', details: `Updated delivery ${id} status to ${status || 'modified'}` }
+        data: { userId: user.id, action: 'UPDATE', entity: 'Delivery', details: `Updated delivery ${id} status to ${status || 'modified'}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
 
       return updated;

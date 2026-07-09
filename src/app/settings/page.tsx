@@ -6,6 +6,8 @@ import { fetcher } from '@/lib/fetcher';
 import { useSession} from 'next-auth/react';
 import { Save, Shield,  Settings as  Building,  Lock, User, Info } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
+import { db } from '@/lib/db';
+import { addSyncTask } from '@/lib/offlineSync';
 
 import Image from "next/image";
 
@@ -55,28 +57,40 @@ export default function SettingsPage() {
   const { data: swrRes, error: swrError } = useSWR('/api/settings', fetcher, { revalidateOnFocus: true });
 
   useEffect(() => {
-    if (swrRes) {
+    const loadSettings = async (raw: any) => {
+      if (!raw) return;
       setSettings({
-        companyName: swrRes.companyName || '',
-        email: swrRes.email || '',
-        phone: swrRes.phone || '',
-        address: swrRes.address || '',
-        currency: swrRes.currency || 'PHP',
-        taxRate: swrRes.taxRate || 0,
-        cleanupMode: swrRes.cleanupMode || false,
-        lockProductDelete: swrRes.lockProductDelete ?? true,
-        lockProductEdit: swrRes.lockProductEdit ?? false,
-        lockOrderDelete: swrRes.lockOrderDelete ?? true,
-        lockOrderEdit: swrRes.lockOrderEdit ?? false,
-        lockOrderCancel: swrRes.lockOrderCancel ?? false,
-        lockOrderDate: swrRes.lockOrderDate ?? false,
-        lockStockVoid: swrRes.lockStockVoid ?? false,
-        expiryWarningDays: swrRes.expiryWarningDays || 30,
-        staffPermissions: swrRes.staffPermissions || '',
-        cashierPermissions: swrRes.cashierPermissions || ''
+        companyName: raw.companyName || '',
+        email: raw.email || '',
+        phone: raw.phone || '',
+        address: raw.address || '',
+        currency: raw.currency || 'PHP',
+        taxRate: raw.taxRate || 0,
+        cleanupMode: raw.cleanupMode || false,
+        lockProductDelete: raw.lockProductDelete ?? true,
+        lockProductEdit: raw.lockProductEdit ?? false,
+        lockOrderDelete: raw.lockOrderDelete ?? true,
+        lockOrderEdit: raw.lockOrderEdit ?? false,
+        lockOrderCancel: raw.lockOrderCancel ?? false,
+        lockOrderDate: raw.lockOrderDate ?? false,
+        lockStockVoid: raw.lockStockVoid ?? false,
+        expiryWarningDays: raw.expiryWarningDays || 30,
+        staffPermissions: raw.staffPermissions || '',
+        cashierPermissions: raw.cashierPermissions || ''
       });
+    };
+
+    if (swrRes) {
+      loadSettings(swrRes);
+    } else if (swrError) {
+      // Server unreachable — try Dexie cache (set by prefetch or last successful sync)
+      db.settings.get('current').then(cached => {
+        if (cached?.data) {
+          try { loadSettings(JSON.parse(cached.data)); } catch { /* ignore parse error */ }
+        }
+      }).catch(() => {});
     }
-  }, [swrRes]);
+  }, [swrRes, swrError]);
 
   // Offline banner state
   const [isOffline, setIsOffline] = useState(false);
@@ -119,12 +133,24 @@ export default function SettingsPage() {
 
   async function saveSettings(e: React.FormEvent) {
     e.preventDefault();
-    // Settings changes require the server — block offline
+    setIsSavingSettings(true);
+
     if (isOffline) {
-      showAlert('error', 'You are Offline', 'Settings cannot be saved while offline. Your local view has been updated but changes will NOT be persisted until you reconnect and save again.');
+      // Queue settings for sync — also save locally so other pages read correct values
+      try {
+        await addSyncTask('settings', 'UPDATE', settings);
+        await db.settings.put({ key: 'current', data: JSON.stringify(settings), lastSynced: Date.now() });
+        showToast('offline', 'Settings queued — will sync when you reconnect.');
+        window.dispatchEvent(new Event('settingsUpdated'));
+      } catch (e) {
+        console.error(e);
+        showAlert('error', 'Queue Failed', 'Could not save settings locally. Please try again.');
+      } finally {
+        setIsSavingSettings(false);
+      }
       return;
     }
-    setIsSavingSettings(true);
+
     try {
       const res = await fetch('/api/settings', {
         method: 'PUT',
@@ -132,6 +158,9 @@ export default function SettingsPage() {
         body: JSON.stringify(settings)
       });
       if (res.ok) {
+        const saved = await res.json().catch(() => settings);
+        // Update Dexie cache with confirmed server values
+        await db.settings.put({ key: 'current', data: JSON.stringify(saved), lastSynced: Date.now() }).catch(() => {});
         showToast('success', 'Settings saved successfully!');
         window.dispatchEvent(new Event('settingsUpdated'));
       } else {
@@ -142,18 +171,27 @@ export default function SettingsPage() {
       console.error(e);
       const offline = typeof navigator !== 'undefined' && !navigator.onLine;
       showAlert('error', 'Action Failed', offline ? 'You are offline. Settings were not saved. Please reconnect and try again.' : 'Error saving settings.');
+    } finally {
+      setIsSavingSettings(false);
     }
-    finally { setIsSavingSettings(false); }
   };
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files || !e.target.files[0]) return;
-    // Avatar upload requires server
+    const file = e.target.files[0];
+
     if (isOffline) {
-      showAlert('error', 'You are Offline', 'Photo uploads require an internet connection. Please reconnect and try again.');
+      // Read as Base64 and store locally — will be uploaded when profile syncs
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setProfileData(prev => ({ ...prev, avatar: base64, avatarBase64: base64 } as any));
+        showToast('offline', 'Photo selected. It will upload when you reconnect and save your profile.');
+      };
+      reader.readAsDataURL(file);
       return;
     }
-    const file = e.target.files[0];
+
     const formData = new FormData();
     formData.append('file', file);
     setIsUploadingAvatar(true);
@@ -186,11 +224,19 @@ export default function SettingsPage() {
       showAlert('error', 'Session Error', 'User ID is missing from session. Please sign out and sign in again.');
       return;
     }
-    // Profile update requires the server
+
     if (isOffline) {
-      showAlert('error', 'You are Offline', 'Profile changes cannot be saved while offline. Please reconnect and try again.');
+      // Queue the profile update (avatarBase64 included if photo selected offline)
+      try {
+        await addSyncTask('customer', 'UPDATE', { ...profileData, id: userId, _profileUpdate: true });
+        showToast('offline', 'Profile changes queued \u2014 will sync when you reconnect.');
+      } catch (e) {
+        console.error(e);
+        showAlert('error', 'Queue Failed', 'Could not queue profile update. Please try again when online.');
+      }
       return;
     }
+
     setIsUpdatingProfile(true);
     try {
       const res = await fetch(`/api/users/${userId}/profile`, {

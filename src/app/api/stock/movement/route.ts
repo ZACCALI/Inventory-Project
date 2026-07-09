@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: firstError.message }, { status: 400 });
     }
 
-    const { productId, type, quantity: rawQuantity, reason, source: validatedSource, expiryDate, forceBatchId, batchNumber, targetBatchId } = parsed.data;
+    const { productId, type, quantity: rawQuantity, reason, source: validatedSource, expiryDate, forceBatchId, batchNumber, targetBatchId, isOfflineSync } = parsed.data as any;
     const userId = user.id;
 
     const actualQuantity = rawQuantity;
@@ -231,6 +231,7 @@ export async function POST(request: NextRequest) {
           action: 'CREATE',
           entity: 'Stock Movement',
           details: `Recorded Stock ${type} of ${actualQuantity} for ${product.name} (Ref: ${finalReason})`,
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
 

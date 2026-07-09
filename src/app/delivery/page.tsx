@@ -52,6 +52,7 @@ export default function DeliveryPage() {
 
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
   const [formData, setFormData] = useState({ driverId: '', driverName: '', driverPhone: '', status: '', proofPhoto: '' });
+  const [proofPhotoBase64, setProofPhotoBase64] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   async function fetchDrivers() {
@@ -152,10 +153,15 @@ export default function DeliveryPage() {
     setActionLoading(true);
 
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         ...formData,
         deliveredAt: formData.status === 'delivered' ? new Date().toISOString() : undefined
       };
+
+      // Attach Base64 photo for offline queuing if present
+      if (proofPhotoBase64) {
+        payload.proofPhotoBase64 = proofPhotoBase64;
+      }
 
       let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
@@ -191,8 +197,9 @@ export default function DeliveryPage() {
         await addSyncTask('delivery', 'UPDATE', { ...payload, id: selectedDelivery.id });
         showToast('offline', 'Delivery update queued offline — will sync when connected');
         // Optimistic update
-        setDeliveries(prev => prev.map(d => d.id === selectedDelivery.id ? { ...d, ...payload } : d));
+        setDeliveries(prev => prev.map(d => d.id === selectedDelivery.id ? { ...d, ...formData } : d));
         setSelectedDelivery(null);
+        setProofPhotoBase64(null);
         return;
       }
     } catch (error) {
@@ -259,16 +266,22 @@ export default function DeliveryPage() {
     });
   };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, proofPhoto: reader.result as string });
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    // Warn if image is too large for Base64 offline queuing
+    if (file.size > 2 * 1024 * 1024) {
+      // Still allow, but warn user
+      console.warn('Large image selected — Base64 encoding may be slow');
     }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setProofPhotoBase64(base64);
+      // Show preview URL
+      setFormData(prev => ({ ...prev, proofPhoto: base64 }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const formatCount = (num: number) => {

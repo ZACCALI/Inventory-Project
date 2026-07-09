@@ -33,7 +33,40 @@ export async function addSyncTask(
 }
 
 /**
- * Processes all pending tasks in the syncQueue
+ * Upload a Base64-encoded photo to the server and return its URL.
+ * Used for proof-of-delivery and avatar uploads queued while offline.
+ */
+async function uploadBase64Photo(base64: string): Promise<string | null> {
+  try {
+    // Convert base64 data URL to a Blob
+    const arr = base64.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
+    const blob = new Blob([u8arr], { type: mime });
+
+    const formData = new FormData();
+    formData.append('file', blob, 'offline-photo.jpg');
+
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    if (res.ok) {
+      const data = await res.json();
+      return data.url as string;
+    }
+    return null;
+  } catch (e) {
+    console.error('Base64 photo upload failed', e);
+    return null;
+  }
+}
+
+/**
+ * Processes all pending tasks in the syncQueue.
+ * Dispatches browser events on completion:
+ *  - 'distritrack:synced'      — at least one task succeeded
+ *  - 'distritrack:syncfailed'  — one or more tasks permanently failed
  */
 export async function processSyncQueue(): Promise<{ synced: number; failed: number }> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -48,20 +81,40 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
 
   let synced = 0;
   let failed = 0;
+  const syncedTypes = new Set<string>();
+  const failedDetails: Array<{ type: string; action: string; error: string }> = [];
 
-  // We should process them sequentially to maintain order
+  // Process sequentially to maintain order
   pending.sort((a, b) => a.createdAt - b.createdAt);
 
   for (const task of pending) {
     try {
       await db.syncQueue.update(task.id!, { syncStatus: 'syncing' });
 
-      const payload = JSON.parse(task.payload);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let payload: any = JSON.parse(task.payload);
       payload.isOfflineSync = true;
       payload.idempotencyKey = task.idempotencyKey;
 
+      // --- PHOTO UPLOAD PRE-STEP ---
+      // If this task has a queued Base64 photo, upload it first and replace with URL
+      if (payload.proofPhotoBase64) {
+        const uploadedUrl = await uploadBase64Photo(payload.proofPhotoBase64);
+        if (uploadedUrl) {
+          payload.proofPhoto = uploadedUrl;
+        }
+        delete payload.proofPhotoBase64;
+      }
+      if (payload.avatarBase64) {
+        const uploadedUrl = await uploadBase64Photo(payload.avatarBase64);
+        if (uploadedUrl) {
+          payload.avatar = uploadedUrl;
+        }
+        delete payload.avatarBase64;
+      }
+
       let endpoint = '';
-      let method = task.action === 'CREATE' ? 'POST' : task.action === 'UPDATE' ? 'PUT' : 'DELETE';
+      const method = task.action === 'CREATE' ? 'POST' : task.action === 'UPDATE' ? 'PUT' : 'DELETE';
 
       if (task.type === 'order') endpoint = task.action === 'CREATE' ? '/api/orders' : `/api/orders/${payload.id}`;
       else if (task.type === 'customer') endpoint = task.action === 'CREATE' ? '/api/customers' : `/api/customers/${payload.id}`;
@@ -73,6 +126,7 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
       else if (task.type === 'stock') endpoint = task.action === 'CREATE' ? '/api/stock/movement' : `/api/stock/movement/${payload.id}`;
       else if (task.type === 'batch') endpoint = `/api/batches/${payload.id}`;
       else if (task.type === 'delivery') endpoint = `/api/delivery/${payload.id}`;
+      else if (task.type === 'settings') endpoint = '/api/settings';
 
       if (!endpoint) throw new Error('Unknown sync task type');
 
@@ -82,18 +136,22 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
         body: JSON.stringify(payload),
       });
 
+      // Buffer response body ONCE to avoid double-read stream error
+      const responseText = await res.text();
+      let responseJson: any = null;
+      try { responseJson = JSON.parse(responseText); } catch { /* non-JSON response */ }
+
       if (res.ok) {
         await db.syncQueue.update(task.id!, { syncStatus: 'synced' });
         synced++;
+        syncedTypes.add(task.type);
         
         // --- OFFLINE ID REMAPPING ---
-        // If this was a CREATE task, the server just generated a real database ID.
-        // We need to find any subsequent tasks in the queue that are still referencing 
-        // the temporary offline ID (e.g. OFF-1234) and update them to use the real ID.
-        if (task.action === 'CREATE') {
+        // If this was a CREATE, the server just assigned a real database ID.
+        // Find all subsequent pending tasks referencing the temp offline ID and update them.
+        if (task.action === 'CREATE' && responseJson) {
           try {
-            const createdEntity = await res.json();
-            const realId = createdEntity.id;
+            const realId = responseJson.id;
             const tempId = payload.id;
             
             if (realId && tempId && String(tempId).startsWith('OFF-')) {
@@ -107,65 +165,94 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
                   const ptPayload = JSON.parse(pt.payload);
                   let modified = false;
                   
-                  // Remap primary ID for UPDATE/DELETE tasks
-                  if (ptPayload.id === tempId) {
-                    ptPayload.id = realId;
-                    modified = true;
-                  }
+                  // Remap primary ID for UPDATE/DELETE tasks on this entity
+                  if (ptPayload.id === tempId) { ptPayload.id = realId; modified = true; }
                   
-                  // Remap common foreign keys in other tasks
+                  // Remap common foreign keys in other entity tasks
                   if (ptPayload.categoryId === tempId) { ptPayload.categoryId = realId; modified = true; }
                   if (ptPayload.productId === tempId) { ptPayload.productId = realId; modified = true; }
                   if (ptPayload.customerId === tempId) { ptPayload.customerId = realId; modified = true; }
+                  if (ptPayload.driverId === tempId) { ptPayload.driverId = realId; modified = true; }
                   if (ptPayload.deliveryDriverId === tempId) { ptPayload.deliveryDriverId = realId; modified = true; }
                   
-                  // Remap nested items (e.g. order items)
+                  // Remap nested order items (productId inside items array)
                   if (Array.isArray(ptPayload.items)) {
                     for (const item of ptPayload.items) {
-                      if (item.productId === tempId) {
-                        item.productId = realId;
-                        modified = true;
-                      }
+                      if (item.productId === tempId) { item.productId = realId; modified = true; }
                     }
                   }
                   
                   if (modified) {
                     await db.syncQueue.update(pt.id!, { payload: JSON.stringify(ptPayload) });
                   }
-                } catch (e) {}
+                } catch (e) { /* ignore individual remap errors */ }
+              }
+
+              // Also update local Dexie caches so the UI doesn't hold stale temp IDs
+              if (task.type === 'customer') {
+                await db.customers.where('id').equals(tempId).modify({ id: realId }).catch(() => {});
+              } else if (task.type === 'product') {
+                await db.products.where('id').equals(tempId).modify({ id: realId }).catch(() => {});
+              } else if (task.type === 'driver') {
+                await db.drivers.where('id').equals(tempId).modify({ id: realId }).catch(() => {});
               }
             }
           } catch (e) {
             console.warn('Failed to remap offline IDs', e);
           }
         }
+
+        // After syncing settings, also update the local db.settings cache
+        if (task.type === 'settings' && responseJson) {
+          try {
+            await db.settings.put({ key: 'current', data: JSON.stringify(responseJson), lastSynced: Date.now() });
+          } catch (e) { /* ignore */ }
+        }
+
       } else {
-        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        const errorMsg = responseJson?.error || `HTTP ${res.status}`;
         await db.syncQueue.update(task.id!, {
           syncStatus: 'failed',
           syncAttempts: task.syncAttempts + 1,
-          lastError: err.error || `HTTP ${res.status}`,
+          lastError: errorMsg,
         });
         failed++;
+        failedDetails.push({ type: task.type, action: task.action, error: errorMsg });
       }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
+      const errorMsg = err.message || 'Network error';
       await db.syncQueue.update(task.id!, {
         syncStatus: 'failed',
         syncAttempts: task.syncAttempts + 1,
-        lastError: err.message || 'Network error',
+        lastError: errorMsg,
       });
       failed++;
+      failedDetails.push({ type: task.type, action: task.action, error: errorMsg });
     }
   }
 
-  // Cleanup old synced tasks
+  // Cleanup old synced tasks (older than 24h)
   const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
   await db.syncQueue
     .where('syncStatus')
     .equals('synced')
     .and(t => t.createdAt < dayAgo)
     .delete();
+
+  // --- DISPATCH BROWSER EVENTS for UI to react ---
+  if (typeof window !== 'undefined') {
+    if (synced > 0) {
+      window.dispatchEvent(new CustomEvent('distritrack:synced', {
+        detail: { synced, types: Array.from(syncedTypes) }
+      }));
+    }
+    if (failedDetails.length > 0) {
+      window.dispatchEvent(new CustomEvent('distritrack:syncfailed', {
+        detail: { failed: failedDetails }
+      }));
+    }
+  }
 
   return { synced, failed };
 }

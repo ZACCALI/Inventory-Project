@@ -25,7 +25,7 @@ export interface PendingOrder {
 
 export interface SyncTask {
   id?: number;
-  type: 'order' | 'customer' | 'expense' | 'product' | 'driver' | 'category' | 'unit' | 'stock' | 'batch' | 'delivery';
+  type: 'order' | 'customer' | 'expense' | 'product' | 'driver' | 'category' | 'unit' | 'stock' | 'batch' | 'delivery' | 'settings';
   action: 'CREATE' | 'UPDATE' | 'DELETE';
   payload: string; // JSON stringified payload
   createdAt: number;
@@ -44,12 +44,48 @@ export interface OfflineCustomer {
   lastSynced: number;
 }
 
+export interface OfflineDriver {
+  id: string;
+  name: string;
+  phone: string | null;
+  status: string;
+  vehicleInfo: string | null;
+  lastSynced: number;
+}
+
+export interface OfflineCategory {
+  id: string;
+  name: string;
+  lastSynced: number;
+}
+
+// Single-row key-value store for settings (key = 'current')
+export interface OfflineSettings {
+  key: string; // always 'current'
+  data: string; // JSON stringified settings object
+  lastSynced: number;
+}
+
 export const db = new Dexie('distritrack_pos') as Dexie & {
   products: EntityTable<OfflineProduct, 'id'>;
   customers: EntityTable<OfflineCustomer, 'id'>;
+  drivers: EntityTable<OfflineDriver, 'id'>;
+  categories: EntityTable<OfflineCategory, 'id'>;
+  settings: EntityTable<OfflineSettings, 'key'>;
   pendingOrders: EntityTable<PendingOrder, 'id'>;
   syncQueue: EntityTable<SyncTask, 'id'>;
 };
+
+// Version 4 — adds drivers, categories, settings tables
+db.version(4).stores({
+  products: 'id, name, sku, barcode, categoryName',
+  customers: 'id, name',
+  drivers: 'id, name, status',
+  categories: 'id, name',
+  settings: 'key',
+  pendingOrders: '++id, createdAt, syncStatus, idempotencyKey',
+  syncQueue: '++id, type, action, syncStatus, createdAt, idempotencyKey'
+});
 
 db.version(3).stores({
   products: 'id, name, sku, barcode, categoryName',

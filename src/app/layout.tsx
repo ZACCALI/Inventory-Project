@@ -4,6 +4,7 @@ import AuthProvider from '@/components/AuthProvider';
 import AppShell from '@/components/layout/AppShell';
 import { AlertProvider } from '@/components/AlertModal';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
+import SyncStatusBanner from '@/components/SyncStatusBanner';
 import NextTopLoader from 'nextjs-toploader';
 import { Toaster } from 'react-hot-toast';
 import { Plus_Jakarta_Sans } from 'next/font/google';
@@ -53,6 +54,7 @@ export default function RootLayout({
           <AuthProvider>
             <AppShell>{children}</AppShell>
             <ServiceWorkerRegister />
+            <SyncStatusBanner />
           </AuthProvider>
         </AlertProvider>
       </body>
