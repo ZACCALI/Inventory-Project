@@ -55,10 +55,10 @@ async function uploadBase64Photo(base64: string): Promise<string | null> {
       const data = await res.json();
       return data.url as string;
     }
-    return null;
-  } catch (e) {
+    throw new Error('Photo upload failed: HTTP ' + res.status);
+  } catch (e: any) {
     console.error('Base64 photo upload failed', e);
-    return null;
+    throw new Error(e.message || 'Base64 photo upload failed');
   }
 }
 
@@ -73,6 +73,23 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
     return { synced: 0, failed: 0 };
   }
 
+  // CROSS-TAB LOCKING: Ensure only one tab processes the queue
+  let result = { synced: 0, failed: 0 };
+  if (typeof navigator !== 'undefined' && navigator.locks) {
+    await navigator.locks.request('distritrack-sync-lock', { ifAvailable: true }, async (lock) => {
+      if (!lock) {
+        console.log('Another tab is already syncing. Skipping.');
+        return; // Lock not acquired, another tab is syncing
+      }
+      result = await _processQueueInternal();
+    });
+  } else {
+    result = await _processQueueInternal(); // Fallback if Web Locks API is unsupported
+  }
+  return result;
+}
+
+async function _processQueueInternal(): Promise<{ synced: number; failed: number }> {
   const pending = await db.syncQueue
     .where('syncStatus')
     .anyOf(['pending', 'failed'])
@@ -83,16 +100,42 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
   let failed = 0;
   const syncedTypes = new Set<string>();
   const failedDetails: Array<{ type: string; action: string; error: string }> = [];
+  const permanentlyFailedIds = new Set<string>();
 
   // Process sequentially to maintain order
   pending.sort((a, b) => a.createdAt - b.createdAt);
 
   for (const task of pending) {
     try {
-      await db.syncQueue.update(task.id!, { syncStatus: 'syncing' });
-
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let payload: any = JSON.parse(task.payload);
+
+      // CASCADING FAILURE PREVENTION
+      // If a parent task permanently failed, this task might depend on it.
+      // We check if this task uses a temp ID that belongs to a failed parent.
+      if (permanentlyFailedIds.size > 0) {
+        const hasFailedDependency = permanentlyFailedIds.has(payload.id) || 
+          permanentlyFailedIds.has(payload.categoryId) ||
+          permanentlyFailedIds.has(payload.productId) ||
+          permanentlyFailedIds.has(payload.customerId) ||
+          permanentlyFailedIds.has(payload.driverId) ||
+          permanentlyFailedIds.has(payload.deliveryDriverId) ||
+          (Array.isArray(payload.items) && payload.items.some((i: any) => permanentlyFailedIds.has(i.productId)));
+          
+        if (hasFailedDependency) {
+           await db.syncQueue.update(task.id!, { 
+             syncStatus: 'failed', 
+             syncAttempts: 999, 
+             lastError: 'Cancelled due to dependency failure' 
+           });
+           failed++;
+           permanentlyFailedIds.add(payload.id); // Add this ID too, in case of deeper chains
+           continue;
+        }
+      }
+
+      await db.syncQueue.update(task.id!, { syncStatus: 'syncing' });
+
       payload.isOfflineSync = true;
       payload.idempotencyKey = task.idempotencyKey;
 
@@ -135,6 +178,13 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+
+      // SESSION EXPIRY LOCKOUT
+      if (res.status === 401) {
+        console.warn('Session expired. Halting sync queue.');
+        await db.syncQueue.update(task.id!, { syncStatus: 'pending' }); // Revert so it doesn't count as attempt
+        break; // Stop processing the queue
+      }
 
       // Buffer response body ONCE to avoid double-read stream error
       const responseText = await res.text();
@@ -210,10 +260,19 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
         }
 
       } else {
-        const errorMsg = responseJson?.error || `HTTP ${res.status}`;
+        const errorMsg = responseJson?.error || responseJson?.message || `HTTP ${res.status}`;
+        
+        // PERMANENT FAILURE HANDLING (4xx errors)
+        const isPermanentError = res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429;
+        const finalAttempts = isPermanentError ? 999 : task.syncAttempts + 1;
+        
+        if (isPermanentError && payload.id && String(payload.id).startsWith('OFF-')) {
+           permanentlyFailedIds.add(payload.id); // Mark this temp ID as failed so children are canceled
+        }
+
         await db.syncQueue.update(task.id!, {
           syncStatus: 'failed',
-          syncAttempts: task.syncAttempts + 1,
+          syncAttempts: finalAttempts,
           lastError: errorMsg,
         });
         failed++;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requirePermission } from '@/lib/apiAuth';
 import { driverSchema } from '@/lib/validations';
+import { checkAndSetIdempotency } from '@/lib/idempotency';
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +25,11 @@ export async function POST(request: NextRequest) {
     if (error) return error;
 
     const body = await request.json();
+
+    const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
+    if (isDuplicate) {
+      return NextResponse.json({ message: 'Already processed' }, { status: 200 });
+    }
 
     // Validate input with Zod schema
     const parsed = driverSchema.safeParse(body);

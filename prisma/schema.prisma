@@ -345,3 +345,10 @@ model PushSubscription {
 
   @@index([userId])
 }
+
+model IdempotencyRecord {
+  key       String   @id
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

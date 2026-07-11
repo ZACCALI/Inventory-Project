@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import {  requireAdmin } from '@/lib/apiAuth';
 import { settingsSchema } from '@/lib/validations';
+import { checkAndSetIdempotency } from '@/lib/idempotency';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,11 @@ export async function PUT(request: NextRequest) {
 
     const bodyRaw = await request.json();
     
+    const isDuplicate = await checkAndSetIdempotency(bodyRaw.idempotencyKey);
+    if (isDuplicate) {
+      return NextResponse.json({ message: 'Already processed' }, { status: 200 });
+    }
+
     // Validate input with Zod schema
     const parsed = settingsSchema.safeParse(bodyRaw);
     if (!parsed.success) {

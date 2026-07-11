@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requirePermission } from '@/lib/apiAuth';
 import { updateDeliverySchema } from '@/lib/validations';
+import { checkAndSetIdempotency } from '@/lib/idempotency';
 
 export async function PUT(
   request: NextRequest,
@@ -13,6 +14,11 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+
+    const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
+    if (isDuplicate) {
+      return NextResponse.json({ message: 'Already processed' }, { status: 200 });
+    }
 
     const parsed = updateDeliverySchema.safeParse(body);
     if (!parsed.success) {

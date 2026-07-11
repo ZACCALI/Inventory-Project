@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { checkAndSetIdempotency } from '@/lib/idempotency';
 
 export async function PUT(
   request: NextRequest,
@@ -21,6 +22,12 @@ export async function PUT(
     }
 
     const body = await request.json();
+
+    const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
+    if (isDuplicate) {
+      return NextResponse.json({ message: 'Already processed' }, { status: 200 });
+    }
+
     const { name, email, avatar } = body;
 
     if (!name || !email) {
