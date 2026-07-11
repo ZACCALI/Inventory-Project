@@ -221,11 +221,11 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      // Update product stock
+      // Update product stock safely using database-level increment/decrement to prevent lost updates
       await tx.product.update({
         where: { id: productId },
         data: { 
-          stock: newStock,
+          stock: type === 'IN' ? { increment: actualQuantity } : { decrement: actualQuantity },
           ...(finalExpiryDate !== undefined ? { expiryDate: finalExpiryDate } : {})
         }
       });
