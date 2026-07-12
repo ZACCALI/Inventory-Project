@@ -291,8 +291,18 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(order, { status: 201 });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Orders POST error:', error);
+    
+    // Check if it is a known business validation error
+    const isBusinessError = 
+      error.message?.startsWith('Insufficient stock') || 
+      error.message?.startsWith('Discount too high');
+      
+    if (isBusinessError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    
     // Security Fix: Prevent internal database/architecture errors from leaking to the client.
     return NextResponse.json({ error: 'An internal server error occurred while processing your order.' }, { status: 500 });
   }
