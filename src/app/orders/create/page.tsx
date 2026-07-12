@@ -592,7 +592,12 @@ export default function CreateOrderPage() {
               discountPercent: discountType === 'percent' ? parsedDiscount : 0,
               items: validItems.map(i => ({ product: i.product, quantity: Number(i.qty), price: i.cartPrice, uomName: i.uomName, multiplier: i.multiplier })),
               createdAt: orderResult.createdAt || new Date().toISOString(),
-              createdBy: { name: session?.user?.name || 'ADMIN' }
+              createdBy: { name: session?.user?.name || 'ADMIN' },
+              isDelivery: fulfillmentMode === 'delivery',
+              delivery: fulfillmentMode === 'delivery' ? {
+                driverName: deliveryDriverName,
+                scheduledDate: deliveryDate
+              } : undefined
             });
 
             // Clear cart and open success modal
@@ -634,8 +639,13 @@ export default function CreateOrderPage() {
           createdAt: new Date().toISOString(),
         };
 
+        const customerObj = customerIdToUse
+          ? customers.find(c => c.id === customerIdToUse)
+          : (fallbackCustomerName ? { name: fallbackCustomerName, address: '' } : { name: 'Walk-in', address: '' });
+
         setLastOrder({
           ...offlineOrder,
+          customer: customerObj,
           totalAmount: finalTotal,
           subtotal: totalAmount,
           tendered: paidAmount,
@@ -643,7 +653,12 @@ export default function CreateOrderPage() {
           discount: discountAmount,
           discountPercent: discountType === 'percent' ? parsedDiscount : 0,
           items: validItems.map(i => ({ product: i.product, quantity: Number(i.qty), price: i.cartPrice, uomName: i.uomName, multiplier: i.multiplier })),
-          createdBy: { name: session?.user?.name || 'ADMIN' }
+          createdBy: { name: session?.user?.name || 'ADMIN' },
+          isDelivery: fulfillmentMode === 'delivery',
+          delivery: fulfillmentMode === 'delivery' ? {
+            driverName: deliveryDriverName,
+            scheduledDate: deliveryDate
+          } : undefined
         });
 
         setCart([]);
@@ -787,20 +802,20 @@ export default function CreateOrderPage() {
           <style>
             @page { margin: 15mm; }
             body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; font-size: 13px; color: #222; }
-            .header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #0061ff; padding-bottom: 16px; }
-            .header h1 { font-size: 22px; font-weight: 800; color: #0061ff; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1px; }
+            .header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #000000; padding-bottom: 16px; }
+            .header h1 { font-size: 22px; font-weight: 800; color: #000000; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1px; }
             .header p { margin: 2px 0; color: #555; font-size: 12px; }
             .meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; padding: 12px 16px; background: #f5f7fa; border-radius: 8px; }
             .meta div { font-size: 12px; min-width: 120px; }
             .meta strong { display: block; font-size: 13px; color: #222; margin-bottom: 2px; }
             table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            thead th { background: #0061ff; color: #fff; padding: 10px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
+            thead th { background: #000000; color: #fff; padding: 10px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
             thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5) { text-align: right; }
             tbody td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
             tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5) { text-align: right; }
             .totals { margin-left: auto; width: 280px; }
             .totals .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
-            .totals .row.grand { border-top: 2px solid #0061ff; padding-top: 12px; margin-top: 8px; font-size: 18px; font-weight: 800; color: #0061ff; }
+            .totals .row.grand { border-top: 2px solid #000000; padding-top: 12px; margin-top: 8px; font-size: 18px; font-weight: 800; color: #000000; }
             .totals .row.discount { color: #e53e3e; }
             .totals .row.change { color: #38a169; font-weight: 700; }
             .footer { text-align: center; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; color: #888; font-size: 11px; }
@@ -811,7 +826,7 @@ export default function CreateOrderPage() {
           <div class="header">
             <h1>{companyName}</h1>
             <p>Sarimanok St. Marawi City 2nd Branch</p>
-            <p style="margin-top: 8px; font-weight: 600; color: #0061ff;">OFFICIAL RECEIPT</p>
+            <p style="margin-top: 8px; font-weight: 600; color: #000000;">OFFICIAL RECEIPT</p>
           </div>
 
           <div class="meta">
@@ -833,6 +848,13 @@ export default function CreateOrderPage() {
               <strong>Cashier</strong>
               ${lastOrder.createdBy?.name || 'ADMIN'}
             </div>
+            ${lastOrder.isDelivery || lastOrder.delivery ? `
+            <div style="width: 100%; border-top: 1px dashed #ddd; margin-top: 8px; padding-top: 8px;">
+              <strong>Delivery Details</strong>
+              Customer: ${lastOrder.customer?.name || 'Walk-in'}<br/>
+              Address: ${lastOrder.customer?.address || 'N/A'}
+            </div>
+            ` : ''}
           </div>
 
           <table>
@@ -849,7 +871,7 @@ export default function CreateOrderPage() {
               ${lastOrder.items.map((i: { product?: { name: string }, uomName?: string, quantity: number, price: number, subtotal: number }, idx: number) => `
                 <tr>
                   <td>${idx + 1}</td>
-                  <td>${i.product?.name || 'Item'}${i.uomName ? ` <small style="color:#0061ff;">(${i.uomName})</small>` : ''}</td>
+                  <td>${i.product?.name || 'Item'}${i.uomName ? ` <small style="color:#000000;">(${i.uomName})</small>` : ''}</td>
                   <td>${i.quantity}</td>
                   <td>${Number(i.price).toFixed(2)}</td>
                   <td><strong>${(Number(i.quantity) * Number(i.price)).toFixed(2)}</strong></td>
