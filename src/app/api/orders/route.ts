@@ -96,7 +96,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: firstError.message }, { status: 400 });
     }
 
-    let { customerId, items, notes, orderReference, discount, orderType, status, paymentStatus, isDelivery, deliveryDriverId, deliveryDriverName, deliveryDate, orderDate, isOfflineSync, customerName } = parsed.data;
+    const { customerId, items, orderReference, orderType, status, paymentStatus, isDelivery, deliveryDriverId, deliveryDriverName, deliveryDate, isOfflineSync, customerName } = parsed.data;
+    let { notes, discount, orderDate } = parsed.data;
 
     if (!notes && orderReference) {
       notes = orderReference;
@@ -291,16 +292,17 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(order, { status: 201 });
-  } catch (error: any) {
-    console.error('Orders POST error:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Orders POST error:', err);
     
     // Check if it is a known business validation error
     const isBusinessError = 
-      error.message?.startsWith('Insufficient stock') || 
-      error.message?.startsWith('Discount too high');
+      err.message?.startsWith('Insufficient stock') || 
+      err.message?.startsWith('Discount too high');
       
     if (isBusinessError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: err.message }, { status: 400 });
     }
     
     // Security Fix: Prevent internal database/architecture errors from leaking to the client.

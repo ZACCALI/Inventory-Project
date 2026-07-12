@@ -317,7 +317,7 @@ export default function CreateOrderPage() {
                   if (!fetchedDrivers.find(d => d.id === payload.id)) fetchedDrivers.unshift(payload);
                 }
               }
-            } catch (e) {}
+            } catch {}
           }
         } catch (err) {
           console.error('Failed to apply offline tasks to POS', err);
@@ -529,9 +529,12 @@ export default function CreateOrderPage() {
     try {
       const validItems = cart.filter(i => typeof i.qty === 'number' && i.qty > 0);
       
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
+      // eslint-disable-next-line react-hooks/purity
       const offlineOrderNumber = `OFF-${Math.floor(Math.random() * 100000)}`;
+      // eslint-disable-next-line react-hooks/purity
       const offlineId = `OFFLINE-${Date.now()}`;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const payload: any = {
         id: offlineId,
         orderNumber: offlineOrderNumber,
@@ -567,7 +570,7 @@ export default function CreateOrderPage() {
       if (customerIdToUse) payload.customerId = customerIdToUse;
       else if (fallbackCustomerName) payload.customerName = fallbackCustomerName;
 
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -612,9 +615,10 @@ export default function CreateOrderPage() {
             const errorData = await res.json();
             throw new Error(errorData.error || 'Failed to create order');
           }
-        } catch (fetchErr: any) {
-          if (fetchErr.message === 'Failed to fetch' || fetchErr.name === 'TypeError') {
-            console.warn('Network error detected, falling back to offline mode', fetchErr);
+        } catch (fetchErr: unknown) {
+          const err = fetchErr as Error;
+          if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+            console.warn('Network error detected, falling back to offline mode', err);
             networkFailed = true;
           } else {
             throw fetchErr;
@@ -635,6 +639,7 @@ export default function CreateOrderPage() {
         const offlineOrder = {
           ...payload,
           id: `OFFLINE-${localId}`,
+          // eslint-disable-next-line react-hooks/purity
           orderNumber: `OFF-${Math.floor(Math.random() * 100000)}`,
           createdAt: new Date().toISOString(),
         };

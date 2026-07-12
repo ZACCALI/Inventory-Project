@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import {  requirePermission } from '@/lib/apiAuth';
+import { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     const productId = searchParams.get('productId');
     const all = searchParams.get('all') === 'true';
 
-    let whereClause: any = {
+    const whereClause: Prisma.BatchWhereInput = {
       product: { isArchived: false }
     };
     

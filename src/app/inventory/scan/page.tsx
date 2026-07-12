@@ -9,7 +9,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { useAlert } from '@/components/AlertModal';
 import { useBarcodeScanner } from '@/lib/useBarcodeScanner';
 import { addSyncTask } from '@/lib/offlineSync';
-import { db } from '@/lib/db';
+import { db, type OfflineProduct } from '@/lib/db';
 
 import Image from "next/image";
 const pluralize = (str: string, qty: number) => {
@@ -176,7 +176,7 @@ export default function BarcodeScannerPage() {
           const allProducts = await db.products.toArray();
           const q = fallbackQuery.toLowerCase();
           const results = allProducts
-            .filter((p: any) => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q))
+            .filter((p: OfflineProduct) => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q))
             .slice(0, 5);
           setFallbackResults(results);
           setShowFallbackDropdown(results.length > 0);
@@ -428,12 +428,12 @@ export default function BarcodeScannerPage() {
       if (isOffline) {
         try {
           const allProducts = await db.products.toArray();
-          const found = allProducts.find((p: any) =>
+          const found = allProducts.find((p: OfflineProduct & { uoms?: { barcode?: string | null }[] }) =>
             p.barcode === code || p.sku === code ||
-            p.uoms?.some((u: any) => u.barcode === code)
+            (p.uoms && p.uoms.some((u: { barcode?: string | null }) => u.barcode === code))
           );
           if (found) {
-            setLastScanned({ ...(found as any), status: 'success' });
+            setLastScanned({ ...(found as unknown as ScannedProduct), status: 'success' });
             setIsMobileDrawerOpen(true);
           } else {
             setLastScanned(null);

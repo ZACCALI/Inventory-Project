@@ -70,6 +70,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
   
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const isSyncingRef = useRef(false);
 
   // Monitor Offline Status & Sync Queue
   useEffect(() => {
@@ -83,7 +84,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
         await fetch(`/api/test-ping?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
         setIsOffline(false);
         handleBackgroundSync();
-      } catch (error) {
+      } catch {
         setIsOffline(true);
       }
     };
@@ -94,22 +95,24 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       try {
         const count = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count();
         setPendingSyncCount(count);
-      } catch(e) {}
+      } catch {}
     };
 
     const handleBackgroundSync = async () => {
-      if (isSyncing) return;
+      if (isSyncingRef.current) return;
       
       try {
         const count = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count();
         if (count === 0) return; // Only sync if there are pending items
 
+        isSyncingRef.current = true;
         setIsSyncing(true);
         await processSyncQueue();
         
         const remainingCount = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count();
         setPendingSyncCount(remainingCount);
-      } catch(e) {}
+      } catch {}
+      isSyncingRef.current = false;
       setIsSyncing(false);
     };
 

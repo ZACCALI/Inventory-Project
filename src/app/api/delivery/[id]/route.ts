@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { requirePermission } from '@/lib/apiAuth';
 import { updateDeliverySchema } from '@/lib/validations';
 import { checkAndSetIdempotency } from '@/lib/idempotency';
+import { Prisma } from '@prisma/client';
 
 export async function PUT(
   request: NextRequest,
@@ -26,12 +27,14 @@ export async function PUT(
       return NextResponse.json({ error: firstError.message }, { status: 400 });
     }
 
-    const { status, driverId, driverName, driverPhone, proofPhoto, deliveredAt, isOfflineSync } = parsed.data as any;
+    const { status, driverId, driverName, driverPhone, proofPhoto, deliveredAt } = parsed.data;
+    const isOfflineSync = !!body.isOfflineSync;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: any = {};
+    const updateData: Prisma.DeliveryUpdateInput = {};
     if (status !== undefined) updateData.status = status;
-    if (driverId !== undefined) updateData.driverId = driverId || null;
+    if (driverId !== undefined) {
+      updateData.driver = driverId ? { connect: { id: driverId } } : { disconnect: true };
+    }
     if (driverName !== undefined) updateData.driverName = driverName;
     if (driverPhone !== undefined) updateData.driverPhone = driverPhone;
     if (proofPhoto !== undefined) updateData.proofPhoto = proofPhoto;

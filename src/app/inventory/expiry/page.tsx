@@ -31,7 +31,7 @@ interface Batch {
 }
 
 export default function ExpiryTrackingPage() {
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
   const { showAlert, showConfirm, showToast } = useAlert();
   const { data: session } = useSession();
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -202,7 +202,7 @@ export default function ExpiryTrackingPage() {
     
     setActionLoading(true);
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -258,7 +258,7 @@ export default function ExpiryTrackingPage() {
     }
     setActionLoading(true);
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -305,7 +305,7 @@ export default function ExpiryTrackingPage() {
     if (!await showConfirm('Confirm', `Are you sure you want to dispose ${batch.stock} ${batch.product.unit || 'pcs'} of ${batch.product.name}?`)) return;
     
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {

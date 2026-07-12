@@ -150,7 +150,7 @@ export default function OrdersPage() {
                 modifiedOrders.unshift(payload as unknown as Order);
               }
             }
-          } catch (e) {}
+          } catch {}
         }
         
         setOrders(modifiedOrders);
@@ -334,7 +334,7 @@ export default function OrdersPage() {
     if (!await showConfirm('Archive Order', 'Are you sure you want to archive this order? Note: Stock will NOT be restored. To restore stock, cancel the order first.')) return;
     
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -370,7 +370,7 @@ export default function OrdersPage() {
   const handleArchiveOrder = async (id: string) => {
     if (!await showConfirm('Archive Order', 'Are you sure you want to archive this order?')) return;
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -398,7 +398,7 @@ export default function OrdersPage() {
       if (isOffline || networkFailed) {
         await addSyncTask('order', 'UPDATE', { id, isArchived: true });
         showToast('offline', 'Action queued offline — will sync when connected');
-        setOrders(prev => prev.map(o => o.id === id ? { ...o, isArchived: true } as any : o));
+        setOrders(prev => prev.map(o => o.id === id ? { ...o, isArchived: true } as unknown as Order : o));
         return;
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -410,7 +410,7 @@ export default function OrdersPage() {
   const handleUnarchiveOrder = async (id: string) => {
     if (!await showConfirm('Unarchive Order', 'Are you sure you want to unarchive this order?')) return;
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -438,7 +438,7 @@ export default function OrdersPage() {
       if (isOffline || networkFailed) {
         await addSyncTask('order', 'UPDATE', { id, isArchived: false });
         showToast('offline', 'Action queued offline — will sync when connected');
-        setOrders(prev => prev.map(o => o.id === id ? { ...o, isArchived: false } as any : o));
+        setOrders(prev => prev.map(o => o.id === id ? { ...o, isArchived: false } as unknown as Order : o));
         return;
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -734,7 +734,7 @@ export default function OrdersPage() {
         }));
       }
 
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -784,7 +784,7 @@ export default function OrdersPage() {
       if (isOffline || networkFailed) {
         await addSyncTask('order', 'UPDATE', { ...payload, id: editingOrder.id });
         showToast('offline', 'Action queued offline — will sync when connected');
-        setOrders(prev => prev.map(o => o.id === editingOrder.id ? { ...o, ...payload } as any : o));
+        setOrders(prev => prev.map(o => o.id === editingOrder.id ? { ...o, ...payload } as unknown as Order : o));
         setIsEditOpen(false);
         setEditingOrder(null);
         setIsSaving(false);

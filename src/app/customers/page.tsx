@@ -27,7 +27,7 @@ export default function CustomersPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
   const { showAlert, showConfirm, showToast } = useAlert();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -87,7 +87,7 @@ export default function CustomersPage() {
                 modifiedCustomers.unshift({ ...payload, _count: { orders: 0 } } as unknown as Customer);
               }
             }
-          } catch (e) {}
+          } catch {}
         }
         
         setCustomers(modifiedCustomers);
@@ -168,7 +168,7 @@ export default function CustomersPage() {
     if (!await showConfirm('Delete Customer', 'Are you sure you want to delete this customer? This action cannot be undone.')) return;
     
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -204,7 +204,7 @@ export default function CustomersPage() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -243,9 +243,9 @@ export default function CustomersPage() {
         setIsModalOpen(false);
         // Optimistically update UI
         if (modalMode === 'ADD') {
-          setCustomers(prev => [{...payload, _count: {orders: 0}} as any, ...prev]);
+          setCustomers(prev => [{...payload, _count: {orders: 0}} as unknown as Customer, ...prev]);
         } else {
-          setCustomers(prev => prev.map(c => c.id === payload.id ? {...c, ...payload} as any : c));
+          setCustomers(prev => prev.map(c => c.id === payload.id ? {...c, ...payload} as unknown as Customer : c));
         }
         setActionLoading(false);
         return;

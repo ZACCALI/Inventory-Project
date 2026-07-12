@@ -21,7 +21,7 @@ interface Driver {
 export default function DriversPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role?.toLowerCase() === 'admin';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
   const { showAlert, showConfirm, showToast } = useAlert();
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +92,7 @@ export default function DriversPage() {
                 modifiedDrivers.unshift(payload as unknown as Driver);
               }
             }
-          } catch (e) {}
+          } catch {}
         }
         
         setDrivers(modifiedDrivers);
@@ -162,7 +162,7 @@ export default function DriversPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -217,7 +217,7 @@ export default function DriversPage() {
   const handleDelete = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Are you sure you want to delete ${name}?`)) return;
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {

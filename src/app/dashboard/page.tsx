@@ -58,7 +58,7 @@ export default function DashboardPage() {
     { refreshInterval: 60000 }
   );
 
-  const { data: salesResult, isLoading: isSalesLoading, error: salesError, mutate: mutateSales } = useSWR(
+  const { data: salesResult, isLoading: isSalesLoading, mutate: mutateSales } = useSWR(
     status === 'authenticated' ? '/api/reports?type=sales' : null,
     fetcher,
     { refreshInterval: 60000 }
@@ -85,7 +85,7 @@ export default function DashboardPage() {
           stockIn: pending.filter(t => t.type === 'stock' && t.action === 'CREATE' && JSON.parse(t.payload).type === 'IN').reduce((s, t) => s + (JSON.parse(t.payload).quantity || 0), 0),
           orders: pending.filter(t => t.type === 'order' && t.action === 'CREATE').length,
         });
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
     };
     computeDeltas();
   }, [isOfflineMode]);

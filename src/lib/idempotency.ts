@@ -19,9 +19,10 @@ export async function checkAndSetIdempotency(idempotencyKey?: string | null): Pr
     });
     // Successfully created -> first time seeing this key
     return false;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Prisma code for unique constraint violation is P2002
-    if (error.code === 'P2002') {
+    const prismaError = error as { code?: string };
+    if (prismaError.code === 'P2002') {
       console.warn(`Idempotency key ${idempotencyKey} already processed. Skipping duplicate execution.`);
       return true; // Already processed
     }

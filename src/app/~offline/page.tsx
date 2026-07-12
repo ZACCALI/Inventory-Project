@@ -47,7 +47,7 @@ export default function OfflinePage() {
           marginBottom: '12px',
           margin: 0
         }}>
-          You're Offline
+          {"You're Offline"}
         </h1>
         
         <p style={{ 
@@ -57,7 +57,7 @@ export default function OfflinePage() {
           marginBottom: '32px',
           marginTop: '12px'
         }}>
-          It looks like you've lost your internet connection or you refreshed the page while offline. Don't worry, the app is still working locally!
+          {"It looks like you've lost your internet connection or you refreshed the page while offline. Don't worry, the app is still working locally!"}
         </p>
 
         <Link 

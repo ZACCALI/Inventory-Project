@@ -108,7 +108,7 @@ export default function DeliveryPage() {
             if (task.action === 'UPDATE') {
               modifiedDeliveries = modifiedDeliveries.map(d => d.id === payload.id ? { ...d, ...payload } : d);
             }
-          } catch (e) {}
+          } catch {}
         }
 
         setDeliveries(modifiedDeliveries);
@@ -163,7 +163,7 @@ export default function DeliveryPage() {
         payload.proofPhotoBase64 = proofPhotoBase64;
       }
 
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -575,6 +575,28 @@ export default function DeliveryPage() {
                         <option value="failed">Failed</option>
                       </select>
                     </div>
+                    {formData.status === 'delivered' && (
+                      <div className="form-group">
+                        <label htmlFor="proof-photo" className="form-label">Proof of Delivery (Optional)</label>
+                        <input
+                          id="proof-photo"
+                          type="file"
+                          accept="image/*"
+                          className="form-input"
+                          onChange={handleFileChange}
+                        />
+                        {(proofPhotoBase64 || formData.proofPhoto) && (
+                          <div style={{ marginTop: '8px' }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={proofPhotoBase64 || formData.proofPhoto}
+                              alt="Proof of Delivery Preview"
+                              style={{ maxHeight: '120px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 )}
               </div>

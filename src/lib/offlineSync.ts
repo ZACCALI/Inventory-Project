@@ -3,11 +3,11 @@ import { db, SyncTask } from './db';
 /**
  * Adds a task to the generic offline sync queue.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export async function addSyncTask(
   type: SyncTask['type'],
   action: SyncTask['action'],
-  payload: any,
+  payload: unknown,
   idempotencyKey?: string
 ): Promise<number | null> {
   const key = idempotencyKey || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -56,9 +56,10 @@ async function uploadBase64Photo(base64: string): Promise<string | null> {
       return data.url as string;
     }
     throw new Error('Photo upload failed: HTTP ' + res.status);
-  } catch (e: any) {
-    console.error('Base64 photo upload failed', e);
-    throw new Error(e.message || 'Base64 photo upload failed');
+  } catch (e: unknown) {
+    const err = e as Error;
+    console.error('Base64 photo upload failed', err);
+    throw new Error(err.message || 'Base64 photo upload failed');
   }
 }
 
@@ -108,7 +109,7 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
   for (const task of pending) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let payload: any = JSON.parse(task.payload);
+      const payload: any = JSON.parse(task.payload);
 
       // CASCADING FAILURE PREVENTION
       // If a parent task permanently failed, this task might depend on it.
@@ -120,7 +121,7 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
           permanentlyFailedIds.has(payload.customerId) ||
           permanentlyFailedIds.has(payload.driverId) ||
           permanentlyFailedIds.has(payload.deliveryDriverId) ||
-          (Array.isArray(payload.items) && payload.items.some((i: any) => permanentlyFailedIds.has(i.productId)));
+          (Array.isArray(payload.items) && payload.items.some((i: { productId?: string }) => permanentlyFailedIds.has(i.productId || '')));
           
         if (hasFailedDependency) {
            await db.syncQueue.update(task.id!, { 
@@ -188,8 +189,9 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
 
       // Buffer response body ONCE to avoid double-read stream error
       const responseText = await res.text();
-      let responseJson: any = null;
+      let responseJson: unknown = null;
       try { responseJson = JSON.parse(responseText); } catch { /* non-JSON response */ }
+      const responseJsonData = responseJson as { id?: string; error?: string; message?: string } | null;
 
       if (res.ok) {
         await db.syncQueue.update(task.id!, { syncStatus: 'synced' });
@@ -199,9 +201,9 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
         // --- OFFLINE ID REMAPPING ---
         // If this was a CREATE, the server just assigned a real database ID.
         // Find all subsequent pending tasks referencing the temp offline ID and update them.
-        if (task.action === 'CREATE' && responseJson) {
+        if (task.action === 'CREATE' && responseJsonData) {
           try {
-            const realId = responseJson.id;
+            const realId = responseJsonData.id;
             const tempId = payload.id;
             
             if (realId && tempId && String(tempId).startsWith('OFF-')) {
@@ -235,7 +237,7 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
                   if (modified) {
                     await db.syncQueue.update(pt.id!, { payload: JSON.stringify(ptPayload) });
                   }
-                } catch (e) { /* ignore individual remap errors */ }
+                } catch { /* ignore individual remap errors */ }
               }
 
               // Also update local Dexie caches so the UI doesn't hold stale temp IDs
@@ -253,14 +255,14 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
         }
 
         // After syncing settings, also update the local db.settings cache
-        if (task.type === 'settings' && responseJson) {
+        if (task.type === 'settings' && responseJsonData) {
           try {
-            await db.settings.put({ key: 'current', data: JSON.stringify(responseJson), lastSynced: Date.now() });
-          } catch (e) { /* ignore */ }
+            await db.settings.put({ key: 'current', data: JSON.stringify(responseJsonData), lastSynced: Date.now() });
+          } catch { /* ignore */ }
         }
 
       } else {
-        const errorMsg = responseJson?.error || responseJson?.message || `HTTP ${res.status}`;
+        const errorMsg = responseJsonData?.error || responseJsonData?.message || `HTTP ${res.status}`;
         
         // PERMANENT FAILURE HANDLING (4xx errors)
         const isPermanentError = res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429;

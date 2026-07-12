@@ -47,7 +47,7 @@ export default function SettingsPage() {
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
-  const [profileData, setProfileData] = useState({ name: '', email: '', avatar: '' });
+  const [profileData, setProfileData] = useState<{ name: string; email: string; avatar: string; avatarBase64?: string }>({ name: '', email: '', avatar: '' });
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
@@ -57,6 +57,7 @@ export default function SettingsPage() {
   const { data: swrRes, error: swrError } = useSWR('/api/settings', fetcher, { revalidateOnFocus: true });
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const loadSettings = async (raw: any) => {
       if (!raw) return;
       setSettings({
@@ -185,7 +186,7 @@ export default function SettingsPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64 = reader.result as string;
-        setProfileData(prev => ({ ...prev, avatar: base64, avatarBase64: base64 } as any));
+        setProfileData(prev => ({ ...prev, avatar: base64, avatarBase64: base64 }));
         showToast('offline', 'Photo selected. It will upload when you reconnect and save your profile.');
       };
       reader.readAsDataURL(file);

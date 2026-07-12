@@ -7,6 +7,39 @@ import { db } from './db';
 const PREFETCH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 const PREFETCH_LS_KEY = 'distritrack_last_prefetch';
 
+interface APIProduct {
+  id: string;
+  name: string;
+  sku: string;
+  barcode?: string | null;
+  price?: number;
+  costPrice?: number;
+  stock?: number;
+  image?: string | null;
+  category?: { name: string } | null;
+}
+
+interface APICustomer {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+}
+
+interface APIDriver {
+  id: string;
+  name: string;
+  phone?: string | null;
+  status?: string;
+  vehicleInfo?: string | null;
+}
+
+interface APICategory {
+  id: string;
+  name: string;
+}
+
 /**
  * Silently fetch and cache all critical lookup data into Dexie.
  * Runs once after login, then every 30 minutes while online.
@@ -30,7 +63,7 @@ async function runPrefetch() {
       if (Array.isArray(products)) {
         const now = Date.now();
         await db.products.bulkPut(
-          products.map((p: any) => ({
+          products.map((p: APIProduct) => ({
             id: p.id,
             name: p.name,
             sku: p.sku,
@@ -53,7 +86,7 @@ async function runPrefetch() {
       if (Array.isArray(customers)) {
         const now = Date.now();
         await db.customers.bulkPut(
-          customers.map((c: any) => ({
+          customers.map((c: APICustomer) => ({
             id: c.id,
             name: c.name,
             email: c.email || null,
@@ -72,7 +105,7 @@ async function runPrefetch() {
       if (Array.isArray(driverList)) {
         const now = Date.now();
         await db.drivers.bulkPut(
-          driverList.map((d: any) => ({
+          driverList.map((d: APIDriver) => ({
             id: d.id,
             name: d.name,
             phone: d.phone || null,
@@ -90,7 +123,7 @@ async function runPrefetch() {
       if (Array.isArray(cats)) {
         const now = Date.now();
         await db.categories.bulkPut(
-          cats.map((c: any) => ({
+          cats.map((c: APICategory) => ({
             id: c.id,
             name: c.name,
             lastSynced: now,
@@ -144,5 +177,5 @@ export function usePrefetchCache() {
       runPrefetch();
     }, remaining);
     return () => clearTimeout(t);
-  }, [session?.user?.id]);
+  }, [session?.user]);
 }

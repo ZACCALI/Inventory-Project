@@ -168,7 +168,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     const { id } = await params;
     
-    const product = await prisma.product.findUnique({ where: { id } });
     let isOfflineSync = false;
     try { const delBody = await request.clone().json(); isOfflineSync = !!delBody?.isOfflineSync; } catch {}
 

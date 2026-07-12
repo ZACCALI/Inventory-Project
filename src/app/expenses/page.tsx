@@ -103,7 +103,7 @@ export default function ExpensesPage() {
                 modifiedExpenses.unshift(payload as unknown as Expense);
               }
             }
-          } catch (e) {}
+          } catch {}
         }
         
         setExpenses(modifiedExpenses);
@@ -189,7 +189,7 @@ export default function ExpensesPage() {
   const handleDelete = async (id: string) => {
     if (!await showConfirm('Confirm', 'Are you sure you want to delete this expense log?')) return;
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -225,7 +225,7 @@ export default function ExpensesPage() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       const url = editId ? `/api/expenses/${editId}` : '/api/expenses';
@@ -266,9 +266,9 @@ export default function ExpensesPage() {
         
         setIsModalOpen(false);
         if (editId) {
-          setExpenses(prev => prev.map(e => e.id === payload.id ? {...e, ...payload, date: payload.date || new Date().toISOString()} as any : e));
+          setExpenses(prev => prev.map(e => e.id === payload.id ? {...e, ...payload, date: payload.date || new Date().toISOString()} as unknown as Expense : e));
         } else {
-          setExpenses(prev => [{...payload, date: payload.date || new Date().toISOString(), createdAt: new Date().toISOString()} as any, ...prev]);
+          setExpenses(prev => [{...payload, date: payload.date || new Date().toISOString(), createdAt: new Date().toISOString()} as unknown as Expense, ...prev]);
         }
         setActionLoading(false);
         return;

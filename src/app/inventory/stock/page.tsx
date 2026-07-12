@@ -300,7 +300,7 @@ export default function StockInOutPage() {
          const offlineCount = pendingBatches.filter(t => t.type === 'stock' && t.action === 'CREATE' && JSON.parse(t.payload).productId === product.id).length;
          
          let serverCount = 0;
-         let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+         const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
          
          if (!isOffline) {
            const res = await fetch(`/api/batches?productId=${product.id}&all=true`).catch(() => null);
@@ -311,7 +311,7 @@ export default function StockInOutPage() {
          }
          
          setFormData({ ...formData, sku: product.sku, batchNumber: String(serverCount + offlineCount + 1) });
-       } catch (e) {
+       } catch {
          setFormData({ ...formData, sku: product.sku, batchNumber: '1' });
        }
     } else {
@@ -367,7 +367,17 @@ export default function StockInOutPage() {
       const actionText = modalType === 'IN' ? 'Received' : 'Issued';
       const formattedReason = `${formData.reason} (${actionText} ${formData.quantity} ${selectedUomName})`;
 
-      const payload: any = {
+      const payload: {
+        id?: string;
+        productId: string;
+        type: string;
+        quantity: number;
+        reason: string;
+        source: string;
+        expiryDate?: string;
+        batchNumber?: string;
+        userId?: string;
+      } = {
         productId: selectedProduct.id,
         type: modalType,
         quantity: finalQuantity,
@@ -378,7 +388,7 @@ export default function StockInOutPage() {
         userId: session?.user?.id
       };
 
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -429,7 +439,7 @@ export default function StockInOutPage() {
         return;
       }
 
-    } catch (error) {
+    } catch {
       showAlert('error', 'Action Failed', 'Failed to process stock movement');
     } finally {
       setActionLoading(false);
@@ -452,7 +462,7 @@ export default function StockInOutPage() {
       const actionText = editingLog.type === 'IN' ? 'Received' : 'Issued';
       const formattedReason = `${editFormData.reason} (${actionText} ${editFormData.quantity} ${selectedUomName})`;
 
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -503,7 +513,7 @@ export default function StockInOutPage() {
   const handleVoidLog = async (id: string, type: string) => {
     if (!await showConfirm('Void Stock Log', `Are you sure you want to void this ${type} stock log? This will reverse the stock change.`)) return;
     
-    let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
     let networkFailed = false;
 
     try {

@@ -51,7 +51,7 @@ interface Category {
 export default function InventoryPage() {
   const { data: session, status } = useSession();
   const isAdmin = session?.user?.role?.toLowerCase() === 'admin';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
   const { showAlert, showConfirm, showToast } = useAlert();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -96,7 +96,7 @@ export default function InventoryPage() {
                 modifiedProducts.unshift({ ...payload, _count: { orderItems: 0, stockLogs: 0 } } as unknown as Product);
               }
             }
-          } catch (e) {}
+          } catch {}
         }
 
         // Apply pending stock movements to adjust local product stock counts
@@ -109,7 +109,7 @@ export default function InventoryPage() {
               const delta = sp.type === 'IN' ? sp.quantity : -sp.quantity;
               return { ...p, stock: Math.max(0, (p.stock || 0) + delta) };
             });
-          } catch (e) {}
+          } catch {}
         }
         
         setProducts(modifiedProducts);
@@ -169,13 +169,13 @@ export default function InventoryPage() {
   const fetchDependencies = useCallback(async () => {
     try {
       const [catRes, unitRes, settingsRes] = await Promise.all([
-        fetch('/api/categories').catch(() => ({ ok: false, json: async () => [] })),
-        fetch('/api/units').catch(() => ({ ok: false, json: async () => [] })),
-        fetch('/api/settings').catch(() => ({ ok: false, json: async () => ({}) }))
+        fetch('/api/categories').catch(() => null),
+        fetch('/api/units').catch(() => null),
+        fetch('/api/settings').catch(() => null)
       ]);
-      const catData = await (catRes as any).json();
-      const unitData = await (unitRes as any).json();
-      const settingsData = await (settingsRes as any).json();
+      const catData = catRes && catRes.ok ? await catRes.json() : [];
+      const unitData = unitRes && unitRes.ok ? await unitRes.json() : [];
+      const settingsData = settingsRes && settingsRes.ok ? await settingsRes.json() : {};
       
       let finalCats = Array.isArray(catData) ? catData : [];
       let finalUnits = Array.isArray(unitData) ? unitData : [];
@@ -189,17 +189,17 @@ export default function InventoryPage() {
         for (const task of pendingTasks) {
           const p = JSON.parse(task.payload);
           if (task.action === 'CREATE') {
-            if (task.type === 'category' && !finalCats.find((c: any) => c.id === p.id)) {
+            if (task.type === 'category' && !finalCats.find((c: { id: string }) => c.id === p.id)) {
               finalCats.push(p);
-            } else if (task.type === 'unit' && !finalUnits.find((u: any) => u.id === p.id)) {
+            } else if (task.type === 'unit' && !finalUnits.find((u: { id: string }) => u.id === p.id)) {
               finalUnits.push(p);
             }
           } else if (task.action === 'UPDATE') {
-            if (task.type === 'category') finalCats = finalCats.map((c: any) => c.id === p.id ? { ...c, ...p } : c);
-            else if (task.type === 'unit') finalUnits = finalUnits.map((u: any) => u.id === p.id ? { ...u, ...p } : u);
+            if (task.type === 'category') finalCats = finalCats.map((c: { id: string }) => c.id === p.id ? { ...c, ...p } : c);
+            else if (task.type === 'unit') finalUnits = finalUnits.map((u: { id: string }) => u.id === p.id ? { ...u, ...p } : u);
           } else if (task.action === 'DELETE') {
-            if (task.type === 'category') finalCats = finalCats.filter((c: any) => c.id !== p.id);
-            else if (task.type === 'unit') finalUnits = finalUnits.filter((u: any) => u.id !== p.id);
+            if (task.type === 'category') finalCats = finalCats.filter((c: { id: string }) => c.id !== p.id);
+            else if (task.type === 'unit') finalUnits = finalUnits.filter((u: { id: string }) => u.id !== p.id);
           }
         }
       } catch (e) {
@@ -346,7 +346,7 @@ export default function InventoryPage() {
       const existingConflict = products.find(p => {
         if (editingProduct && p.id === editingProduct.id) return false;
         if (p.barcode && allBarcodes.includes(p.barcode)) return true;
-        if (p.uoms && p.uoms.some((u: any) => u.barcode && allBarcodes.includes(u.barcode))) return true;
+        if (p.uoms && p.uoms.some((u: { barcode?: string | null }) => u.barcode && allBarcodes.includes(u.barcode))) return true;
         return false;
       });
       
@@ -358,7 +358,7 @@ export default function InventoryPage() {
     }
 
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       const method = editingProduct ? 'PUT' : 'POST';
@@ -479,7 +479,7 @@ export default function InventoryPage() {
       `Permanently delete "${name}"?\n\n(Safe to delete: 0 sales, 0 stock logs.)\n\nThis cannot be undone.`
     )) return;
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -514,7 +514,7 @@ export default function InventoryPage() {
   const handleArchiveProduct = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Are you sure you want to archive ${name}?`)) return;
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -553,7 +553,7 @@ export default function InventoryPage() {
   const handleUnarchiveProduct = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Are you sure you want to unarchive ${name}?`)) return;
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -1170,7 +1170,7 @@ export default function InventoryPage() {
 }
 
 function ManageListModal({ type, items, onClose, onUpdate }: { type: 'category' | 'unit', items: {id: string, name: string}[], onClose: () => void, onUpdate: () => void }) {
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
   const { showAlert, showConfirm, showToast } = useAlert();
   const [inputValue, setInputValue] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -1189,7 +1189,7 @@ function ManageListModal({ type, items, onClose, onUpdate }: { type: 'category' 
     if (!inputValue.trim()) return;
     setLoading(true);
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -1246,7 +1246,7 @@ function ManageListModal({ type, items, onClose, onUpdate }: { type: 'category' 
   const handleDelete = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Delete ${name}?`)) return;
     try {
-      let isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
       if (!isOffline) {

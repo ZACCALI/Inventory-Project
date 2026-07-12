@@ -68,7 +68,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: firstError.message }, { status: 400 });
     }
 
-    const { productId, type, quantity: rawQuantity, reason, source: validatedSource, expiryDate, forceBatchId, batchNumber, targetBatchId, isOfflineSync } = parsed.data as any;
+    const { productId, type, quantity: rawQuantity, reason, source: validatedSource, expiryDate, forceBatchId, batchNumber, targetBatchId } = parsed.data;
+    const isOfflineSync = !!body.isOfflineSync;
     const userId = user.id;
 
     const actualQuantity = rawQuantity;
