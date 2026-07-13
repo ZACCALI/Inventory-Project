@@ -58,10 +58,25 @@ export default function DeliveryPage() {
   async function fetchDrivers() {
     try {
       const res = await fetch('/api/drivers');
-      const data = await res.json();
-      if (Array.isArray(data)) setDrivers(data);
-      else setDrivers([]);
-    } catch (e) { console.error(e); }
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setDrivers(data);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch drivers, falling back to local DB cache', e);
+    }
+
+    try {
+      const localDrivers = await db.drivers.toArray();
+      if (localDrivers.length > 0) {
+        setDrivers(localDrivers as any[]);
+      }
+    } catch (dbErr) {
+      console.error('Failed to read drivers from Dexie', dbErr);
+    }
   }
 
   const getQueryString = () => {
@@ -75,7 +90,7 @@ export default function DeliveryPage() {
     return params.toString();
   };
 
-  const { data: swrRes, error: swrError } = useSWR(
+  const { data: swrRes, error: swrError, mutate: mutateDeliveries } = useSWR(
     session ? `/api/delivery?${getQueryString()}` : null,
     async (url) => {
       const res = await fetch(url);
@@ -126,26 +141,7 @@ export default function DeliveryPage() {
     }
   }, [swrRes, swrError]);
 
-  async function fetchDeliveries() {
-    if (typeof document !== 'undefined' && document.hidden) return;
-    try {
-      const res = await fetch(`/api/delivery?${getQueryString()}`);
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setDeliveries(data);
-        const totalCount = res.headers.get('X-Total-Count');
-        if (totalCount) setTotalDeliveries(parseInt(totalCount, 10));
-      }
-      else {
-        setDeliveries([]);
-        setTotalDeliveries(0);
-      }
-    } catch (error) {
-      console.error('Failed to fetch deliveries', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -176,7 +172,7 @@ export default function DeliveryPage() {
 
           if (res.ok) {
             setSelectedDelivery(null);
-            if (typeof navigator !== 'undefined' && navigator.onLine) fetchDeliveries();
+            if (typeof navigator !== 'undefined' && navigator.onLine) mutateDeliveries();
             if (formData.status === 'failed' || formData.status === 'cancelled') {
               showAlert('warning', 'Action Required: Return Stock', 'The delivery is marked as failed, but the stock is still technically reserved. Once the driver physically returns the items to the warehouse, you must go to the Orders page and manually Cancel the order to release the stock back into available inventory.');
             } else {
@@ -222,17 +218,15 @@ export default function DeliveryPage() {
   }, [isFilterOpen]);
 
   useEffect(() => {
-    fetchDeliveries();
     fetchDrivers();
     const interval = setInterval(() => {
       if (typeof navigator !== 'undefined' && navigator.onLine) {
-        fetchDeliveries();
+        fetchDrivers();
       }
     }, 60000);
     
     return () => clearInterval(interval);
-// eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, statusFilter, startDate, endDate, page]);
+  }, []);
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {

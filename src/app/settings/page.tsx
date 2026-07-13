@@ -57,6 +57,41 @@ export default function SettingsPage() {
   const { data: swrRes, error: swrError } = useSWR('/api/settings', fetcher, { revalidateOnFocus: true });
 
   useEffect(() => {
+    // Load from Dexie cache immediately on mount so form is populated instantly
+    const loadCached = async () => {
+      try {
+        const cached = await db.settings.get('current');
+        if (cached?.data) {
+          const raw = JSON.parse(cached.data);
+          setSettings(prev => ({
+            ...prev,
+            companyName: raw.companyName || '',
+            email: raw.email || '',
+            phone: raw.phone || '',
+            address: raw.address || '',
+            currency: raw.currency || 'PHP',
+            taxRate: raw.taxRate || 0,
+            cleanupMode: raw.cleanupMode || false,
+            lockProductDelete: raw.lockProductDelete ?? true,
+            lockProductEdit: raw.lockProductEdit ?? false,
+            lockOrderDelete: raw.lockOrderDelete ?? true,
+            lockOrderEdit: raw.lockOrderEdit ?? false,
+            lockOrderCancel: raw.lockOrderCancel ?? false,
+            lockOrderDate: raw.lockOrderDate ?? false,
+            lockStockVoid: raw.lockStockVoid ?? false,
+            expiryWarningDays: raw.expiryWarningDays || 30,
+            staffPermissions: raw.staffPermissions || '',
+            cashierPermissions: raw.cashierPermissions || ''
+          }));
+        }
+      } catch (err) {
+        console.warn('Failed to load cached settings on mount', err);
+      }
+    };
+    loadCached();
+  }, []);
+
+  useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const loadSettings = async (raw: any) => {
       if (!raw) return;

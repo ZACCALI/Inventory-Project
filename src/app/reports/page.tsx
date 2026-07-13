@@ -61,7 +61,10 @@ export default function ReportsPage() {
     if (!isMonthlyLoading && !isBestLoading) {
       setLoading(false);
     }
-  }, [monthlyRes, bestRes, isMonthlyLoading, isBestLoading]);
+    if (monthlyError || bestError) {
+      setLoading(false);
+    }
+  }, [monthlyRes, bestRes, isMonthlyLoading, isBestLoading, monthlyError, bestError]);
 
   const handleExportPDF = () => {
     const columns = [
