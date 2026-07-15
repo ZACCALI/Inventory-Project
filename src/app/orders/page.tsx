@@ -240,13 +240,25 @@ export default function OrdersPage() {
     const fetchSettings = async () => {
       try {
         const res = await fetch('/api/settings');
+        if (!res.ok) throw new Error();
         const data = await res.json();
         setLockOrderCancel(data.lockOrderCancel ?? true);
         setLockOrderDelete(data.lockOrderDelete ?? true);
         setLockOrderEdit(data.lockOrderEdit ?? false);
         if (data.companyName) setCompanyName(data.companyName);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (error) {
+      } catch {
+        try {
+          const cachedSettings = await db.settings.get('current');
+          if (cachedSettings?.data) {
+            const data = JSON.parse(cachedSettings.data);
+            setLockOrderCancel(data.lockOrderCancel ?? true);
+            setLockOrderDelete(data.lockOrderDelete ?? true);
+            setLockOrderEdit(data.lockOrderEdit ?? false);
+            if (data.companyName) setCompanyName(data.companyName);
+          }
+        } catch (dexieErr) {
+          console.warn('Failed to load settings from Dexie cache', dexieErr);
+        }
       }
     };
     fetchSettings();
@@ -783,8 +795,28 @@ export default function OrdersPage() {
 
       if (isOffline || networkFailed) {
         await addSyncTask('order', 'UPDATE', { ...payload, id: editingOrder.id });
+
+        if (['paid', 'partial'].includes(editForm.paymentStatus) && parsedAmount > 0) {
+          const match = editingOrder.notes?.match(/Amount Paid: [^\d]*([\d,.]+)/);
+          const previousTotalPaid = match ? parseFloat(match[1].replace(/,/g, '')) || 0 : 0;
+          const difference = parsedAmount - previousTotalPaid;
+
+          if (difference > 0.01) {
+            await addSyncTask('payment', 'CREATE', {
+              orderId: editingOrder.id,
+              amount: difference,
+              method: paymentMethod.toLowerCase(),
+              notes: 'Payment recorded via order edit (offline)'
+            });
+          }
+        }
+
         showToast('offline', 'Action queued offline — will sync when connected');
-        setOrders(prev => prev.map(o => o.id === editingOrder.id ? { ...o, ...payload } as unknown as Order : o));
+        setOrders(prev => prev.map(o => o.id === editingOrder.id ? {
+          ...o,
+          ...payload,
+          ...(itemsModified ? { items: editingOrder.items } : {})
+        } as unknown as Order : o));
         setIsEditOpen(false);
         setEditingOrder(null);
         setIsSaving(false);
@@ -862,7 +894,7 @@ export default function OrdersPage() {
 
     // === Items Table ===
     const tableColumn = ["#", "Item Description", "SKU", "Qty", "Unit Price", "Total"];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tableRows: any[] = [];
 
     if (order.items && order.items.length > 0) {
@@ -887,81 +919,126 @@ export default function OrdersPage() {
       theme: 'plain',
       headStyles: { fillColor: [248, 250, 252], textColor: [44, 62, 80], fontStyle: 'bold', fontSize: 9, lineWidth: 0 },
       styles: { fontSize: 9, cellPadding: 6, textColor: [71, 85, 105] },
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       bodyStyles: { lineWidth: { bottom: 0.1 } as any, lineColor: [229, 231, 235] },
       columnStyles: {
         0: { cellWidth: 12, halign: 'center' },
         3: { cellWidth: 15, halign: 'center' },
         4: { cellWidth: 35, halign: 'right' },
         5: { cellWidth: 35, halign: 'right' },
+      },
+      didDrawPage: (data) => {
+        if (data.pageNumber > 1) {
+          doc.setFillColor(0, 97, 255);
+          doc.roundedRect(14, 10, 8, 8, 1.5, 1.5, 'F');
+          doc.setFontSize(11);
+          doc.setTextColor(255, 255, 255);
+          doc.setFont('helvetica', 'bold');
+          doc.text('A', 18, 15.8, { align: 'center' });
+          
+          doc.setFontSize(14);
+          doc.setTextColor(0, 97, 255);
+          doc.text(companyName, 25, 16);
+          
+          doc.setFontSize(16);
+          doc.setTextColor(29, 78, 216);
+          doc.text('INVOICE', 196, 17, { align: 'right' });
+          
+          doc.setDrawColor(229, 231, 235);
+          doc.line(14, 21, 196, 21);
+        }
       }
     });
 
     // === Totals Section ===
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const finalY = (doc as any).lastAutoTable.finalY || startY;
     const subtotal = order.items ? order.items.reduce((sum, item) => sum + item.subtotal, 0) : order.totalAmount;
     const discount = order.discount || 0;
     const total = order.totalAmount;
 
-    // Status Badges (bottom left)
+    // Check if totals section fits on current page
+    let currentY = finalY + 15;
+    const totalsHeight = 35; // approximate vertical space for payment status + total block
+    if (currentY + totalsHeight > 270) {
+      doc.addPage();
+      currentY = 25;
+    }
+
+    // Status Badges
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(44, 62, 80);
-    doc.text('Payment Status:', 14, finalY + 15);
+    doc.text('Payment Status:', 14, currentY);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(order.paymentStatus === 'paid' ? 34 : 220, order.paymentStatus === 'paid' ? 197 : 38, order.paymentStatus === 'paid' ? 94 : 38); // green/red
-    doc.text(order.paymentStatus.toUpperCase(), 45, finalY + 15);
+    doc.setTextColor(order.paymentStatus === 'paid' ? 34 : 220, order.paymentStatus === 'paid' ? 197 : 38, order.paymentStatus === 'paid' ? 94 : 38);
+    doc.text(order.paymentStatus.toUpperCase(), 45, currentY);
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(44, 62, 80);
-    doc.text('Order Status:', 14, finalY + 22);
+    doc.text('Order Status:', 14, currentY + 7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 116, 139);
-    doc.text(order.status.toUpperCase(), 45, finalY + 22);
+    doc.text(order.status.toUpperCase(), 45, currentY + 7);
 
     // Totals on right
     const totalsX = 130;
-    let totalsY = finalY + 15;
+    let totalsBlockY = currentY;
 
     doc.setFontSize(10);
     doc.setTextColor(100, 116, 139);
-    doc.text('Subtotal:', totalsX, totalsY);
+    doc.text('Subtotal:', totalsX, totalsBlockY);
     doc.setTextColor(44, 62, 80);
-    doc.text(formatPDFCurrency(subtotal), 196, totalsY, { align: 'right' });
+    doc.text(formatPDFCurrency(subtotal), 196, totalsBlockY, { align: 'right' });
 
     if (discount > 0) {
-      totalsY += 8;
+      totalsBlockY += 8;
       doc.setTextColor(231, 76, 60);
-      doc.text('Discount:', totalsX, totalsY);
-      doc.text(`-${formatPDFCurrency(discount)}`, 196, totalsY, { align: 'right' });
+      doc.text('Discount:', totalsX, totalsBlockY);
+      doc.text(`-${formatPDFCurrency(discount)}`, 196, totalsBlockY, { align: 'right' });
     }
 
-    totalsY += 10;
+    totalsBlockY += 10;
     doc.setDrawColor(229, 231, 235);
     doc.setLineWidth(0.5);
-    doc.line(totalsX, totalsY - 6, 196, totalsY - 6);
+    doc.line(totalsX, totalsBlockY - 6, 196, totalsBlockY - 6);
 
     doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(29, 78, 216);
-    doc.text('TOTAL:', totalsX, totalsY);
-    doc.text(formatPDFCurrency(total), 196, totalsY, { align: 'right' });
+    doc.text('TOTAL:', totalsX, totalsBlockY);
+    doc.text(formatPDFCurrency(total), 196, totalsBlockY, { align: 'right' });
 
     // === Notes ===
     if (order.notes) {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100, 116, 139);
-      doc.text('Notes:', 14, totalsY + 15);
-      doc.text(order.notes, 14, totalsY + 20);
+      
+      const splitNotes = doc.splitTextToSize(order.notes, 180);
+      const linesCount = splitNotes.length;
+      const notesHeight = linesCount * 4.5;
+      
+      let notesY = totalsBlockY + 15;
+      if (notesY + notesHeight + 10 > 270) {
+        doc.addPage();
+        notesY = 25;
+      }
+      
+      doc.text('Notes:', 14, notesY);
+      doc.text(splitNotes, 14, notesY + 5);
     }
 
-    // === Footer ===
-    doc.setFontSize(8);
-    doc.setTextColor(149, 165, 166);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Thank you for your business! — Generated by ${APP_NAME}`, 105, 285, { align: 'center' });
+    // === Footers on all pages ===
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(149, 165, 166);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Thank you for your business! — Generated by ${APP_NAME} | Page ${i} of ${pageCount}`, 105, 285, { align: 'center' });
+    }
 
     doc.save(`Invoice_${order.orderNumber}.pdf`);
   };

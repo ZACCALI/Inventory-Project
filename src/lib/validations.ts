@@ -116,6 +116,7 @@ export const createOrderSchema = z.object({
   orderType: z.enum(['wholesale', 'retail', 'walk-in', 'pos']).default('wholesale'),
   status: z.enum(['pending', 'confirmed', 'delivered', 'cancelled']).default('pending'),
   paymentStatus: z.enum(['unpaid', 'partial', 'paid']).default('unpaid'),
+  amountPaid: z.coerce.number().min(0).optional(),
   isDelivery: z.boolean().optional(),
   deliveryDriverId: z.string().optional(),
   deliveryDriverName: safeOptionalString(200),

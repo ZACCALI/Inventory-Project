@@ -34,8 +34,11 @@ export async function POST(request: Request) {
     if (!body.name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
     // Case-insensitive duplicate check
-    const existingCategories = await prisma.category.findMany({ select: { name: true } });
-    if (existingCategories.some(c => c.name.toLowerCase() === body.name.toLowerCase())) {
+    const existingCategory = await prisma.category.findFirst({
+      where: { name: { equals: body.name, mode: 'insensitive' } },
+      select: { id: true }
+    });
+    if (existingCategory) {
       return NextResponse.json({ error: 'A category with this name already exists' }, { status: 400 });
     }
 

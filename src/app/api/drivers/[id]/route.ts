@@ -5,7 +5,7 @@ import { driverSchema } from '@/lib/validations';
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { user, error } = await requirePermission(request, 'delivery');
+    const { user, error } = await requirePermission(request, 'drivers');
     if (error) return error;
 
     const { id } = await params;
@@ -43,7 +43,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { user, error } = await requirePermission(request, 'delivery');
+    const { user, error } = await requirePermission(request, 'drivers');
     if (error) return error;
 
     const { id } = await params;

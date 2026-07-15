@@ -16,8 +16,11 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     }
 
     // Case-insensitive duplicate check
-    const existingCategories = await prisma.category.findMany({ select: { id: true, name: true } });
-    if (existingCategories.some(c => c.id !== id && c.name.toLowerCase() === name.toLowerCase())) {
+    const existingCategory = await prisma.category.findFirst({
+      where: { id: { not: id }, name: { equals: name, mode: 'insensitive' } },
+      select: { id: true }
+    });
+    if (existingCategory) {
       return NextResponse.json({ error: 'A category with this name already exists' }, { status: 400 });
     }
 

@@ -80,7 +80,30 @@ export default function InventoryPage() {
           .anyOf(['pending', 'failed'])
           .toArray();
 
-        let modifiedProducts = swrProducts ? [...swrProducts] : [];
+        let baseProducts: Product[] = [];
+        if (swrProducts) {
+          baseProducts = [...swrProducts];
+        } else {
+          try {
+            const cached = await db.products.toArray();
+            baseProducts = cached.map(p => ({
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              barcode: p.barcode,
+              price: p.price,
+              costPrice: p.costPrice,
+              stock: p.stock,
+              image: p.image,
+              category: p.categoryName ? { name: p.categoryName } : null,
+              uoms: p.uoms || [],
+              _count: { orderItems: 0, stockLogs: 0 }
+            })) as unknown as Product[];
+          } catch (err) {
+            console.error('Failed to load products from Dexie cache', err);
+          }
+        }
+        let modifiedProducts = [...baseProducts];
 
         // Apply pending product CRUD tasks
         for (const task of pendingTasks) {
@@ -175,10 +198,26 @@ export default function InventoryPage() {
       ]);
       const catData = catRes && catRes.ok ? await catRes.json() : [];
       const unitData = unitRes && unitRes.ok ? await unitRes.json() : [];
-      const settingsData = settingsRes && settingsRes.ok ? await settingsRes.json() : {};
+      let settingsData = settingsRes && settingsRes.ok ? await settingsRes.json() : null;
       
-      let finalCats = Array.isArray(catData) ? catData : [];
+      let finalCats = Array.isArray(catData) && catData.length > 0 ? catData : [];
+      if (finalCats.length === 0) {
+        try {
+          const cachedCats = await db.categories.toArray();
+          finalCats = cachedCats.map(c => ({ id: c.id, name: c.name }));
+        } catch {}
+      }
+
       let finalUnits = Array.isArray(unitData) ? unitData : [];
+
+      if (!settingsData) {
+        try {
+          const cachedSettings = await db.settings.get('current');
+          if (cachedSettings?.data) {
+            settingsData = JSON.parse(cachedSettings.data);
+          }
+        } catch {}
+      }
 
       try {
         const pendingTasks = await db.syncQueue
@@ -364,12 +403,26 @@ export default function InventoryPage() {
       const method = editingProduct ? 'PUT' : 'POST';
       const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products';
       
+      const productPayload = {
+        ...formData,
+        price: Number(formData.price) || 0,
+        costPrice: Number(formData.costPrice) || 0,
+        stock: Number(formData.stock) || 0,
+        minStock: Number(formData.minStock) || 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        uoms: formData.uoms.map((u: any) => ({
+          ...u,
+          multiplier: Number(u.multiplier) || 1,
+          price: Number(u.price) || 0
+        }))
+      };
+
       if (!isOffline) {
         try {
           const res = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData),
+            body: JSON.stringify(productPayload),
           });
           
           if (res.ok) {
@@ -390,12 +443,8 @@ export default function InventoryPage() {
       if (isOffline || networkFailed) {
         const action = editingProduct ? 'UPDATE' : 'CREATE';
         const payload = { 
-          ...formData, 
+          ...productPayload, 
           id: editingProduct ? editingProduct.id : `OFF-${Date.now()}`,
-          price: Number(formData.price),
-          costPrice: Number(formData.costPrice),
-          stock: Number(formData.stock),
-          minStock: Number(formData.minStock),
           category: formData.categoryId ? categories.find(c => c.id === formData.categoryId) : null
         };
         await addSyncTask('product', action, payload);

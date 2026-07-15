@@ -49,7 +49,12 @@ function getAllowedTypes(role: string): string[] {
 export async function syncNotificationsForUser(
   userId: string,
   userRole: string,
-  sendPush: boolean = true
+  sendPush: boolean = true,
+  prefetchedData?: {
+    lowStockProducts?: unknown[];
+    expiringBatches?: unknown[];
+    pendingDeliveries?: unknown[];
+  }
 ): Promise<SyncResult> {
   const result: SyncResult = { created: 0, dismissed: 0, deleted: 0, pushed: 0 };
   const allowedTypes = getAllowedTypes(userRole);
@@ -60,34 +65,46 @@ export async function syncNotificationsForUser(
   /* eslint-disable @typescript-eslint/no-explicit-any */
   let lowStockProducts: any[] = [];
   if (allowedTypes.includes('low_stock')) {
-    const allProducts = await prisma.product.findMany({
-      where: { isArchived: false }
-    });
-    lowStockProducts = allProducts.filter(p => p.stock <= p.minStock);
+    if (prefetchedData?.lowStockProducts) {
+      lowStockProducts = prefetchedData.lowStockProducts;
+    } else {
+      const allProducts = await prisma.product.findMany({
+        where: { isArchived: false }
+      });
+      lowStockProducts = allProducts.filter(p => p.stock <= p.minStock);
+    }
   }
 
   // ── 2. Expiry Detection ─────────────────────────────────────
   const today = new Date();
   let expiringBatches: any[] = [];
   if (allowedTypes.includes('expiry')) {
-    const expiryThreshold = new Date();
-    expiryThreshold.setDate(today.getDate() + settings.expiryWarningDays);
-    expiringBatches = await prisma.batch.findMany({
-      where: {
-        expiryDate: { lte: expiryThreshold },
-        stock: { gt: 0 }
-      },
-      include: { product: true }
-    });
+    if (prefetchedData?.expiringBatches) {
+      expiringBatches = prefetchedData.expiringBatches;
+    } else {
+      const expiryThreshold = new Date();
+      expiryThreshold.setDate(today.getDate() + settings.expiryWarningDays);
+      expiringBatches = await prisma.batch.findMany({
+        where: {
+          expiryDate: { lte: expiryThreshold },
+          stock: { gt: 0 }
+        },
+        include: { product: true }
+      });
+    }
   }
 
   // ── 3. Pending Deliveries Detection ─────────────────────────
   let pendingDeliveries: any[] = [];
   if (allowedTypes.includes('delivery')) {
-    pendingDeliveries = await prisma.delivery.findMany({
-      where: { status: 'pending' },
-      include: { order: true }
-    });
+    if (prefetchedData?.pendingDeliveries) {
+      pendingDeliveries = prefetchedData.pendingDeliveries;
+    } else {
+      pendingDeliveries = await prisma.delivery.findMany({
+        where: { status: 'pending' },
+        include: { order: true }
+      });
+    }
   }
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -252,12 +269,42 @@ export async function syncNotificationsForAllUsers(): Promise<{
     select: { id: true, role: true }
   });
 
+  const settings = await prisma.systemSettings.findFirst() || { expiryWarningDays: 30 };
+
+  const today = new Date();
+  const expiryThreshold = new Date();
+  expiryThreshold.setDate(today.getDate() + settings.expiryWarningDays);
+
+  const [allProducts, expiringBatches, pendingDeliveries] = await Promise.all([
+    prisma.product.findMany({
+      where: { isArchived: false }
+    }),
+    prisma.batch.findMany({
+      where: {
+        expiryDate: { lte: expiryThreshold },
+        stock: { gt: 0 }
+      },
+      include: { product: true }
+    }),
+    prisma.delivery.findMany({
+      where: { status: 'pending' },
+      include: { order: true }
+    })
+  ]);
+
+  const lowStockProducts = allProducts.filter(p => p.stock <= p.minStock);
+
+  const prefetchedData = {
+    lowStockProducts,
+    expiringBatches,
+    pendingDeliveries
+  };
+
   const results: Array<{ userId: string; role: string; result: SyncResult }> = [];
 
-  // Process users sequentially to avoid overwhelming the DB
   for (const user of users) {
     try {
-      const result = await syncNotificationsForUser(user.id, user.role, true);
+      const result = await syncNotificationsForUser(user.id, user.role, true, prefetchedData);
       results.push({ userId: user.id, role: user.role, result });
     } catch (err) {
       console.error(`Sync failed for user ${user.id}:`, err);

@@ -16,6 +16,7 @@ interface Customer {
   name: string;
   contactPerson: string | null;
   phone: string | null;
+  email?: string | null;
   address: string | null;
   _count: {
     orders: number;
@@ -73,7 +74,28 @@ export default function CustomersPage() {
           .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
           .toArray();
 
-        let modifiedCustomers = swrRes ? [...swrRes] : [];
+        let baseCustomers: Customer[] = [];
+        if (swrRes) {
+          baseCustomers = [...swrRes];
+        } else {
+          try {
+            const cached = await db.customers.toArray();
+            baseCustomers = cached.map(c => ({
+              id: c.id,
+              name: c.name,
+              contactPerson: null,
+              email: c.email || null,
+              phone: c.phone || null,
+              address: c.address || null,
+              customerType: 'wholesale',
+              _count: { orders: 0 }
+            }));
+          } catch (dexieErr) {
+            console.error('Failed to load customers from Dexie', dexieErr);
+          }
+        }
+
+        let modifiedCustomers = [...baseCustomers];
 
         for (const task of pendingTasks) {
           try {
@@ -108,11 +130,26 @@ export default function CustomersPage() {
     if (typeof document !== 'undefined' && document.hidden) return;
     try {
       const res = await fetch(`/api/customers?${getQueryString()}`);
-      const data = await res.json();
       if (!res.ok) throw new Error('Failed to fetch customers');
+      const data = await res.json();
       setCustomers(data);
     } catch (error) {
-      console.error('Failed to fetch customers', error);
+      console.error('Failed to fetch customers, using cache fallback', error);
+      try {
+        const cached = await db.customers.toArray();
+        setCustomers(cached.map(c => ({
+          id: c.id,
+          name: c.name,
+          contactPerson: null,
+          email: c.email || null,
+          phone: c.phone || null,
+          address: c.address || null,
+          customerType: 'wholesale',
+          _count: { orders: 0 }
+        })) as unknown as Customer[]);
+      } catch (dexieErr) {
+        console.error('Failed to load customers from Dexie', dexieErr);
+      }
     } finally {
       setLoading(false);
     }
@@ -165,6 +202,11 @@ export default function CustomersPage() {
   };
 
   const handleDelete = async (id: string) => {
+    const cust = customers.find(c => c.id === id);
+    if (cust && cust._count && cust._count.orders > 0) {
+      showAlert('error', 'Delete Blocked', 'This customer has existing orders and cannot be deleted.');
+      return;
+    }
     if (!await showConfirm('Delete Customer', 'Are you sure you want to delete this customer? This action cannot be undone.')) return;
     
     try {
@@ -191,6 +233,9 @@ export default function CustomersPage() {
       if (isOffline || networkFailed) {
         await addSyncTask('customer', 'DELETE', { id });
         showToast('offline', 'Action queued offline — will sync when connected');
+        try {
+          await db.customers.delete(id);
+        } catch {}
         setCustomers(prev => prev.filter(c => c.id !== id));
         return;
       }
@@ -240,6 +285,19 @@ export default function CustomersPage() {
         await addSyncTask('customer', action, payload);
         showToast('offline', 'Action queued offline — will sync when connected');
         
+        try {
+          await db.customers.put({
+            id: payload.id,
+            name: payload.name || '',
+            email: payload.email || null,
+            phone: payload.phone || null,
+            address: payload.address || null,
+            lastSynced: Date.now()
+          });
+        } catch (dexieErr) {
+          console.error('Failed to update customer cache offline', dexieErr);
+        }
+
         setIsModalOpen(false);
         // Optimistically update UI
         if (modalMode === 'ADD') {

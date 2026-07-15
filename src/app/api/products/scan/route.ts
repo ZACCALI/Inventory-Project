@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const matchedUom = product.uoms.find((u: any) => u.barcode === code);
+    const matchedUom = product.uoms.find((u: any) => u.barcode?.toLowerCase() === code.toLowerCase());
 
     return NextResponse.json({
       id: product.id,

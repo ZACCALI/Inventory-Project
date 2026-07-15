@@ -121,6 +121,7 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
           permanentlyFailedIds.has(payload.customerId) ||
           permanentlyFailedIds.has(payload.driverId) ||
           permanentlyFailedIds.has(payload.deliveryDriverId) ||
+          permanentlyFailedIds.has(payload.orderId) ||
           (Array.isArray(payload.items) && payload.items.some((i: { productId?: string }) => permanentlyFailedIds.has(i.productId || '')));
           
         if (hasFailedDependency) {
@@ -171,6 +172,7 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
       else if (task.type === 'batch') endpoint = `/api/batches/${payload.id}`;
       else if (task.type === 'delivery') endpoint = `/api/delivery/${payload.id}`;
       else if (task.type === 'settings') endpoint = '/api/settings';
+      else if (task.type === 'payment') endpoint = `/api/orders/${payload.orderId}/payments`;
 
       if (!endpoint) throw new Error('Unknown sync task type');
 
@@ -226,6 +228,7 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
                   if (ptPayload.customerId === tempId) { ptPayload.customerId = realId; modified = true; }
                   if (ptPayload.driverId === tempId) { ptPayload.driverId = realId; modified = true; }
                   if (ptPayload.deliveryDriverId === tempId) { ptPayload.deliveryDriverId = realId; modified = true; }
+                  if (ptPayload.orderId === tempId) { ptPayload.orderId = realId; modified = true; }
                   
                   // Remap nested order items (productId inside items array)
                   if (Array.isArray(ptPayload.items)) {
@@ -247,6 +250,8 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
                 await db.products.where('id').equals(tempId).modify({ id: realId }).catch(() => {});
               } else if (task.type === 'driver') {
                 await db.drivers.where('id').equals(tempId).modify({ id: realId }).catch(() => {});
+              } else if (task.type === 'category') {
+                await db.categories.where('id').equals(tempId).modify({ id: realId }).catch(() => {});
               }
             }
           } catch (e) {

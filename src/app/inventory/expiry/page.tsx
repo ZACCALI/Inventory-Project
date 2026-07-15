@@ -72,8 +72,15 @@ export default function ExpiryTrackingPage() {
         if (data.expiryWarningDays) setWarningDays(data.expiryWarningDays);
         if (data.lockProductEdit !== undefined) setLockProductEdit(data.lockProductEdit);
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      try {
+        const cached = await db.settings.get('current');
+        if (cached?.data) {
+          const raw = JSON.parse(cached.data);
+          if (raw.expiryWarningDays) setWarningDays(raw.expiryWarningDays);
+          if (raw.lockProductEdit !== undefined) setLockProductEdit(raw.lockProductEdit);
+        }
+      } catch {}
     }
   };
 
@@ -81,7 +88,19 @@ export default function ExpiryTrackingPage() {
 
   useEffect(() => {
     const applyOfflineTasks = async () => {
-      let finalBatches: Batch[] = Array.isArray(swrRes) ? [...swrRes] : [];
+      let baseBatches = [];
+      if (swrRes && Array.isArray(swrRes)) {
+        baseBatches = [...swrRes];
+        try {
+          localStorage.setItem('distritrack_cached_batches', JSON.stringify(swrRes));
+        } catch {}
+      } else {
+        try {
+          const cached = localStorage.getItem('distritrack_cached_batches');
+          if (cached) baseBatches = JSON.parse(cached);
+        } catch {}
+      }
+      let finalBatches: Batch[] = baseBatches;
       try {
         const pendingTasks = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).toArray();
         for (const task of pendingTasks) {
@@ -110,8 +129,18 @@ export default function ExpiryTrackingPage() {
       if (!res.ok) throw new Error('Network response was not ok');
       const data = await res.json();
       setBatches(data);
+      try {
+        localStorage.setItem('distritrack_cached_batches', JSON.stringify(data));
+      } catch {}
     } catch (error: unknown) {
-      if ((error as Error)?.message === 'Failed to fetch' || error instanceof TypeError) return;
+      if ((error as Error)?.message === 'Failed to fetch' || error instanceof TypeError) {
+        try {
+          const cached = localStorage.getItem('distritrack_cached_batches');
+          if (cached) setBatches(JSON.parse(cached));
+        } catch {}
+        return;
+      }
+      console.error('Failed to fetch batches', error);
     } finally {
       setLoading(false);
     }

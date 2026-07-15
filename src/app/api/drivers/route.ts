@@ -6,7 +6,7 @@ import { checkAndSetIdempotency } from '@/lib/idempotency';
 
 export async function GET(request: NextRequest) {
   try {
-    const { error } = await requirePermission(request, 'delivery');
+    const { error } = await requirePermission(request, 'drivers');
     if (error) return error;
 
     const drivers = await prisma.driver.findMany({
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, error } = await requirePermission(request, 'delivery');
+    const { user, error } = await requirePermission(request, 'drivers');
     if (error) return error;
 
     const body = await request.json();

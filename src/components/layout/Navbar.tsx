@@ -181,7 +181,17 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       fetch('/api/settings')
         .then(res => res.json())
         .then(data => setCompanyName(data.companyName || 'Amroding General Merchandise'))
-        .catch(() => setCompanyName('Amroding General Merchandise'));
+        .catch(async () => {
+          try {
+            const cached = await db.settings.get('current');
+            if (cached?.data) {
+              const raw = JSON.parse(cached.data);
+              setCompanyName(raw.companyName || 'Amroding General Merchandise');
+              return;
+            }
+          } catch {}
+          setCompanyName('Amroding General Merchandise');
+        });
     };
 
     fetchSettings();

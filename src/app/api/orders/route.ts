@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: firstError.message }, { status: 400 });
     }
 
-    const { customerId, items, orderReference, orderType, status, paymentStatus, isDelivery, deliveryDriverId, deliveryDriverName, deliveryDate, isOfflineSync, customerName } = parsed.data;
+    const { customerId, items, orderReference, orderType, status, paymentStatus, amountPaid, isDelivery, deliveryDriverId, deliveryDriverName, deliveryDate, isOfflineSync, customerName } = parsed.data;
     let { notes, discount, orderDate } = parsed.data;
 
     if (!notes && orderReference) {
@@ -244,6 +244,29 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        if (remainingToDeduct > 0) {
+          const oldestBatch = await tx.batch.findFirst({
+            where: { productId: item.productId },
+            orderBy: { createdAt: 'asc' }
+          });
+          if (oldestBatch) {
+            await tx.batch.update({
+              where: { id: oldestBatch.id },
+              data: { stock: oldestBatch.stock - remainingToDeduct }
+            });
+          } else {
+            await tx.batch.create({
+              data: {
+                productId: item.productId,
+                batchNumber: 'ADJ-OFFLINE',
+                initialQty: 0,
+                stock: -remainingToDeduct,
+                expiryDate: null
+              }
+            });
+          }
+        }
+
         // 2. Deduct from global stock
         await tx.product.update({
           where: { id: item.productId },
@@ -273,6 +296,30 @@ export async function POST(request: NextRequest) {
             status: 'pending',
           }
         });
+      }
+
+      // Create initial Payment record if paid/partial
+      if (['paid', 'partial'].includes(paymentStatus || 'unpaid')) {
+        let finalAmountPaid = Number(amountPaid) || 0;
+        
+        if (!finalAmountPaid && notes) {
+          const match = notes.match(/Amount Paid:\s*₱\s*([\d,.]+)/);
+          if (match) {
+            finalAmountPaid = parseFloat(match[1].replace(/,/g, '')) || 0;
+          }
+        }
+
+        if (finalAmountPaid > 0) {
+          await tx.payment.create({
+            data: {
+              amount: finalAmountPaid,
+              method: 'cash',
+              notes: 'Initial checkout payment',
+              orderId: newOrder.id,
+              createdAt: newOrder.orderDate
+            }
+          });
+        }
       }
 
       // Create audit log

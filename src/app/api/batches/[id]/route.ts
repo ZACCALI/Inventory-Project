@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requirePermission } from '@/lib/apiAuth';
+import { z } from 'zod';
+
+const updateBatchSchema = z.object({
+  expiryDate: z.string().trim().max(100).optional().or(z.literal('')).or(z.null()),
+  batchNumber: z.string().trim().max(100).optional().or(z.literal('')).or(z.null()),
+});
 
 export async function PUT(
   request: NextRequest,
@@ -12,7 +18,13 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { expiryDate, batchNumber } = body;
+
+    const parsed = updateBatchSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+    }
+
+    const { expiryDate, batchNumber } = parsed.data;
 
     const batch = await prisma.batch.findUnique({ where: { id }, include: { product: true } });
     if (!batch) {

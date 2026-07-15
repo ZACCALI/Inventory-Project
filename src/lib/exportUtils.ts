@@ -88,9 +88,18 @@ export async function exportToPDF(data: any[], columns: { header: string, dataKe
   });
 
   if (summaryData && summaryData.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const finalY = (doc as any).lastAutoTable.finalY || 50;
+    const summaryHeight = 15 + summaryData.length * 8;
+    let summaryStartY = finalY + 10;
+    
+    if (summaryStartY + summaryHeight > 190) {
+      doc.addPage();
+      summaryStartY = 25;
+    }
+
     autoTable(doc, {
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-      startY: (doc as any).lastAutoTable.finalY + 10,
+      startY: summaryStartY,
       head: [['Summary Metric', 'Value']],
       body: summaryData.map(row => [row.metric, row.value.replace(/₱/g, 'PHP ')]),
       theme: 'grid',

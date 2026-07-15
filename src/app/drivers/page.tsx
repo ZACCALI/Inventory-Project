@@ -15,7 +15,10 @@ interface Driver {
   phone: string | null;
   vehicleInfo: string | null;
   status: string;
-  createdAt: string;
+  createdAt?: string;
+  _count?: {
+    deliveries: number;
+  };
 }
 
 export default function DriversPage() {
@@ -78,7 +81,26 @@ export default function DriversPage() {
           .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
           .toArray();
 
-        let modifiedDrivers = Array.isArray(swrRes) ? [...swrRes] : [];
+        let baseDrivers: Driver[] = [];
+        if (Array.isArray(swrRes)) {
+          baseDrivers = [...swrRes];
+        } else {
+          try {
+            const cached = await db.drivers.toArray();
+            baseDrivers = cached.map(d => ({
+              id: d.id,
+              name: d.name,
+              phone: d.phone,
+              status: d.status,
+              vehicleInfo: d.vehicleInfo,
+              _count: { deliveries: 0 }
+            }));
+          } catch (dexieErr) {
+            console.error('Failed to load drivers from Dexie', dexieErr);
+          }
+        }
+
+        let modifiedDrivers = [...baseDrivers];
 
         for (const task of pendingTasks) {
           try {
@@ -113,15 +135,28 @@ export default function DriversPage() {
     if (typeof document !== 'undefined' && document.hidden) return;
     try {
       const res = await fetch('/api/drivers');
+      if (!res.ok) throw new Error('Failed to fetch drivers');
       const data = await res.json();
       if (Array.isArray(data)) {
         setDrivers(data);
       } else {
-        console.error('API did not return an array:', data);
         setDrivers([]);
       }
     } catch (error) {
-      console.error('Failed to fetch drivers', error);
+      console.error('Failed to fetch drivers, using cache fallback', error);
+      try {
+        const cached = await db.drivers.toArray();
+        setDrivers(cached.map(d => ({
+          id: d.id,
+          name: d.name,
+          phone: d.phone,
+          status: d.status,
+          vehicleInfo: d.vehicleInfo,
+          _count: { deliveries: 0 }
+        })) as unknown as Driver[]);
+      } catch (dexieErr) {
+        console.error('Failed to load drivers from Dexie', dexieErr);
+      }
     } finally {
       setLoading(false);
     }
@@ -197,6 +232,19 @@ export default function DriversPage() {
         await addSyncTask('driver', action, payload);
         showToast('offline', 'Action queued offline — will sync when connected');
         
+        try {
+          await db.drivers.put({
+            id: payload.id,
+            name: payload.name || '',
+            phone: payload.phone || null,
+            status: payload.status || 'active',
+            vehicleInfo: payload.vehicleInfo || null,
+            lastSynced: Date.now()
+          });
+        } catch (dexieErr) {
+          console.error('Failed to update driver cache offline', dexieErr);
+        }
+
         closeModal();
         if (editingDriver) {
           setDrivers(prev => prev.map(d => d.id === payload.id ? { ...d, ...payload } as unknown as Driver : d));
@@ -241,6 +289,9 @@ export default function DriversPage() {
       if (isOffline || networkFailed) {
         await addSyncTask('driver', 'DELETE', { id });
         showToast('offline', 'Action queued offline — will sync when connected');
+        try {
+          await db.drivers.delete(id);
+        } catch {}
         setDrivers(prev => prev.filter(d => d.id !== id));
         return;
       }

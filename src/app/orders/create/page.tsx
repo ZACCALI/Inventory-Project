@@ -281,11 +281,60 @@ export default function CreateOrderPage() {
           }
         } catch (e) {
           console.warn('Network error during initial load, falling back to local cache', e);
-          // Fall back to Dexie local cache
+          // Fall back to Dexie local cache for products
           try {
             const cachedProducts = await db.products.toArray();
-            if (cachedProducts.length > 0) fetchedProducts = cachedProducts;
+            fetchedProducts = cachedProducts.map(p => ({
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              barcode: p.barcode,
+              price: p.price,
+              costPrice: p.costPrice,
+              stock: p.stock,
+              image: p.image,
+              category: p.categoryName ? { name: p.categoryName } : null,
+              uoms: p.uoms || [],
+              _count: { orderItems: 0, stockLogs: 0 }
+            }));
           } catch (cacheErr) { console.warn('No product cache', cacheErr); }
+
+          // Fall back to Dexie local cache for customers
+          try {
+            const cachedCustomers = await db.customers.toArray();
+            fetchedCustomers = cachedCustomers.map(c => ({
+              id: c.id,
+              name: c.name,
+              email: c.email,
+              phone: c.phone,
+              address: c.address,
+              customerType: 'wholesale',
+              _count: { orders: 0 }
+            }));
+          } catch (cacheErr) { console.warn('No customer cache', cacheErr); }
+
+          // Fall back to Dexie local cache for drivers
+          try {
+            const cachedDrivers = await db.drivers.toArray();
+            fetchedDrivers = cachedDrivers.map(d => ({
+              id: d.id,
+              name: d.name,
+              phone: d.phone,
+              status: d.status,
+              vehicleInfo: d.vehicleInfo,
+              _count: { deliveries: 0 }
+            }));
+          } catch (cacheErr) { console.warn('No driver cache', cacheErr); }
+
+          // Fall back to Dexie local cache for settings
+          try {
+            const cachedSettings = await db.settings.get('current');
+            if (cachedSettings?.data) {
+              const raw = JSON.parse(cachedSettings.data);
+              setLockOrderDate(raw.lockOrderDate ?? true);
+              if (raw.companyName) setCompanyName(raw.companyName);
+            }
+          } catch (cacheErr) { console.warn('No settings cache', cacheErr); }
         }
 
         // Apply offline tasks
@@ -462,16 +511,12 @@ export default function CreateOrderPage() {
   const totalAmount = cart.reduce((sum, item) => sum + ((typeof item.qty === 'number' ? item.qty : 0) * item.cartPrice), 0);
   
   // Bounds checking on discount
-  let parsedDiscount = parseFloat(discountValue) || 0;
-  if (parsedDiscount < 0) {
-    showToast('Discount cannot be negative.', 'error');
-    parsedDiscount = 0;
-  }
-  if (discountType === 'percent' && parsedDiscount > 100) parsedDiscount = 100;
+  const parsedDiscount = Math.max(0, parseFloat(discountValue) || 0);
+  const finalParsedDiscount = discountType === 'percent' && parsedDiscount > 100 ? 100 : parsedDiscount;
 
   const discountAmount = discountType === 'percent' 
-    ? totalAmount * (parsedDiscount / 100) 
-    : parsedDiscount;
+    ? totalAmount * (finalParsedDiscount / 100) 
+    : finalParsedDiscount;
     
   const finalTotal = Math.max(0, totalAmount - discountAmount);
   
@@ -502,11 +547,19 @@ export default function CreateOrderPage() {
 
     // Payment Validation
     const paidAmount = parseFloat(amountPaid) || 0;
-    if (['paid', 'partial'].includes(paymentStatus) && paidAmount < finalTotal && paymentStatus === 'paid') {
+    if (paymentStatus === 'paid' && paidAmount < finalTotal - 0.01) {
       showToast('Paid amount must meet or exceed the total for Fully Paid status.', 'error');
       return;
     }
-    if (['paid', 'partial'].includes(paymentStatus) && paidAmount > finalTotal + 0.01) {
+    if (paymentStatus === 'partial' && (paidAmount <= 0 || paidAmount >= finalTotal - 0.01)) {
+      showToast('Paid amount for Partial Payment must be greater than 0 and less than the total.', 'error');
+      return;
+    }
+    if (paymentStatus === 'unpaid' && paidAmount > 0) {
+      showToast('Paid amount must be 0 for Unpaid status.', 'error');
+      return;
+    }
+    if (paidAmount > finalTotal + 0.01) {
       showToast('Payment amount cannot exceed the total bill.', 'error');
       return;
     }
@@ -552,6 +605,7 @@ export default function CreateOrderPage() {
         discount: discountAmount, // Backend expects flat absolute amount, which we calculated
         orderType: 'wholesale',
         paymentStatus,
+        amountPaid: paidAmount,
         status: orderStatus,
         isDelivery: fulfillmentMode === 'delivery',
         deliveryDriverId: fulfillmentMode === 'delivery' ? deliveryDriverId : undefined,
@@ -1319,6 +1373,7 @@ export default function CreateOrderPage() {
                             min="1" 
                             value={item.qty || ''} 
                             onChange={e => updateQty(item.product.id, item.uomName, e.target.value === '' ? '' : parseInt(e.target.value))}
+                            onWheel={e => e.currentTarget.blur()}
                             style={{ width: '40px', textAlign: 'center', border: 'none', background: 'transparent', padding: '4px', fontSize: '13px', fontWeight: 600 }}
                           />
                           <button onClick={() => updateQty(item.product.id, item.uomName, Number(item.qty) + 1, true)} className="btn btn-icon btn-ghost" style={{ width: '28px', height: '28px', padding: 0 }}><Plus size={14} /></button>
@@ -1361,7 +1416,15 @@ export default function CreateOrderPage() {
                     <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', fontSize: '12px' }}>
                       {discountType === 'percent' ? '%' : '₱'}
                     </span>
-                    <input id="create-order-discount" name="discountValue" aria-label="Discount amount" type="number" step="0.01" min="0" max={discountType === 'percent' ? "100" : undefined} className="form-input" placeholder="0" value={discountValue} onChange={e => setDiscountValue(e.target.value)} style={{ fontSize: '13px', height: '40px', paddingLeft: '30px', background: 'var(--bg-main)' }} />
+                    <input id="create-order-discount" name="discountValue" aria-label="Discount amount" type="number" step="0.01" min="0" max={discountType === 'percent' ? "100" : undefined} className="form-input" placeholder="0" value={discountValue} onChange={e => {
+                      const val = e.target.value;
+                      if (parseFloat(val) < 0) {
+                        showToast('Discount cannot be negative.', 'error');
+                        setDiscountValue('0');
+                      } else {
+                        setDiscountValue(val);
+                      }
+                    }} onWheel={e => e.currentTarget.blur()} style={{ fontSize: '13px', height: '40px', paddingLeft: '30px', background: 'var(--bg-main)' }} />
                   </div>
                 </div>
               </div>
@@ -1371,7 +1434,7 @@ export default function CreateOrderPage() {
                   <label htmlFor="create-order-amount-paid" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Amount Tendered <span style={{ color: 'var(--danger)' }}>*</span></label>
                   <div style={{ position: 'relative' }}>
                     <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', fontSize: '14px', fontWeight: 700 }}>₱</span>
-                    <input id="create-order-amount-paid" name="amountPaid" type="number" step="0.01" className="form-input" placeholder="0.00" value={amountPaid} onChange={e => setAmountPaid(e.target.value)} style={{ fontSize: '16px', height: '48px', paddingLeft: '30px', fontWeight: 700, color: 'var(--success-dark)', borderColor: (['paid', 'partial'].includes(paymentStatus) && (parseFloat(amountPaid)||0) < finalTotal && paymentStatus === 'paid') ? 'var(--danger)' : 'var(--border)' }} />
+                    <input id="create-order-amount-paid" name="amountPaid" type="number" step="0.01" className="form-input" placeholder="0.00" value={amountPaid} onChange={e => setAmountPaid(e.target.value)} onWheel={e => e.currentTarget.blur()} style={{ fontSize: '16px', height: '48px', paddingLeft: '30px', fontWeight: 700, color: 'var(--success-dark)', borderColor: (['paid', 'partial'].includes(paymentStatus) && (parseFloat(amountPaid)||0) < finalTotal && paymentStatus === 'paid') ? 'var(--danger)' : 'var(--border)' }} />
                   </div>
                 </div>
               )}
@@ -1544,6 +1607,7 @@ export default function CreateOrderPage() {
                             type="number" 
                             value={item.qty}
                             onChange={(e) => updateQty(item.product.id, item.uomName, e.target.value === '' ? '' : parseInt(e.target.value))}
+                            onWheel={e => e.currentTarget.blur()}
                             style={{ width: '40px', textAlign: 'center', fontWeight: 700, fontSize: '15px', border: 'none', background: 'transparent', color: 'var(--text-primary)' }}
                           />
                           <button onClick={() => updateQty(item.product.id, item.uomName, Number(item.qty) + 1, true)} className="btn btn-icon btn-ghost" style={{ width: '28px', height: '28px', padding: 0 }}><Plus size={14} /></button>
@@ -1559,6 +1623,7 @@ export default function CreateOrderPage() {
                             type="number" 
                             value={item.cartPrice} 
                             onChange={e => updatePrice(item.product.id, item.uomName, parseFloat(e.target.value) || 0)}
+                            onWheel={e => e.currentTarget.blur()}
                             style={{ width: '70px', textAlign: 'right', border: '1px dashed var(--border)', background: 'var(--bg-main)', padding: '4px 8px', fontSize: '14px', fontWeight: 700, color: 'var(--primary)', borderRadius: '6px' }}
                           />
                         </div>

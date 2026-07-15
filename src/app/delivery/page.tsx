@@ -72,7 +72,7 @@ export default function DeliveryPage() {
     try {
       const localDrivers = await db.drivers.toArray();
       if (localDrivers.length > 0) {
-        setDrivers(localDrivers as any[]);
+        setDrivers(localDrivers as unknown as Driver[]);
       }
     } catch (dbErr) {
       console.error('Failed to read drivers from Dexie', dbErr);
@@ -149,18 +149,45 @@ export default function DeliveryPage() {
     setActionLoading(true);
 
     try {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      let networkFailed = false;
+      let finalProofPhoto = formData.proofPhoto;
+
+      if (!isOffline && proofPhotoBase64) {
+        try {
+          const arr = proofPhotoBase64.split(',');
+          const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+          const bstr = atob(arr[1]);
+          let n = bstr.length;
+          const u8arr = new Uint8Array(n);
+          while (n--) u8arr[n] = bstr.charCodeAt(n);
+          const blob = new Blob([u8arr], { type: mime });
+
+          const uploadFormData = new FormData();
+          uploadFormData.append('file', blob, 'delivery-photo.jpg');
+
+          const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadFormData });
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            finalProofPhoto = uploadData.url;
+          }
+        } catch (uploadErr) {
+          console.error('Error uploading proof photo', uploadErr);
+        }
+      }
+
       const payload: Record<string, unknown> = {
         ...formData,
+        proofPhoto: finalProofPhoto,
         deliveredAt: formData.status === 'delivered' ? new Date().toISOString() : undefined
       };
 
-      // Attach Base64 photo for offline queuing if present
       if (proofPhotoBase64) {
         payload.proofPhotoBase64 = proofPhotoBase64;
+        if (isOffline) {
+          payload.proofPhoto = null; // Clear base64 so we don't save it in db queue
+        }
       }
-
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      let networkFailed = false;
 
       if (!isOffline) {
         try {

@@ -17,6 +17,14 @@ interface APIProduct {
   stock?: number;
   image?: string | null;
   category?: { name: string } | null;
+  uoms?: {
+    id?: string;
+    name: string;
+    barcode: string | null;
+    multiplier: number;
+    price: number;
+    isBase?: boolean;
+  }[];
 }
 
 interface APICustomer {
@@ -73,6 +81,7 @@ async function runPrefetch() {
             stock: p.stock || 0,
             image: p.image || null,
             categoryName: p.category?.name || null,
+            uoms: p.uoms || [],
             lastSynced: now,
           }))
         );

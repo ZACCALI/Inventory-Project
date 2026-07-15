@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Truck } from 'lucide-react';
 import Sidebar from '@/components/layout/Sidebar';
 import Navbar from '@/components/layout/Navbar';
+import { db } from '@/lib/db';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -37,8 +38,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           return res.json();
         })
         .then(data => setSettings(data))
-        .catch(err => {
-          console.error('Failed to fetch settings for permissions', err);
+        .catch(async err => {
+          console.error('Failed to fetch settings for permissions, checking local cache', err);
+          try {
+            const cached = await db.settings.get('current');
+            if (cached?.data) {
+              setSettings(JSON.parse(cached.data));
+              return;
+            }
+          } catch (dexieErr) {
+            console.error('Failed to read settings from Dexie cache', dexieErr);
+          }
           // Set a fallback to avoid infinite loading on offline mode
           setSettings({}); 
         });
@@ -69,7 +79,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathMappings: Record<string, string> = {
       '/inventory': 'inventory',
       '/delivery': 'delivery',
-      '/drivers': 'delivery',
+      '/drivers': 'drivers',
       '/customers': 'customers',
       '/orders': 'orders',
       '/expenses': 'finances', 

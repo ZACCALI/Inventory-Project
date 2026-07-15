@@ -62,7 +62,7 @@ const getNavItems = (userRole?: string, permissions: string[] = []) => {
   // People
   const peopleItems = [];
   if (hasPerm('customers')) peopleItems.push({ name: 'Customers', href: '/customers', icon: Users });
-  if (hasPerm('delivery')) peopleItems.push({ name: 'Delivery Men', href: '/drivers', icon: Truck });
+  if (hasPerm('drivers')) peopleItems.push({ name: 'Delivery Men', href: '/drivers', icon: Truck });
   if (peopleItems.length > 0) {
     sections.push({ section: 'People', items: peopleItems });
   }

@@ -161,10 +161,31 @@ export default function StockInOutPage() {
   const fetchProducts = async () => {
     try {
       const res = await fetch('/api/products');
-      const data = await res.json();
-      setProducts(Array.isArray(data) ? data : []);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+      if (res.ok) {
+        const data = await res.json();
+        setProducts(Array.isArray(data) ? data : []);
+      } else {
+        throw new Error('Failed to fetch products');
+      }
+    } catch {
+      try {
+        const cached = await db.products.toArray();
+        const mapped = cached.map(p => ({
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          barcode: p.barcode,
+          price: p.price,
+          costPrice: p.costPrice,
+          stock: p.stock,
+          image: p.image,
+          category: p.categoryName ? { name: p.categoryName } : null,
+          uoms: p.uoms || []
+        }));
+        setProducts(mapped as unknown as Product[]);
+      } catch (err) {
+        console.error('Failed to load products from Dexie cache', err);
+      }
     }
   };
 
@@ -174,9 +195,16 @@ export default function StockInOutPage() {
       if (res.ok) {
         const data = await res.json();
         setCategories(data);
+      } else {
+        throw new Error('Failed to fetch categories');
       }
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
+      try {
+        const cachedCats = await db.categories.toArray();
+        setCategories(cachedCats as unknown as {id: string, name: string}[]);
+      } catch (err) {
+        console.error('Failed to load categories from Dexie cache', err);
+      }
     }
   };
 

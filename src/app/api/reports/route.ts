@@ -51,12 +51,12 @@ export async function GET(request: NextRequest) {
       const stockValueResult = [{ total: allProducts.reduce((sum, p) => sum + (p.stock * p.costPrice), 0) }];
       const totalStockValue = Number(stockValueResult[0]?.total || 0);
 
-      // Today's sales with timezone
-      const now = new Date();
-      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const pst = new Date(utc + (3600000 * 8));
-      pst.setHours(0, 0, 0, 0);
-      const todayUTC = new Date(pst.getTime() - (3600000 * 8));
+      // Today's sales in Asia/Manila (PST, UTC+8) timezone
+      const nowUTC = new Date();
+      const pstTime = nowUTC.getTime() + (8 * 3600000);
+      const pstDate = new Date(pstTime);
+      pstDate.setUTCHours(0, 0, 0, 0);
+      const todayUTC = new Date(pstDate.getTime() - (8 * 3600000));
       const todaySalesResult = await prisma.order.aggregate({
         where: { createdAt: { gte: todayUTC }, status: { not: 'cancelled' }, isArchived: false },
         _sum: { totalAmount: true },
@@ -135,17 +135,19 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'asc' },
       });
 
-      // Group by date
+      // Group by date in Asia/Manila (PST, UTC+8) timezone
       const salesByDate: Record<string, number> = {};
+      const nowUTC = new Date();
       for (let i = 0; i < 30; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() - (29 - i));
+        const date = new Date(nowUTC.getTime() + (8 * 3600000));
+        date.setUTCDate(date.getUTCDate() - (29 - i));
         const key = date.toISOString().split('T')[0];
         salesByDate[key] = 0;
       }
 
       orders.forEach(order => {
-        const key = new Date(order.createdAt).toISOString().split('T')[0];
+        const orderPST = new Date(new Date(order.createdAt).getTime() + (8 * 3600000));
+        const key = orderPST.toISOString().split('T')[0];
         if (salesByDate[key] !== undefined) {
           salesByDate[key] += order.totalAmount;
         }
@@ -213,7 +215,10 @@ export async function GET(request: NextRequest) {
       const monthlySummary: Record<string, { revenue: number; cost: number; orders: number; expenses: number; collections: number }> = {};
 
       orders.forEach(order => {
-        const key = new Date(order.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short' });
+        const orderPST = new Date(new Date(order.createdAt).getTime() + (8 * 3600000));
+        const year = orderPST.getUTCFullYear();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const key = `${monthNames[orderPST.getUTCMonth()]} ${year}`;
         if (!monthlySummary[key]) {
           monthlySummary[key] = { revenue: 0, cost: 0, orders: 0, expenses: 0, collections: 0 };
         }
@@ -225,7 +230,10 @@ export async function GET(request: NextRequest) {
       });
 
       expenses.forEach(expense => {
-        const key = new Date(expense.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short' });
+        const datePST = new Date(new Date(expense.date).getTime() + (8 * 3600000));
+        const year = datePST.getUTCFullYear();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const key = `${monthNames[datePST.getUTCMonth()]} ${year}`;
         if (!monthlySummary[key]) {
           monthlySummary[key] = { revenue: 0, cost: 0, orders: 0, expenses: 0, collections: 0 };
         }
@@ -233,7 +241,10 @@ export async function GET(request: NextRequest) {
       });
 
       payments.forEach(payment => {
-        const key = new Date(payment.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short' });
+        const datePST = new Date(new Date(payment.createdAt).getTime() + (8 * 3600000));
+        const year = datePST.getUTCFullYear();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const key = `${monthNames[datePST.getUTCMonth()]} ${year}`;
         if (!monthlySummary[key]) {
           monthlySummary[key] = { revenue: 0, cost: 0, orders: 0, expenses: 0, collections: 0 };
         }

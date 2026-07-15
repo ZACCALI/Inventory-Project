@@ -143,10 +143,27 @@ export default function ExpensesPage() {
           const settings = await res.json();
           if (settings.expenseCategories) {
             const parsed = JSON.parse(settings.expenseCategories);
-            if (Array.isArray(parsed) && parsed.length > 0) setCategories(parsed);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setCategories(parsed);
+              return;
+            }
           }
         }
-      } catch {}
+        throw new Error();
+      } catch {
+        try {
+          const cachedSettings = await db.settings.get('current');
+          if (cachedSettings?.data) {
+            const data = JSON.parse(cachedSettings.data);
+            if (data.expenseCategories) {
+              const parsed = JSON.parse(data.expenseCategories);
+              if (Array.isArray(parsed) && parsed.length > 0) setCategories(parsed);
+            }
+          }
+        } catch (dexieErr) {
+          console.warn('Failed to load settings from Dexie cache', dexieErr);
+        }
+      }
     })();
   }, []);
 
