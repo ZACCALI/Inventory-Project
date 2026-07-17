@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Package, ShoppingCart, Truck, BarChart3, Shield, ArrowLeft } from 'lucide-react';
@@ -14,8 +14,11 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [companyName, setCompanyName] = useState('Amroding General Merchandise');
+  const [rememberMe, setRememberMe] = useState(true);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Load settings
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
@@ -24,6 +27,23 @@ export default function LoginPage() {
         }
       })
       .catch(err => console.error('Failed to load settings:', err));
+
+    // Load saved email if exists
+    try {
+      const savedEmail = localStorage.getItem('amroding_remember_email');
+      if (savedEmail) {
+        setEmail(savedEmail);
+        setRememberMe(true);
+        // Autofill may happen slightly after mount; defer focus to ensure input is ready
+        setTimeout(() => {
+          passwordInputRef.current?.focus();
+        }, 100);
+      } else {
+        setRememberMe(false);
+      }
+    } catch (e) {
+      console.warn('Failed to load remembered email:', e);
+    }
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -32,6 +52,17 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // Save or remove remembered email
+      try {
+        if (rememberMe) {
+          localStorage.setItem('amroding_remember_email', email);
+        } else {
+          localStorage.removeItem('amroding_remember_email');
+        }
+      } catch (e) {
+        console.warn('Failed to save remember me preference:', e);
+      }
+
       const result = await signIn('credentials', {
         email,
         password,
@@ -139,6 +170,7 @@ export default function LoginPage() {
               <div style={{ position: 'relative', marginTop: '4px' }}>
                 <input
                   id="password"
+                  ref={passwordInputRef}
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   className="form-input"
@@ -167,6 +199,25 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', margin: '16px 0 24px 0' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  style={{
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '4px',
+                    border: '1px solid var(--border)',
+                    accentColor: 'var(--primary)',
+                    cursor: 'pointer'
+                  }}
+                />
+                Remember me
+              </label>
             </div>
 
             <button
