@@ -12,6 +12,7 @@ const withSerwist = withSerwistInit({
   register: false,
   additionalPrecacheEntries: [
     { url: "/~offline", revision },
+    { url: "/", revision },
     { url: "/login", revision },
     { url: "/dashboard", revision },
     { url: "/inventory", revision },
