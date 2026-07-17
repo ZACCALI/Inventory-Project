@@ -108,8 +108,12 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
 
   for (const task of pending) {
     try {
+      // Reload task from database to pick up any remapped IDs (e.g. customerId) updated by previous loop iterations
+      const freshTask = await db.syncQueue.get(task.id!);
+      if (!freshTask || freshTask.syncStatus === 'synced') continue;
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const payload: any = JSON.parse(task.payload);
+      const payload: any = JSON.parse(freshTask.payload);
 
       // CASCADING FAILURE PREVENTION
       // If a parent task permanently failed, this task might depend on it.
