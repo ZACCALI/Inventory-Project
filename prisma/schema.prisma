@@ -1,31 +1,27 @@
-// Amroding Database Schema
-// Using PostgreSQL for production
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("staff") // admin, staff, cashier
-  avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  stockLogs StockLog[]
-  orders    Order[]
-  auditLogs AuditLog[]
-  notifications Notification[]
+  id                String             @id @default(cuid())
+  name              String
+  email             String             @unique
+  password          String
+  role              String             @default("staff")
+  avatar            String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  orders            Order[]
   pushSubscriptions PushSubscription[]
+  stockLogs         StockLog[]
 }
 
 model Category {
@@ -34,17 +30,15 @@ model Category {
   description String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  products Product[]
+  products    Product[]
 }
 
 model Unit {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
-
 
 model Customer {
   id            String   @id @default(cuid())
@@ -53,39 +47,35 @@ model Customer {
   phone         String?
   email         String?
   address       String?
-  customerType  String   @default("wholesale") // wholesale, walk-in
+  customerType  String   @default("wholesale")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  orders Order[]
+  orders        Order[]
 
   @@index([name])
 }
 
 model Product {
-  id         String    @id @default(cuid())
+  id         String       @id @default(cuid())
   name       String
-  sku        String    @unique
-  barcode    String?   @unique
-  price      Float     @default(0)
-  costPrice  Float     @default(0)
-  stock      Int       @default(0)
-  minStock   Int       @default(10)
-  unit       String    @default("pcs")
+  sku        String       @unique
+  barcode    String?      @unique
+  price      Float        @default(0)
+  costPrice  Float        @default(0)
+  stock      Int          @default(0)
+  minStock   Int          @default(10)
+  unit       String       @default("pcs")
   expiryDate DateTime?
   image      String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  isArchived Boolean   @default(false)
-
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  isArchived Boolean      @default(false)
   categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id])
-
-
-  stockLogs  StockLog[]
-  orderItems OrderItem[]
   batches    Batch[]
+  orderItems OrderItem[]
+  category   Category?    @relation(fields: [categoryId], references: [id])
   uoms       ProductUOM[]
+  stockLogs  StockLog[]
 
   @@index([categoryId])
   @@index([isArchived])
@@ -95,18 +85,16 @@ model Product {
 }
 
 model Batch {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   batchNumber String?
-  stock       Int       // Current remaining stock in this batch
-  initialQty  Int       // How much was originally received
-  expiryDate DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  productId  String
-  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  stockLogs  StockLog[]
+  stock       Int
+  initialQty  Int
+  expiryDate  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  productId   String
+  product     Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockLogs   StockLog[]
 
   @@index([productId])
   @@index([expiryDate])
@@ -114,21 +102,18 @@ model Batch {
 
 model StockLog {
   id        String   @id @default(cuid())
-  type      String   // IN or OUT
+  type      String
   quantity  Int
   reason    String?
   source    String   @default("MANUAL")
   isVoided  Boolean  @default(false)
   createdAt DateTime @default(now())
-
   productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
   batchId   String?
-  batch     Batch?  @relation(fields: [batchId], references: [id], onDelete: SetNull)
-
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
+  batch     Batch?   @relation(fields: [batchId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@index([productId])
   @@index([userId])
@@ -137,28 +122,25 @@ model StockLog {
 }
 
 model Order {
-  id            String   @id @default(cuid())
-  orderNumber   String   @unique
-  totalAmount   Float    @default(0)
-  status        String   @default("pending") // pending, confirmed, delivered, cancelled
-  paymentStatus String   @default("unpaid")  // unpaid, partial, paid
-  orderType     String   @default("wholesale") // wholesale, pos
-  discount      Float    @default(0)
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique
+  totalAmount   Float       @default(0)
+  status        String      @default("pending")
+  paymentStatus String      @default("unpaid")
+  orderType     String      @default("wholesale")
+  discount      Float       @default(0)
   notes         String?
-  orderDate     DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  isArchived    Boolean  @default(false)
-
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
-
-  createdById String?
-  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
-
-  items    OrderItem[]
-  payments  Payment[]
-  delivery Delivery?
+  orderDate     DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  isArchived    Boolean     @default(false)
+  customerId    String
+  createdById   String?
+  delivery      Delivery?
+  createdBy     User?       @relation(fields: [createdById], references: [id])
+  customer      Customer    @relation(fields: [customerId], references: [id])
+  items         OrderItem[]
+  payments      Payment[]
 
   @@index([customerId])
   @@index([createdById])
@@ -170,18 +152,16 @@ model Order {
 }
 
 model OrderItem {
-  id       String @id @default(cuid())
-  quantity Int
-  price    Float
-  subtotal Float
-  uomName  String?
+  id         String  @id @default(cuid())
+  quantity   Int
+  price      Float
+  subtotal   Float
+  uomName    String?
   multiplier Int?
-
-  orderId String
-  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  orderId    String
+  productId  String
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id])
 
   @@index([orderId])
   @@index([productId])
@@ -190,13 +170,12 @@ model OrderItem {
 model Payment {
   id        String   @id @default(cuid())
   amount    Float
-  method    String   @default("cash") // cash, gcash, bank_transfer, check
-  reference String?  // transaction reference number
+  method    String   @default("cash")
+  reference String?
   notes     String?
   createdAt DateTime @default(now())
-
-  orderId String
-  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
 }
@@ -207,17 +186,15 @@ model Delivery {
   driverPhone   String?
   scheduledDate DateTime?
   deliveredAt   DateTime?
-  status        String    @default("pending") // pending, in_transit, delivered, failed, cancelled
+  status        String    @default("pending")
   proofPhoto    String?
   notes         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
-  orderId  String  @unique
-  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  driverId String?
-  driver   Driver? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  orderId       String    @unique
+  driverId      String?
+  driver        Driver?   @relation(fields: [driverId], references: [id])
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([driverId])
@@ -228,10 +205,9 @@ model Driver {
   name        String
   phone       String?
   vehicleInfo String?
-  status      String     @default("active") // active, inactive
+  status      String     @default("active")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-
   deliveries  Delivery[]
 }
 
@@ -258,40 +234,40 @@ model OrderReference {
 }
 
 model SystemSettings {
-  id                    String   @id @default("1")
-  companyName           String   @default("My Company")
-  email                 String?
-  phone                 String?
-  address               String?
-  currency              String   @default("PHP")
-  taxRate               Float    @default(0)
-  expiryWarningDays     Int      @default(30)
-  cleanupMode           Boolean  @default(false)
-  lockProductDelete     Boolean  @default(true)
-  lockProductEdit       Boolean  @default(false)
-  lockOrderDelete       Boolean  @default(true)
-  lockOrderEdit         Boolean  @default(false)
-  lockOrderCancel       Boolean  @default(false)
-  lockOrderDate         Boolean  @default(false)
-  lockStockVoid         Boolean  @default(false)
-  stockInReasons        String   @default("[\"New Stock Delivery\",\"Customer Return\",\"Inventory Adjustment\",\"Transfer In\",\"Other\"]")
-  stockOutReasons       String   @default("[\"Damage/Spoilage\",\"Expired\",\"Internal Use\",\"Inventory Adjustment\",\"Customer Order\",\"Transfer Out\",\"Other\"]")
-  expenseCategories     String   @default("[\"Rent & Lease\",\"Utilities\",\"Payroll & Salary\",\"Office Supplies\",\"Marketing\",\"Maintenance\",\"Transportation\",\"Other\"]")
-  staffPermissions      String   @default("inventory,stock,delivery,drivers,history")
-  cashierPermissions    String   @default("customers,orders")
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                 String   @id @default("1")
+  companyName        String   @default("My Company")
+  email              String?
+  phone              String?
+  address            String?
+  currency           String   @default("PHP")
+  taxRate            Float    @default(0)
+  expiryWarningDays  Int      @default(30)
+  cleanupMode        Boolean  @default(false)
+  lockProductDelete  Boolean  @default(true)
+  lockProductEdit    Boolean  @default(false)
+  lockOrderDelete    Boolean  @default(true)
+  lockOrderEdit      Boolean  @default(false)
+  lockOrderCancel    Boolean  @default(false)
+  lockOrderDate      Boolean  @default(false)
+  lockStockVoid      Boolean  @default(false)
+  stockInReasons     String   @default("[\"New Stock Delivery\",\"Customer Return\",\"Inventory Adjustment\",\"Transfer In\",\"Other\"]")
+  stockOutReasons    String   @default("[\"Damage/Spoilage\",\"Expired\",\"Internal Use\",\"Inventory Adjustment\",\"Customer Order\",\"Transfer Out\",\"Other\"]")
+  staffPermissions   String   @default("inventory,stock,delivery,drivers,history")
+  cashierPermissions String   @default("customers,orders")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  expenseCategories  String   @default("[\"Rent & Lease\",\"Utilities\",\"Payroll & Salary\",\"Office Supplies\",\"Marketing\",\"Maintenance\",\"Transportation\",\"Other\"]")
 }
 
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
-  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action    String   // e.g., "CREATE", "UPDATE", "DELETE"
-  entity    String   // e.g., "Order", "Expense", "Delivery"
-  details   String   // JSON string or plain text description
-  mode      String   @default("online") // "online" or "offline"
+  action    String
+  entity    String
+  details   String
   createdAt DateTime @default(now())
+  mode      String   @default("online")
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([entity])
@@ -301,32 +277,31 @@ model AuditLog {
 }
 
 model ProductUOM {
-  id         String   @id @default(cuid())
-  name       String   // e.g., "Pack", "Box"
-  barcode    String?  @unique
-  multiplier Int      // "Pack" = 1, "Box" = 10
-  price      Float    // Price for this specific unit
-  isBase     Boolean  @default(false)
-  
+  id         String  @id @default(cuid())
+  name       String
+  barcode    String? @unique
+  multiplier Int
+  price      Float
+  isBase     Boolean @default(false)
   productId  String
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
 }
 
 model Notification {
   id          String   @id @default(cuid())
-  userId      String   
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String   // "low_stock", "expiry", "delivery", "system"
+  userId      String
+  type        String
   title       String
   message     String
   link        String?
   isRead      Boolean  @default(false)
   isDismissed Boolean  @default(false)
-  referenceId String?  // e.g., productId, batchId
+  referenceId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, isDismissed])
@@ -337,11 +312,11 @@ model Notification {
 model PushSubscription {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   endpoint  String   @unique
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }

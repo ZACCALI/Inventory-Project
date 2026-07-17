@@ -1,8 +1,16 @@
-import NextAuth from 'next-auth';
+import NextAuth, { CredentialsSignin } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { rateLimit } from '@/lib/rateLimit';
+
+class DatabaseError extends CredentialsSignin {
+  code = 'DatabaseError';
+}
+
+class RateLimitError extends CredentialsSignin {
+  code = 'RateLimitError';
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -21,24 +29,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Rate limit: 5 login attempts per email per 15 minutes
         if (process.env.NODE_ENV !== 'development') {
-          const { allowed } = rateLimit(`login:${email}`, 5, 15 * 60 * 1000);
-          if (!allowed) {
-            throw new Error('Too many login attempts. Please try again in 15 minutes.');
+          try {
+            const { allowed } = rateLimit(`login:${email}`, 5, 15 * 60 * 1000);
+            if (!allowed) {
+              throw new RateLimitError();
+            }
+          } catch (rlError) {
+            if (rlError instanceof RateLimitError) {
+              throw rlError;
+            }
+            console.error('Rate limit check encountered an error:', rlError);
           }
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-        });
+        let user;
+        try {
+          user = await prisma.user.findUnique({
+            where: { email },
+          });
+        } catch (dbError) {
+          console.error('Prisma database connection failure in authorize:', dbError);
+          throw new DatabaseError();
+        }
 
         if (!user) {
           return null;
         }
 
-        const isPasswordValid = await compare(
-          credentials.password as string,
-          user.password
-        );
+        let isPasswordValid = false;
+        try {
+          isPasswordValid = await compare(
+            credentials.password as string,
+            user.password
+          );
+        } catch (bcryptError) {
+          console.error('Password comparison failed:', bcryptError);
+          return null;
+        }
 
         if (!isPasswordValid) {
           return null;
@@ -56,50 +83,66 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      if (user) {
-        token.role = (user as { role: string }).role;
-        token.id = user.id;
-        token.avatar = user.avatar as string | null;
-      }
-      if (trigger === 'update' && session) {
-        token.name = session.name;
-        token.email = session.email;
-        token.avatar = session.avatar;
+      try {
+        if (user) {
+          token.role = (user as { role: string }).role;
+          token.id = user.id;
+          token.avatar = user.avatar as string | null;
+        }
+        if (trigger === 'update' && session) {
+          token.name = session.name;
+          token.email = session.email;
+          token.avatar = session.avatar;
+        }
+      } catch (error) {
+        console.error('Error in jwt callback:', error);
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.role = token.role as string;
-        session.user.id = token.id as string;
-        session.user.avatar = token.avatar as string | null;
+      try {
+        if (session.user) {
+          session.user.role = token.role as string;
+          session.user.id = token.id as string;
+          session.user.avatar = token.avatar as string | null;
+        }
+      } catch (error) {
+        console.error('Error in session callback:', error);
       }
       return session;
     },
   },
   events: {
     async signIn(message) {
-      if (message.user && message.user.id) {
-        await prisma.auditLog.create({
-          data: {
-            userId: message.user.id,
-            action: 'LOGIN',
-            entity: 'System',
-            details: 'User logged into the system',
-          }
-        });
+      try {
+        if (message.user && message.user.id) {
+          await prisma.auditLog.create({
+            data: {
+              userId: message.user.id,
+              action: 'LOGIN',
+              entity: 'System',
+              details: 'User logged into the system',
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Non-blocking error in signIn event handler:', error);
       }
     },
     async signOut(message) {
-      if ('token' in message && message.token && message.token.id) {
-        await prisma.auditLog.create({
-          data: {
-            userId: message.token.id as string,
-            action: 'LOGOUT',
-            entity: 'System',
-            details: 'User logged out',
-          }
-        });
+      try {
+        if ('token' in message && message.token && message.token.id) {
+          await prisma.auditLog.create({
+            data: {
+              userId: message.token.id as string,
+              action: 'LOGOUT',
+              entity: 'System',
+              details: 'User logged out',
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Non-blocking error in signOut event handler:', error);
       }
     }
   },

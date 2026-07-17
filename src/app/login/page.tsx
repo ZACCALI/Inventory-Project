@@ -54,6 +54,12 @@ export default function LoginPage() {
           setError('Invalid email or password. Please try again.');
         } else if (urlError === 'Configuration') {
           setError('Server configuration error. Please ensure AUTH_SECRET is set correctly.');
+        } else if (urlError === 'DatabaseError') {
+          setError('Database connection error. Please try again later.');
+        } else if (urlError === 'RateLimitError') {
+          setError('Too many login attempts. Please try again in 15 minutes.');
+        } else if (urlError === 'undefined' || urlError === 'null' || urlError.trim() === '') {
+          setError('An unexpected authentication error occurred. Please try again.');
         } else {
           setError(`Authentication error: ${urlError}`);
         }
@@ -89,6 +95,10 @@ export default function LoginPage() {
       if (result?.error) {
         if (result.error === 'CredentialsSignin') {
           setError('Invalid email or password. Please try again.');
+        } else if (result.error === 'DatabaseError') {
+          setError('Database connection error. Please try again later.');
+        } else if (result.error === 'RateLimitError') {
+          setError('Too many login attempts. Please try again in 15 minutes.');
         } else {
           setError('An error occurred during sign in. Please try again.');
         }
