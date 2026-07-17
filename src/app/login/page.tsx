@@ -52,8 +52,8 @@ export default function LoginPage() {
       if (urlError) {
         if (urlError === 'CredentialsSignin') {
           setError('Invalid email or password. Please try again.');
-        } else if (urlError === 'Configuration') {
-          setError('Server configuration error. Please ensure AUTH_SECRET is set correctly.');
+        } else if (urlError === 'Configuration' || urlError === 'CallbackRouteError') {
+          setError('Server configuration error. Please verify database URL and AUTH_SECRET settings.');
         } else if (urlError === 'DatabaseError') {
           setError('Database connection error. Please try again later.');
         } else if (urlError === 'RateLimitError') {
@@ -92,6 +92,8 @@ export default function LoginPage() {
         redirect: false,
       });
 
+      console.log('NextAuth signIn result:', result);
+
       if (result?.error) {
         if (result.error === 'CredentialsSignin') {
           setError('Invalid email or password. Please try again.');
@@ -99,8 +101,10 @@ export default function LoginPage() {
           setError('Database connection error. Please try again later.');
         } else if (result.error === 'RateLimitError') {
           setError('Too many login attempts. Please try again in 15 minutes.');
+        } else if (result.error === 'CallbackRouteError' || result.error === 'Configuration') {
+          setError('Server configuration error. Please verify database URL and AUTH_SECRET settings.');
         } else {
-          setError('An error occurred during sign in. Please try again.');
+          setError(`An error occurred during sign in (${result.error}). Please try again.`);
         }
       } else {
         router.push('/dashboard');
