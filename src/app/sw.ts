@@ -35,14 +35,14 @@ const customCache: RuntimeCaching[] = [
     matcher: /\/api\/(customers|drivers|products|orders|expenses|history|categories|units|reports).*/i,
     handler: new NetworkFirst({
       cacheName: "core-api-data",
-      networkTimeoutSeconds: 3,
+      networkTimeoutSeconds: 10,
     }),
   },
   {
     matcher: ({ request }) => request.mode === 'navigate',
     handler: new NetworkFirst({
       cacheName: "page-navigations",
-      networkTimeoutSeconds: 3,
+      networkTimeoutSeconds: 10,
     }),
   },
   ...defaultCache,
@@ -59,7 +59,7 @@ const serwist = new Serwist({
       {
         url: "/~offline",
         matcher({ request }) {
-          return request.destination === "document";
+          return request.destination === "document" || request.mode === "navigate";
         },
       },
     ],
