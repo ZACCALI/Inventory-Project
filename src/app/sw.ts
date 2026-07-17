@@ -16,11 +16,14 @@ const customCache: RuntimeCaching[] = [
     matcher: /\/api\/test-ping.*/i,
     handler: new NetworkOnly(),
   },
+  // --- AUTH ROUTES: ALWAYS NetworkOnly ---
+  // CRITICAL: Never cache any NextAuth/Auth.js route.
+  // Caching /api/auth/csrf returns stale CSRF tokens → sign-in fails with ?error=undefined.
+  // Caching /api/auth/session can return a stale/invalid session.
+  // Caching /api/auth/callback/* can replay old sign-in responses.
   {
-    matcher: /\/api\/auth\/session.*/i,
-    handler: new NetworkFirst({
-      cacheName: "next-auth-session",
-    }),
+    matcher: /\/api\/auth\/.*/i,
+    handler: new NetworkOnly(),
   },
   {
     matcher: /\/api\/settings.*/i,

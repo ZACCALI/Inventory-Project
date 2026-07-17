@@ -154,8 +154,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: 'jwt',
   },
   trustHost: true,
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-  debug: false,
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
   logger: {
     error(code, ...message) {
       console.error("NextAuth Error:", code, message);

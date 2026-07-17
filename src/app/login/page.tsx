@@ -45,23 +45,42 @@ export default function LoginPage() {
       console.warn('Failed to load remembered email:', e);
     }
 
-    // Read NextAuth query error from URL
+    // Read NextAuth query error from URL, then clean the URL to avoid re-showing stale errors on refresh
     try {
       const params = new URLSearchParams(window.location.search);
       const urlError = params.get('error');
-      if (urlError) {
+      const urlCode  = params.get('code');  // Custom error code from CredentialsSignin subclasses
+
+      // Always strip auth-related query params from the URL so stale errors don't re-show on refresh
+      if (urlError !== null || urlCode !== null) {
+        const cleaned = new URLSearchParams(params);
+        cleaned.delete('error');
+        cleaned.delete('code');
+        const qs = cleaned.toString();
+        window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+      }
+
+      // Ignore garbage values NextAuth passes when it has no real error code
+      const isGarbageError = !urlError || urlError === 'undefined' || urlError === 'null' || urlError.trim() === '';
+
+      if (!isGarbageError) {
         if (urlError === 'CredentialsSignin') {
-          setError('Invalid email or password. Please try again.');
-        } else if (urlError === 'Configuration' || urlError === 'CallbackRouteError') {
-          setError('Server configuration error. Please verify database URL and AUTH_SECRET settings.');
-        } else if (urlError === 'DatabaseError') {
-          setError('Database connection error. Please try again later.');
-        } else if (urlError === 'RateLimitError') {
-          setError('Too many login attempts. Please try again in 15 minutes.');
-        } else if (urlError === 'undefined' || urlError === 'null' || urlError.trim() === '') {
-          setError('An unexpected authentication error occurred. Please try again.');
+          // Check the custom `code` param for specific error types from our CredentialsSignin subclasses
+          if (urlCode === 'DatabaseError') {
+            setError('Database connection error. Please try again later.');
+          } else if (urlCode === 'RateLimitError') {
+            setError('Too many login attempts. Please try again in 15 minutes.');
+          } else {
+            setError('Invalid email or password. Please try again.');
+          }
+        } else if (urlError === 'Configuration') {
+          setError('Server configuration error. Please contact your administrator.');
+        } else if (urlError === 'AccessDenied') {
+          setError('Access denied. You do not have permission to sign in.');
+        } else if (urlError === 'Verification') {
+          setError('Sign in link has expired or has already been used.');
         } else {
-          setError(`Authentication error: ${urlError}`);
+          setError('An error occurred during sign in. Please try again.');
         }
       }
     } catch (e) {
@@ -92,23 +111,27 @@ export default function LoginPage() {
         redirect: false,
       });
 
-      console.log('NextAuth signIn result:', result);
+      // Guard: if result is undefined, the auth provider endpoint was unreachable
+      if (!result) {
+        setError('Could not reach the authentication service. Please check your connection and try again.');
+        return;
+      }
 
-      if (result?.error) {
-        if (result.error === 'CredentialsSignin') {
-          setError('Invalid email or password. Please try again.');
-        } else if (result.error === 'DatabaseError') {
+      if (result.error) {
+        // result.error is always 'CredentialsSignin' for credential failures.
+        // The specific cause is in result.code (set by our DatabaseError/RateLimitError subclasses).
+        if ((result as { code?: string }).code === 'DatabaseError') {
           setError('Database connection error. Please try again later.');
-        } else if (result.error === 'RateLimitError') {
+        } else if ((result as { code?: string }).code === 'RateLimitError') {
           setError('Too many login attempts. Please try again in 15 minutes.');
-        } else if (result.error === 'CallbackRouteError' || result.error === 'Configuration') {
-          setError('Server configuration error. Please verify database URL and AUTH_SECRET settings.');
         } else {
-          setError(`An error occurred during sign in (${result.error}). Please try again.`);
+          setError('Invalid email or password. Please try again.');
         }
-      } else {
+      } else if (result.ok) {
         router.push('/dashboard');
         router.refresh();
+      } else {
+        setError('Sign-in failed. Please try again.');
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');
