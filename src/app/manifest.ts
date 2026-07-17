@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'DistriTrack Inventory Management',
-    short_name: 'DistriTrack',
+    name: 'Amroding Inventory Management',
+    short_name: 'Amroding',
     description: 'Distributor inventory management system for online and offline use',
     start_url: '/',
     display: 'standalone',

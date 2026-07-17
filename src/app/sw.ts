@@ -78,7 +78,7 @@ self.addEventListener("push", (event) => {
     data = event.data.json();
   } catch {
     data = {
-      title: "DistriTrack",
+      title: "Amroding",
       body: event.data.text(),
       icon: "/icons/icon-192x192.png",
       data: { url: "/dashboard" },
@@ -104,7 +104,7 @@ self.addEventListener("push", (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || "DistriTrack", options)
+    self.registration.showNotification(data.title || "Amroding", options)
   );
 });
 

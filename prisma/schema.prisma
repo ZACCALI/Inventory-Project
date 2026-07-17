@@ -1,4 +1,4 @@
-// DistriTrack Database Schema
+// Amroding Database Schema
 // Using PostgreSQL for production
 
 generator client {

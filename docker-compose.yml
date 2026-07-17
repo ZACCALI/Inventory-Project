@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    container_name: distritrack-app
+    container_name: amroding-app
     build:
       context: .
       dockerfile: Dockerfile
@@ -19,11 +19,11 @@ services:
 
   db:
     image: postgres:15-alpine
-    container_name: distritrack-db
+    container_name: amroding-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: distritrack
+      POSTGRES_DB: amroding
     ports:
       - "5432:5432"
     volumes:

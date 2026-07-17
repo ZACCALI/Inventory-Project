@@ -85,7 +85,7 @@ export default function BarcodeScannerPage() {
   // Load from Local Storage on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('distritrack_audit_items');
+      const saved = localStorage.getItem('amroding_audit_items');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -105,9 +105,9 @@ export default function BarcodeScannerPage() {
   useEffect(() => {
     if (isInitialized) {
       if (auditItems.length > 0) {
-        localStorage.setItem('distritrack_audit_items', JSON.stringify(auditItems));
+        localStorage.setItem('amroding_audit_items', JSON.stringify(auditItems));
       } else {
-        localStorage.removeItem('distritrack_audit_items');
+        localStorage.removeItem('amroding_audit_items');
       }
     }
   }, [auditItems, isInitialized]);

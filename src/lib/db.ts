@@ -65,7 +65,7 @@ export interface OfflineSettings {
   lastSynced: number;
 }
 
-export const db = new Dexie('distritrack_pos') as Dexie & {
+export const db = new Dexie('amroding_pos') as Dexie & {
   products: EntityTable<OfflineProduct, 'id'>;
   customers: EntityTable<OfflineCustomer, 'id'>;
   drivers: EntityTable<OfflineDriver, 'id'>;

@@ -66,8 +66,8 @@ async function uploadBase64Photo(base64: string): Promise<string | null> {
 /**
  * Processes all pending tasks in the syncQueue.
  * Dispatches browser events on completion:
- *  - 'distritrack:synced'      — at least one task succeeded
- *  - 'distritrack:syncfailed'  — one or more tasks permanently failed
+ *  - 'amroding:synced'      — at least one task succeeded
+ *  - 'amroding:syncfailed'  — one or more tasks permanently failed
  */
 export async function processSyncQueue(): Promise<{ synced: number; failed: number }> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -77,7 +77,7 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
   // CROSS-TAB LOCKING: Ensure only one tab processes the queue
   let result = { synced: 0, failed: 0 };
   if (typeof navigator !== 'undefined' && navigator.locks) {
-    await navigator.locks.request('distritrack-sync-lock', { ifAvailable: true }, async (lock) => {
+    await navigator.locks.request('amroding-sync-lock', { ifAvailable: true }, async (lock) => {
       if (!lock) {
         console.log('Another tab is already syncing. Skipping.');
         return; // Lock not acquired, another tab is syncing
@@ -309,12 +309,12 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
   // --- DISPATCH BROWSER EVENTS for UI to react ---
   if (typeof window !== 'undefined') {
     if (synced > 0) {
-      window.dispatchEvent(new CustomEvent('distritrack:synced', {
+      window.dispatchEvent(new CustomEvent('amroding:synced', {
         detail: { synced, types: Array.from(syncedTypes) }
       }));
     }
     if (failedDetails.length > 0) {
-      window.dispatchEvent(new CustomEvent('distritrack:syncfailed', {
+      window.dispatchEvent(new CustomEvent('amroding:syncfailed', {
         detail: { failed: failedDetails }
       }));
     }

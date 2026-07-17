@@ -67,11 +67,11 @@ export default function SyncStatusBanner() {
       // Failures stay visible until manually dismissed
     };
 
-    window.addEventListener('distritrack:synced', handleSynced);
-    window.addEventListener('distritrack:syncfailed', handleFailed);
+    window.addEventListener('amroding:synced', handleSynced);
+    window.addEventListener('amroding:syncfailed', handleFailed);
     return () => {
-      window.removeEventListener('distritrack:synced', handleSynced);
-      window.removeEventListener('distritrack:syncfailed', handleFailed);
+      window.removeEventListener('amroding:synced', handleSynced);
+      window.removeEventListener('amroding:syncfailed', handleFailed);
     };
   }, []);
 

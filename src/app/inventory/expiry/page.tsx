@@ -92,11 +92,11 @@ export default function ExpiryTrackingPage() {
       if (swrRes && Array.isArray(swrRes)) {
         baseBatches = [...swrRes];
         try {
-          localStorage.setItem('distritrack_cached_batches', JSON.stringify(swrRes));
+          localStorage.setItem('amroding_cached_batches', JSON.stringify(swrRes));
         } catch {}
       } else {
         try {
-          const cached = localStorage.getItem('distritrack_cached_batches');
+          const cached = localStorage.getItem('amroding_cached_batches');
           if (cached) baseBatches = JSON.parse(cached);
         } catch {}
       }
@@ -130,12 +130,12 @@ export default function ExpiryTrackingPage() {
       const data = await res.json();
       setBatches(data);
       try {
-        localStorage.setItem('distritrack_cached_batches', JSON.stringify(data));
+        localStorage.setItem('amroding_cached_batches', JSON.stringify(data));
       } catch {}
     } catch (error: unknown) {
       if ((error as Error)?.message === 'Failed to fetch' || error instanceof TypeError) {
         try {
-          const cached = localStorage.getItem('distritrack_cached_batches');
+          const cached = localStorage.getItem('amroding_cached_batches');
           if (cached) setBatches(JSON.parse(cached));
         } catch {}
         return;

@@ -75,8 +75,8 @@ export default function ServiceWorkerRegister() {
       // Revalidate all cached SWR keys so every open page refreshes immediately
       mutate(() => true, undefined, { revalidate: true });
     };
-    window.addEventListener('distritrack:synced', handleSynced);
-    return () => window.removeEventListener('distritrack:synced', handleSynced);
+    window.addEventListener('amroding:synced', handleSynced);
+    return () => window.removeEventListener('amroding:synced', handleSynced);
   }, [mutate]);
 
   useEffect(() => {

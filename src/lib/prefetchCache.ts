@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { db } from './db';
 
 const PREFETCH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-const PREFETCH_LS_KEY = 'distritrack_last_prefetch';
+const PREFETCH_LS_KEY = 'amroding_last_prefetch';
 
 interface APIProduct {
   id: string;
@@ -154,9 +154,9 @@ async function runPrefetch() {
     }
 
     localStorage.setItem(PREFETCH_LS_KEY, String(Date.now()));
-    console.log('[DistriTrack] Background cache prefetch complete');
+    console.log('[Amroding] Background cache prefetch complete');
   } catch (e) {
-    console.warn('[DistriTrack] Background cache prefetch failed', e);
+    console.warn('[Amroding] Background cache prefetch failed', e);
   }
 }
 
