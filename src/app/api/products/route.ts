@@ -122,6 +122,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Resolve categoryId — discard offline temp IDs and validate existence
+    let resolvedCategoryId: string | null = null;
+    if (categoryId && !String(categoryId).startsWith('OFF-')) {
+      const catExists = await prisma.category.findUnique({ where: { id: categoryId }, select: { id: true } });
+      if (!catExists) {
+        return NextResponse.json({ error: 'The selected category no longer exists. Please refresh and try again.' }, { status: 400 });
+      }
+      resolvedCategoryId = categoryId;
+    }
+
     const product = await prisma.$transaction(async (tx) => {
       const initialStock = stock || 0;
       
@@ -137,7 +147,7 @@ export async function POST(request: NextRequest) {
           unit: unit || 'pcs',
           expiryDate: expiryDate ? new Date(expiryDate) : null,
           image: image || null,
-          categoryId: categoryId || null,
+          categoryId: resolvedCategoryId,
           uoms: uoms && uoms.length > 0 ? {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             create: uoms.map((uom: any) => ({
@@ -192,9 +202,14 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     console.error('Products POST error:', error);
     let msg = 'Failed to create product';
+    const prismaError = error as { code?: string };
     if (error instanceof Error) {
-      if (error.message.includes('Unique constraint') || (error as { code?: string }).code === 'P2002') {
+      if (error.message.includes('Unique constraint') || prismaError.code === 'P2002') {
         msg = 'SKU or Barcode already exists';
+      } else if (prismaError.code === 'P2003') {
+        msg = 'The selected category does not exist. Please refresh the page and try again.';
+      } else if (prismaError.code === 'P2025') {
+        msg = 'A related record was not found. Please refresh and try again.';
       } else {
         msg = error.message;
       }

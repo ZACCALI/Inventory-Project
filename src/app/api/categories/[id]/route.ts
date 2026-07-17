@@ -11,6 +11,11 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     const body = await request.json();
     const { name, description } = body;
 
+    // Guard: offline temp IDs are not yet in the database
+    if (String(id).startsWith('OFF-')) {
+      return NextResponse.json({ error: 'This category was created offline and has not yet synced to the server. Please wait for sync to complete before editing.' }, { status: 400 });
+    }
+
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
@@ -38,9 +43,12 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     return NextResponse.json(category);
   } catch (error: unknown) {
     console.error('Failed to update category:', error);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((error as any)?.code === 'P2002') {
+    const prismaError = error as { code?: string };
+    if (prismaError.code === 'P2002') {
       return NextResponse.json({ error: 'A category with this name already exists' }, { status: 400 });
+    }
+    if (prismaError.code === 'P2025') {
+      return NextResponse.json({ error: 'Category not found. It may have been deleted.' }, { status: 404 });
     }
     return NextResponse.json({ error: 'Failed to update category' }, { status: 500 });
   }
@@ -52,6 +60,11 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     if (error) return error;
 
     const { id } = await context.params;
+
+    // Guard: offline temp IDs are not yet in the database
+    if (String(id).startsWith('OFF-')) {
+      return NextResponse.json({ error: 'This category was created offline and has not yet synced. It cannot be deleted until sync completes.' }, { status: 400 });
+    }
     
     const productsCount = await prisma.product.count({ where: { categoryId: id } });
     if (productsCount > 0) {
@@ -68,6 +81,11 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Failed to delete category:', error);
+    const prismaError = error as { code?: string };
+    if (prismaError.code === 'P2025') {
+      return NextResponse.json({ error: 'Category not found. It may have already been deleted.' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 });
   }
 }
+

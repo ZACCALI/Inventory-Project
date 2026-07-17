@@ -1111,8 +1111,13 @@ export default function InventoryPage() {
                     </div>
                     <select id="product-category" name="categoryId" aria-label="Category" className="form-select" required value={formData.categoryId} onChange={e => setFormData({...formData, categoryId: e.target.value})}>
                       <option value="">-- Select Category --</option>
-                      {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                      {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}{String(cat.id).startsWith('OFF-') ? ' ⚠ (Pending Sync)' : ''}</option>)}
                     </select>
+                    {formData.categoryId && String(formData.categoryId).startsWith('OFF-') && (
+                      <p style={{ fontSize: '12px', color: 'var(--warning, #f59e0b)', marginTop: '4px', marginBottom: 0 }}>
+                        ⚠ This category is pending sync. The product will be saved without the category link until both sync online.
+                      </p>
+                    )}
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
@@ -1375,6 +1380,7 @@ function ManageListModal({ type, items, onClose, onUpdate }: { type: 'category' 
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {items.map(item => {
                   const isEditing = editingId === item.id;
+                  const isPendingSync = String(item.id).startsWith('OFF-');
                   return (
                     <li 
                       key={item.id} 
@@ -1390,43 +1396,56 @@ function ManageListModal({ type, items, onClose, onUpdate }: { type: 'category' 
                       onMouseEnter={(e) => { if(!isEditing) e.currentTarget.style.background = 'var(--bg-hover)'; }}
                       onMouseLeave={(e) => { if(!isEditing) e.currentTarget.style.background = 'transparent'; }}
                     >
-                      <span style={{ fontSize: '14px', fontWeight: isEditing ? 600 : 500, color: isEditing ? 'var(--primary)' : 'inherit' }}>
-                        {item.name}
-                      </span>
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <span style={{ fontSize: '14px', fontWeight: isEditing ? 600 : 500, color: isEditing ? 'var(--primary)' : 'inherit' }}>
+                          {item.name}
+                        </span>
+                        {isPendingSync && (
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--warning, #f59e0b)', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '4px', padding: '1px 6px', whiteSpace: 'nowrap' }}>
+                            Pending Sync
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                         <button 
                           type="button" 
                           className="btn btn-icon" 
                           onClick={() => handleEdit(item)} 
-                          data-tooltip="Edit"
+                          data-tooltip={isPendingSync ? 'Cannot edit until synced' : 'Edit'}
+                          disabled={isPendingSync}
                           style={{ 
                             width: '32px', height: '32px', padding: 0,
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             background: 'var(--bg-main)',
                             border: '1px solid var(--border)',
-                            color: 'var(--text-secondary)',
+                            color: isPendingSync ? 'var(--text-disabled, #ccc)' : 'var(--text-secondary)',
                             borderRadius: '6px',
                             boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            opacity: isPendingSync ? 0.5 : 1,
+                            cursor: isPendingSync ? 'not-allowed' : 'pointer',
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                          onMouseEnter={(e) => { if(!isPendingSync) { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--primary)'; }}}
+                          onMouseLeave={(e) => { if(!isPendingSync) { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}}
                         ><Edit size={16} /></button>
                         <button 
                           type="button" 
                           className="btn btn-icon" 
                           onClick={() => handleDelete(item.id, item.name)} 
-                          data-tooltip="Delete"
+                          data-tooltip={isPendingSync ? 'Cannot delete until synced' : 'Delete'}
+                          disabled={isPendingSync}
                           style={{ 
                             width: '32px', height: '32px', padding: 0,
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             background: 'var(--bg-main)',
                             border: '1px solid var(--border)',
-                            color: 'var(--danger)',
+                            color: isPendingSync ? 'var(--text-disabled, #ccc)' : 'var(--danger)',
                             borderRadius: '6px',
                             boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            opacity: isPendingSync ? 0.5 : 1,
+                            cursor: isPendingSync ? 'not-allowed' : 'pointer',
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--danger)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                          onMouseEnter={(e) => { if(!isPendingSync) { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--danger)'; }}}
+                          onMouseLeave={(e) => { if(!isPendingSync) { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'var(--border)'; }}}
                         ><Trash2 size={16} /></button>
                       </div>
                     </li>

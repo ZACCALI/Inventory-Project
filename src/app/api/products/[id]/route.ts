@@ -98,9 +98,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           minStock: minStock !== undefined ? minStock : undefined,
           unit: unit !== undefined ? unit : undefined,
           expiryDate: expiryDate !== undefined ? (expiryDate ? new Date(expiryDate) : null) : undefined,
-          categoryId: categoryId !== undefined ? (categoryId === '' ? null : categoryId) : undefined,
           isArchived: isArchived !== undefined ? isArchived : undefined,
       };
+
+      // Resolve categoryId — discard offline temp IDs, validate existence
+      if (categoryId !== undefined) {
+        if (!categoryId || categoryId === '' || String(categoryId).startsWith('OFF-')) {
+          updateData.categoryId = null;
+        } else {
+          const catExists = await tx.category.findUnique({ where: { id: categoryId }, select: { id: true } });
+          if (!catExists) {
+            throw Object.assign(new Error('The selected category does not exist.'), { code: 'INVALID_CAT' });
+          }
+          updateData.categoryId = categoryId;
+        }
+      }
 
       if (uoms !== undefined) {
  
@@ -158,9 +170,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error: unknown) {
     console.error('Product PUT error:', error);
     let msg = 'Failed to update product';
+    const prismaError = error as { code?: string };
     if (error instanceof Error) {
-      if (error.message.includes('Unique constraint') || (error as { code?: string }).code === 'P2002') {
+      if (error.message.includes('Unique constraint') || prismaError.code === 'P2002') {
         msg = 'SKU or Barcode already exists';
+      } else if (prismaError.code === 'P2003' || prismaError.code === 'INVALID_CAT') {
+        msg = 'The selected category does not exist. Please refresh the page and try again.';
+      } else if (prismaError.code === 'P2025') {
+        msg = 'Product not found.';
       } else {
         msg = error.message;
       }
