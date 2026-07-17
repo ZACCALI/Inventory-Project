@@ -44,6 +44,23 @@ export default function LoginPage() {
     } catch (e) {
       console.warn('Failed to load remembered email:', e);
     }
+
+    // Read NextAuth query error from URL
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlError = params.get('error');
+      if (urlError) {
+        if (urlError === 'CredentialsSignin') {
+          setError('Invalid email or password. Please try again.');
+        } else if (urlError === 'Configuration') {
+          setError('Server configuration error. Please ensure AUTH_SECRET is set correctly.');
+        } else {
+          setError(`Authentication error: ${urlError}`);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse auth error:', e);
+    }
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
