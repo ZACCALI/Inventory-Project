@@ -155,9 +155,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     });
 
     return NextResponse.json(product);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Product PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
+    let msg = 'Failed to update product';
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint') || (error as { code?: string }).code === 'P2002') {
+        msg = 'SKU or Barcode already exists';
+      } else {
+        msg = error.message;
+      }
+    }
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 }
 

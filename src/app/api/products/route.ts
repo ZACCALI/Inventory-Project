@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log("DEBUG PRODUCTS POST BODY:", JSON.stringify(body));
 
     const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
     if (isDuplicate) {
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
     // Validate input with Zod schema
     const parsed = createProductSchema.safeParse(body);
     if (!parsed.success) {
+      console.log("DEBUG PRODUCTS ZOD ERROR:", JSON.stringify(parsed.error.issues));
       const firstError = parsed.error.issues[0];
       return NextResponse.json({ error: firstError.message }, { status: 400 });
     }
@@ -189,7 +191,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(product, { status: 201 });
   } catch (error: unknown) {
     console.error('Products POST error:', error);
-    const msg = error instanceof Error && (error as Error).message.includes('Unique') ? 'SKU or Barcode already exists' : 'Failed to create product';
+    let msg = 'Failed to create product';
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint') || (error as { code?: string }).code === 'P2002') {
+        msg = 'SKU or Barcode already exists';
+      } else {
+        msg = error.message;
+      }
+    }
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 }
