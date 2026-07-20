@@ -76,7 +76,22 @@ export default function ServiceWorkerRegister() {
       mutate(() => true, undefined, { revalidate: true });
     };
     window.addEventListener('amroding:synced', handleSynced);
-    return () => window.removeEventListener('amroding:synced', handleSynced);
+    
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'TRIGGER_SYNC') {
+        import('@/lib/offlineSync').then(m => m.processSyncQueue());
+      }
+    };
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleMessage);
+    }
+    
+    return () => {
+      window.removeEventListener('amroding:synced', handleSynced);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleMessage);
+      }
+    };
   }, [mutate]);
 
   useEffect(() => {

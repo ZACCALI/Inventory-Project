@@ -43,6 +43,13 @@ export default function CreateOrderPage() {
 
   // State
   const [products, setProducts] = useState<Product[]>([]);
+  const [idempotencyKey, setIdempotencyKey] = useState<string>('');
+
+  useEffect(() => {
+    setIdempotencyKey(`${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
+  }, []);
+
+  const resetIdempotencyKey = () => setIdempotencyKey(`${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
   const [categories, setCategories] = useState<string[]>(['All']);
   const [customers, setCustomers] = useState<{id: string, name: string, customerType?: string}[]>([]);
   const [drivers, setDrivers] = useState<{id: string, name: string}[]>([]);
@@ -631,7 +638,7 @@ export default function CreateOrderPage() {
         try {
           const res = await fetch('/api/orders', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Idempotency-Key': idempotencyKey },
             body: JSON.stringify(payload)
           });
 
@@ -663,6 +670,7 @@ export default function CreateOrderPage() {
             setAmountPaid('');
             setPaymentStatus('unpaid');
             setIsSubmitting(false);
+            resetIdempotencyKey();
             setIsSuccessOpen(true);
             return;
           } else {
@@ -681,11 +689,28 @@ export default function CreateOrderPage() {
       }
 
       if (isOffline || networkFailed) {
-        const localId = await addSyncTask('order', 'CREATE', payload);
+        // Stock check first
+        for (const i of validItems) {
+           const requiredStock = (typeof i.qty === 'number' ? i.qty : 0) * (i.multiplier || 1);
+           const p = await db.products.get(i.product.id);
+           if (p && p.stock < requiredStock) {
+              showToast(`Insufficient offline stock for ${p.name}.`, 'error');
+              setIsSubmitting(false);
+              return;
+           }
+        }
+
+        const localId = await addSyncTask('order', 'CREATE', payload, idempotencyKey);
         if (!localId) {
           showToast('This exact order is already pending sync.', 'warning');
           setIsSubmitting(false);
           return;
+        }
+
+        // Decrement stock
+        for (const i of validItems) {
+          const qtyToDeduct = (typeof i.qty === 'number' ? i.qty : 0) * (i.multiplier || 1);
+          await db.products.where('id').equals(i.product.id).modify(p => { p.stock = Math.max(0, (p.stock || 0) - qtyToDeduct); });
         }
 
         showToast('Action queued offline — will sync when connected', 'warning');
@@ -725,6 +750,7 @@ export default function CreateOrderPage() {
         setAmountPaid('');
         setPaymentStatus('unpaid');
         setIsSubmitting(false);
+        resetIdempotencyKey();
         setIsSuccessOpen(true);
         return;
       }

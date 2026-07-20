@@ -1,5 +1,22 @@
 import { db, SyncTask } from './db';
 
+const LOCK_KEY = 'amroding_sync_lock';
+const LOCK_TIMEOUT = 30000; // 30s
+
+function acquireLocalStorageLock(): boolean {
+  const existing = localStorage.getItem(LOCK_KEY);
+  if (existing) {
+    const lockTime = parseInt(existing, 10);
+    if (Date.now() - lockTime < LOCK_TIMEOUT) return false; // lock held
+  }
+  localStorage.setItem(LOCK_KEY, String(Date.now()));
+  return true;
+}
+
+function releaseLocalStorageLock() {
+  localStorage.removeItem(LOCK_KEY);
+}
+
 /**
  * Adds a task to the generic offline sync queue.
  */
@@ -29,6 +46,19 @@ export async function addSyncTask(
     lastError: null,
     idempotencyKey: key,
   });
+
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      if ('sync' in registration) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (registration as any).sync.register('sync-offline-queue');
+      }
+    } catch (e) {
+      console.warn('Background sync registration failed', e);
+    }
+  }
+
   return id as number;
 }
 
@@ -84,13 +114,26 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
       }
       result = await _processQueueInternal();
     });
+  } else if (typeof window !== 'undefined' && window.localStorage) {
+    if (acquireLocalStorageLock()) {
+      try {
+        result = await _processQueueInternal();
+      } finally {
+        releaseLocalStorageLock();
+      }
+    } else {
+      console.log('Another tab is already syncing (localStorage lock). Skipping.');
+    }
   } else {
-    result = await _processQueueInternal(); // Fallback if Web Locks API is unsupported
+    result = await _processQueueInternal(); // Fallback if Web Locks API and localStorage are unsupported
   }
   return result;
 }
 
 async function _processQueueInternal(): Promise<{ synced: number; failed: number }> {
+  // Reset any tasks orphaned in 'syncing' state (e.g. from a crash/tab close mid-sync)
+  await db.syncQueue.where('syncStatus').equals('syncing').modify({ syncStatus: 'pending', lastError: 'Recovered from interrupted sync' });
+
   const pending = await db.syncQueue
     .where('syncStatus')
     .anyOf(['pending', 'failed'])
@@ -194,9 +237,14 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
       }
 
       // Buffer response body ONCE to avoid double-read stream error
-      const responseText = await res.text();
+      let responseText = '';
+      if (res.status !== 204 && res.headers.get('content-length') !== '0') {
+        responseText = await res.text();
+      }
       let responseJson: unknown = null;
-      try { responseJson = JSON.parse(responseText); } catch { /* non-JSON response */ }
+      if (responseText) {
+        try { responseJson = JSON.parse(responseText); } catch { /* non-JSON response */ }
+      }
       const responseJsonData = responseJson as { id?: string; error?: string; message?: string } | null;
 
       if (res.ok) {

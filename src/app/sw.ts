@@ -135,3 +135,15 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
+
+// ── Background Sync Handler ──────────────────────────────────────
+
+self.addEventListener('sync', (event: any) => {
+  if (event.tag === 'sync-offline-queue') {
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window' }).then(clients => {
+        clients.forEach(client => client.postMessage({ type: 'TRIGGER_SYNC' }));
+      })
+    );
+  }
+});
