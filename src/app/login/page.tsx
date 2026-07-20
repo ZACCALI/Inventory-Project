@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Package, ShoppingCart, Truck, BarChart3, Shield, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [companyName, setCompanyName] = useState('Amroding General Merchandise');
   const [rememberMe, setRememberMe] = useState(true);
+  const emailInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -31,15 +33,23 @@ export default function LoginPage() {
     // Load saved email if exists
     try {
       const savedEmail = localStorage.getItem('amroding_remember_email');
+      const pref = localStorage.getItem('amroding_remember_me_pref');
       if (savedEmail) {
-        setEmail(savedEmail);
+        setEmail(prev => prev || savedEmail);
         setRememberMe(true);
         // Autofill may happen slightly after mount; defer focus to ensure input is ready
         setTimeout(() => {
           passwordInputRef.current?.focus();
         }, 100);
       } else {
-        setRememberMe(false);
+        if (pref === 'false') {
+          setRememberMe(false);
+        } else {
+          setRememberMe(true);
+        }
+        setTimeout(() => {
+          emailInputRef.current?.focus();
+        }, 100);
       }
     } catch (e) {
       console.warn('Failed to load remembered email:', e);
@@ -57,7 +67,7 @@ export default function LoginPage() {
         cleaned.delete('error');
         cleaned.delete('code');
         const qs = cleaned.toString();
-        window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+        router.replace(`${pathname}${qs ? '?' + qs : ''}`, { scroll: false });
       }
 
       // Ignore garbage values NextAuth passes when it has no real error code
@@ -101,6 +111,7 @@ export default function LoginPage() {
         } else {
           localStorage.removeItem('amroding_remember_email');
         }
+        localStorage.setItem('amroding_remember_me_pref', String(rememberMe));
       } catch (e) {
         console.warn('Failed to save remember me preference:', e);
       }
@@ -114,6 +125,7 @@ export default function LoginPage() {
       // Guard: if result is undefined, the auth provider endpoint was unreachable
       if (!result) {
         setError('Could not reach the authentication service. Please check your connection and try again.');
+        setLoading(false);
         return;
       }
 
@@ -127,15 +139,16 @@ export default function LoginPage() {
         } else {
           setError('Invalid email or password. Please try again.');
         }
+        setLoading(false);
       } else if (result.ok) {
         router.push('/dashboard');
         router.refresh();
       } else {
         setError('Sign-in failed. Please try again.');
+        setLoading(false);
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
@@ -207,6 +220,7 @@ export default function LoginPage() {
               <label className="form-label" htmlFor="email" style={{ display: 'block', marginBottom: '8px' }}>Email Address</label>
               <input
                 id="email"
+                ref={emailInputRef}
                 type="email"
                 autoComplete="email"
                 className="form-input"
@@ -214,7 +228,6 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                autoFocus
                 style={{ marginTop: '4px' }}
               />
             </div>
@@ -260,7 +273,10 @@ export default function LoginPage() {
                 <input
                   type="checkbox"
                   checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
+                  onChange={(e) => {
+                    setRememberMe(e.target.checked);
+                    localStorage.setItem('amroding_remember_me_pref', String(e.target.checked));
+                  }}
                   style={{
                     width: '16px',
                     height: '16px',
