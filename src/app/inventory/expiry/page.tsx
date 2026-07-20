@@ -50,6 +50,18 @@ export default function ExpiryTrackingPage() {
   const [newBatchNumber, setNewBatchNumber] = useState('');
   const [disposeQty, setDisposeQty] = useState<number | string>(1);
   const [actionLoading, setActionLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const isAdmin = session?.user?.role?.toLowerCase() === 'admin';
   const filterRef = useRef<HTMLDivElement>(null);
@@ -231,7 +243,7 @@ export default function ExpiryTrackingPage() {
     
     setActionLoading(true);
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = !isOnline;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -287,7 +299,7 @@ export default function ExpiryTrackingPage() {
     }
     setActionLoading(true);
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = !isOnline;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -334,7 +346,7 @@ export default function ExpiryTrackingPage() {
     if (!await showConfirm('Confirm', `Are you sure you want to dispose ${batch.stock} ${batch.product.unit || 'pcs'} of ${batch.product.name}?`)) return;
     
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = !isOnline;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -388,6 +400,12 @@ export default function ExpiryTrackingPage() {
         <div className="page-header-actions" style={{ display: 'flex', gap: '12px' }}>
         </div>
       </div>
+
+      {!isOnline && (
+        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>⚠️ Offline Mode — Showing local data. Changes will sync when reconnected.</span>
+        </div>
+      )}
 
       {loading ? (
         <div className="stats-grid-3">

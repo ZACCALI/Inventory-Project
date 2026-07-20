@@ -45,6 +45,19 @@ export default function CreateOrderPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [idempotencyKey, setIdempotencyKey] = useState<string>('');
 
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+
   useEffect(() => {
     setIdempotencyKey(`${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
   }, []);

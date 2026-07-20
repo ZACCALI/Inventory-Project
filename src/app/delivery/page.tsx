@@ -96,7 +96,11 @@ export default function DeliveryPage() {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      return { data, totalCount: parseInt(res.headers.get('X-Total-Count') || '0', 10) };
+      const totalCount = parseInt(res.headers.get('X-Total-Count') || '0', 10);
+      try {
+        localStorage.setItem(`cached_delivery_${getQueryString()}`, JSON.stringify({ data, totalCount }));
+      } catch (e) {}
+      return { data, totalCount };
     },
     { refreshInterval: 30000 }
   );
@@ -115,7 +119,23 @@ export default function DeliveryPage() {
           .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
           .toArray();
 
-        let modifiedDeliveries = swrRes?.data && Array.isArray(swrRes.data) ? [...swrRes.data] : [];
+        let baseData = swrRes?.data && Array.isArray(swrRes.data) ? [...swrRes.data] : [];
+        let baseTotal = swrRes?.totalCount || 0;
+
+        if ((swrError || (typeof navigator !== 'undefined' && !navigator.onLine)) && (!swrRes || !Array.isArray(swrRes.data))) {
+          try {
+            const cached = localStorage.getItem(`cached_delivery_${getQueryString()}`);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed.data)) {
+                baseData = parsed.data;
+                baseTotal = parsed.totalCount || parsed.data.length;
+              }
+            }
+          } catch (e) { console.warn('Failed to parse cached delivery', e); }
+        }
+
+        let modifiedDeliveries = [...baseData];
 
         for (const task of pendingTasks) {
           try {
@@ -127,7 +147,7 @@ export default function DeliveryPage() {
         }
 
         setDeliveries(modifiedDeliveries);
-        setTotalDeliveries(swrRes?.totalCount || modifiedDeliveries.length);
+        setTotalDeliveries(baseTotal);
       } catch (err) {
         console.error(err);
         if (swrRes?.data && Array.isArray(swrRes.data)) setDeliveries(swrRes.data);

@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle, AlertTriangle, X, CloudOff, RefreshCw } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '@/lib/db';
 
 interface SyncFailureDetail {
   type: string;
@@ -24,6 +26,16 @@ interface SyncBannerState {
 export default function SyncStatusBanner() {
   const [banner, setBanner] = useState<SyncBannerState | null>(null);
   const [visible, setVisible] = useState(false);
+
+  const pendingCount = useLiveQuery(
+    () => db.syncQueue.where('syncStatus').equals('pending').count(),
+    []
+  ) || 0;
+
+  const syncingCount = useLiveQuery(
+    () => db.syncQueue.where('syncStatus').equals('syncing').count(),
+    []
+  ) || 0;
 
   useEffect(() => {
     const handleSynced = (e: Event) => {
@@ -75,63 +87,104 @@ export default function SyncStatusBanner() {
     };
   }, []);
 
-  if (!visible || !banner) return null;
-
-  const isSuccess = banner.kind === 'success';
+  const isSuccess = banner?.kind === 'success';
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: '80px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 99999,
-        maxWidth: '600px',
-        width: 'calc(100vw - 32px)',
-        background: isSuccess ? '#dcfce7' : '#fef3c7',
-        border: `1px solid ${isSuccess ? '#16a34a' : '#f59e0b'}`,
-        borderRadius: '12px',
-        padding: '14px 16px',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '12px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-        animation: 'slideUp 0.3s ease',
-      }}
-    >
-      {isSuccess
-        ? <CheckCircle size={18} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
-        : <AlertTriangle size={18} color="#92400e" style={{ flexShrink: 0, marginTop: '2px' }} />}
-      <span style={{
-        fontSize: '13px',
-        fontWeight: 500,
-        color: isSuccess ? '#14532d' : '#92400e',
-        flex: 1,
-        lineHeight: '1.5',
-      }}>
-        {banner.message}
-      </span>
-      <button
-        onClick={() => setVisible(false)}
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: isSuccess ? '#14532d' : '#92400e',
-          padding: '2px',
-          flexShrink: 0,
-        }}
-        aria-label="Dismiss"
-      >
-        <X size={16} />
-      </button>
+    <>
+      {/* Live pending queue indicator */}
+      {(pendingCount > 0 || syncingCount > 0) && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            zIndex: 99998,
+            background: syncingCount > 0 ? '#3b82f6' : '#f59e0b',
+            color: 'white',
+            padding: '8px 12px',
+            borderRadius: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '12px',
+            fontWeight: 600,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            animation: 'fadeIn 0.3s ease'
+          }}
+        >
+          {syncingCount > 0 ? (
+            <RefreshCw size={14} className="spin" />
+          ) : (
+            <CloudOff size={14} />
+          )}
+          <span>
+            {syncingCount > 0 
+              ? `Syncing ${syncingCount} item${syncingCount !== 1 ? 's' : ''}...` 
+              : `${pendingCount} offline item${pendingCount !== 1 ? 's' : ''} pending`}
+          </span>
+        </div>
+      )}
+
+      {/* Flash Banner for success/failure */}
+      {visible && banner && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '80px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 99999,
+            maxWidth: '600px',
+            width: 'calc(100vw - 32px)',
+            background: isSuccess ? '#dcfce7' : '#fef3c7',
+            border: `1px solid ${isSuccess ? '#16a34a' : '#f59e0b'}`,
+            borderRadius: '12px',
+            padding: '14px 16px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+            animation: 'slideUp 0.3s ease',
+          }}
+        >
+          {isSuccess
+            ? <CheckCircle size={18} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
+            : <AlertTriangle size={18} color="#92400e" style={{ flexShrink: 0, marginTop: '2px' }} />}
+          <span style={{
+            fontSize: '13px',
+            fontWeight: 500,
+            color: isSuccess ? '#14532d' : '#92400e',
+            flex: 1,
+            lineHeight: '1.5',
+          }}>
+            {banner.message}
+          </span>
+          <button
+            onClick={() => setVisible(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: isSuccess ? '#14532d' : '#92400e',
+              padding: '2px',
+              flexShrink: 0,
+            }}
+            aria-label="Dismiss"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
       <style>{`
         @keyframes slideUp {
           from { opacity: 0; transform: translateX(-50%) translateY(20px); }
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
       `}</style>
-    </div>
+    </>
   );
 }

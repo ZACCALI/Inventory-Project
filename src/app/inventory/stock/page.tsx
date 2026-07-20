@@ -55,6 +55,18 @@ export default function StockInOutPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -328,7 +340,7 @@ export default function StockInOutPage() {
          const offlineCount = pendingBatches.filter(t => t.type === 'stock' && t.action === 'CREATE' && JSON.parse(t.payload).productId === product.id).length;
          
          let serverCount = 0;
-         const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+         const isOffline = !isOnline;
          
          if (!isOffline) {
            const res = await fetch(`/api/batches?productId=${product.id}&all=true`).catch(() => null);
@@ -416,7 +428,7 @@ export default function StockInOutPage() {
         userId: session?.user?.id
       };
 
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = !isOnline;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -490,7 +502,7 @@ export default function StockInOutPage() {
       const actionText = editingLog.type === 'IN' ? 'Received' : 'Issued';
       const formattedReason = `${editFormData.reason} (${actionText} ${editFormData.quantity} ${selectedUomName})`;
 
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = !isOnline;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -541,7 +553,7 @@ export default function StockInOutPage() {
   const handleVoidLog = async (id: string, type: string) => {
     if (!await showConfirm('Void Stock Log', `Are you sure you want to void this ${type} stock log? This will reverse the stock change.`)) return;
     
-    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+    const isOffline = !isOnline;
     let networkFailed = false;
 
     try {
@@ -651,6 +663,12 @@ export default function StockInOutPage() {
           </button>
         </div>
       </div>
+
+      {!isOnline && (
+        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>⚠️ Offline Mode — Showing local data. Changes will sync when reconnected.</span>
+        </div>
+      )}
 
       <div className="timeframe-container" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
         <select 

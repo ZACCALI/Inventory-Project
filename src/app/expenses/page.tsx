@@ -89,7 +89,22 @@ export default function ExpensesPage() {
           .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
           .toArray();
 
-        let modifiedExpenses = Array.isArray(swrRes) ? [...swrRes] : [];
+        let baseData = Array.isArray(swrRes) ? [...swrRes] : [];
+        if ((swrError || (typeof navigator !== 'undefined' && !navigator.onLine)) && (!swrRes || !Array.isArray(swrRes))) {
+          try {
+            const cached = localStorage.getItem(`cached_expenses_${getQueryString()}`);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed)) baseData = parsed;
+            }
+          } catch (e) { console.warn('Failed to parse cached expenses', e); }
+        } else if (swrRes && Array.isArray(swrRes)) {
+          try {
+            localStorage.setItem(`cached_expenses_${getQueryString()}`, JSON.stringify(swrRes));
+          } catch (e) { console.warn('Failed to cache expenses', e); }
+        }
+
+        let modifiedExpenses = [...baseData];
 
         for (const task of pendingTasks) {
           try {
@@ -124,9 +139,12 @@ export default function ExpensesPage() {
     if (typeof document !== 'undefined' && document.hidden) return;
     try {
       const res = await fetch(`/api/expenses?${getQueryString()}`);
-      const data = await res.json();
       if (!res.ok) throw new Error('Failed to fetch expenses');
+      const data = await res.json();
       setExpenses(data);
+      try {
+        localStorage.setItem(`cached_expenses_${getQueryString()}`, JSON.stringify(data));
+      } catch (e) { console.warn('Failed to cache expenses', e); }
     } catch (error) {
       console.error('Failed to fetch expenses', error);
     } finally {

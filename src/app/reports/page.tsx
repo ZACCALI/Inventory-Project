@@ -41,6 +41,7 @@ export default function ReportsPage() {
   const { data: monthlyRes, isLoading: isMonthlyLoading, error: monthlyError } = useSWR('/api/reports?type=monthly', fetcher, { refreshInterval: 60000 });
   const { data: bestRes, isLoading: isBestLoading, error: bestError } = useSWR('/api/reports?type=bestsellers', fetcher, { refreshInterval: 60000 });
   const [isOffline, setIsOffline] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   useEffect(() => {
     const update = () => setIsOffline(!navigator.onLine);
@@ -51,20 +52,57 @@ export default function ReportsPage() {
   }, []);
 
   useEffect(() => {
+    let hasUpdatedCache = false;
     if (monthlyRes) {
       setMonthlyData(monthlyRes.monthly || []);
       setTotalReceivables(monthlyRes.totalReceivables || 0);
+      try {
+        localStorage.setItem('cached_monthly_report', JSON.stringify({ data: monthlyRes, timestamp: Date.now() }));
+      } catch (e) {}
+      hasUpdatedCache = true;
     }
     if (bestRes) {
       setBestsellers(bestRes.bestsellers || []);
+      try {
+        localStorage.setItem('cached_best_report', JSON.stringify({ data: bestRes, timestamp: Date.now() }));
+      } catch (e) {}
+      hasUpdatedCache = true;
     }
+    
+    if (hasUpdatedCache) {
+      setLastUpdated(Date.now());
+    }
+
+    if ((monthlyError || isOffline) && !monthlyRes) {
+      try {
+        const cachedMonthly = localStorage.getItem('cached_monthly_report');
+        if (cachedMonthly) {
+          const parsed = JSON.parse(cachedMonthly);
+          setMonthlyData(parsed.data?.monthly || []);
+          setTotalReceivables(parsed.data?.totalReceivables || 0);
+          if (parsed.timestamp) setLastUpdated(parsed.timestamp);
+        }
+      } catch (e) {}
+    }
+    
+    if ((bestError || isOffline) && !bestRes) {
+      try {
+        const cachedBest = localStorage.getItem('cached_best_report');
+        if (cachedBest) {
+          const parsed = JSON.parse(cachedBest);
+          setBestsellers(parsed.data?.bestsellers || []);
+          if (parsed.timestamp) setLastUpdated(parsed.timestamp);
+        }
+      } catch (e) {}
+    }
+
     if (!isMonthlyLoading && !isBestLoading) {
       setLoading(false);
     }
     if (monthlyError || bestError) {
       setLoading(false);
     }
-  }, [monthlyRes, bestRes, isMonthlyLoading, isBestLoading, monthlyError, bestError]);
+  }, [monthlyRes, bestRes, isMonthlyLoading, isBestLoading, monthlyError, bestError, isOffline]);
 
   const handleExportPDF = () => {
     const columns = [
@@ -417,7 +455,9 @@ export default function ReportsPage() {
         <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <AlertTriangle size={16} color="#92400e" />
           <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>
-            {isOffline ? '⚠️ You are offline — showing last cached data. Charts and downloads may be unavailable.' : 'Data may be outdated. Check your connection.'}
+            {isOffline 
+              ? `⚠️ You are offline — showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. Charts and downloads may be unavailable.` 
+              : `Data may be outdated. Showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. Check your connection.`}
           </span>
         </div>
       )}

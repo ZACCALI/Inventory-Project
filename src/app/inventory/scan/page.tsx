@@ -47,6 +47,18 @@ export default function BarcodeScannerPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   
   // Audit Mode State
   const [auditMode, setAuditMode] = useState(false);
@@ -171,7 +183,7 @@ export default function BarcodeScannerPage() {
       setIsSearchingFallback(true);
       try {
         // Offline: use local Dexie cache
-        const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+        const isOffline = !isOnline;
         if (isOffline) {
           const allProducts = await db.products.toArray();
           const q = fallbackQuery.toLowerCase();
@@ -424,7 +436,7 @@ export default function BarcodeScannerPage() {
       setNotFoundCode('');
 
       // Offline: use local Dexie products cache
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = !isOnline;
       if (isOffline) {
         try {
           const allProducts = await db.products.toArray();
@@ -584,6 +596,12 @@ export default function BarcodeScannerPage() {
           <p className="page-subtitle">Scan products to quickly lookup or audit your inventory</p>
         </div>
       </div>
+
+      {!isOnline && (
+        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>⚠️ Offline Mode — Showing local data. Changes will sync when reconnected.</span>
+        </div>
+      )}
 
       <div className="scanner-layout" style={{ 
         display: 'grid', 

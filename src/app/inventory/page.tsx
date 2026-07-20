@@ -58,6 +58,18 @@ export default function InventoryPage() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // SWR for instant caching
   const { data: swrProducts, error: swrError } = useSWR(
@@ -397,7 +409,7 @@ export default function InventoryPage() {
     }
 
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = !isOnline;
       let networkFailed = false;
 
       const method = editingProduct ? 'PUT' : 'POST';
@@ -489,7 +501,7 @@ export default function InventoryPage() {
           
           canvas.toBlob(async (blob) => {
             if (!blob) return;
-            const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+            const isOffline = !isOnline;
             let networkFailed = false;
 
             if (!isOffline) {
@@ -528,7 +540,7 @@ export default function InventoryPage() {
       `Permanently delete "${name}"?\n\n(Safe to delete: 0 sales, 0 stock logs.)\n\nThis cannot be undone.`
     )) return;
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = !isOnline;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -563,7 +575,7 @@ export default function InventoryPage() {
   const handleArchiveProduct = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Are you sure you want to archive ${name}?`)) return;
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = !isOnline;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -602,7 +614,7 @@ export default function InventoryPage() {
   const handleUnarchiveProduct = async (id: string, name: string) => {
     if (!await showConfirm('Confirm', `Are you sure you want to unarchive ${name}?`)) return;
     try {
-      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const isOffline = !isOnline;
       let networkFailed = false;
 
       if (!isOffline) {
@@ -656,6 +668,12 @@ export default function InventoryPage() {
           </button>
         </div>
       </div>
+
+      {!isOnline && (
+        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>⚠️ Offline Mode — Showing local data. Changes will sync when reconnected.</span>
+        </div>
+      )}
 
       {loading ? (
         <div className="stats-grid-3">

@@ -48,6 +48,19 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
 
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+
   const [lockOrderCancel, setLockOrderCancel] = useState(true);
   const [lockOrderDelete, setLockOrderDelete] = useState(true);
   const [lockOrderEdit, setLockOrderEdit] = useState(false);
@@ -126,7 +139,7 @@ export default function OrdersPage() {
     }
 
     const applyOfflineTasks = async () => {
-      if (!swrRes) return;
+      if (!swrRes && !swrError) return;
       
       try {
         const pendingTasks = await db.syncQueue
@@ -135,7 +148,7 @@ export default function OrdersPage() {
           .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
           .toArray();
 
-        let modifiedOrders = Array.isArray(swrRes.data) ? [...swrRes.data] : [];
+        let modifiedOrders = Array.isArray(swrRes?.data) ? [...(swrRes?.data || [])] : [];
 
         for (const task of pendingTasks) {
           try {
@@ -154,11 +167,11 @@ export default function OrdersPage() {
         }
         
         setOrders(modifiedOrders);
-        setTotalOrders(swrRes.totalCount);
+        setTotalOrders(swrRes?.totalCount || 0);
       } catch (err) {
         console.error('Failed to apply offline tasks', err);
-        setOrders(Array.isArray(swrRes.data) ? swrRes.data : []);
-        setTotalOrders(swrRes.totalCount);
+        setOrders(Array.isArray(swrRes?.data) ? swrRes!.data : []);
+        setTotalOrders(swrRes?.totalCount || 0);
       } finally {
         setLoading(false);
       }

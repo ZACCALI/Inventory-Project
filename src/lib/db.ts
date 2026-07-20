@@ -65,6 +65,26 @@ export interface OfflineSettings {
   lastSynced: number;
 }
 
+export interface OfflineStockMovement {
+  id: string;
+  productId: string;
+  type: string;
+  quantity: number;
+  reason: string;
+  source: string;
+  date: string;
+  lastSynced: number;
+}
+
+export interface OfflineExpiryAlert {
+  id: string;
+  productId: string;
+  batchNumber: string;
+  expiryDate: string;
+  stock: number;
+  lastSynced: number;
+}
+
 export const db = new Dexie('amroding_pos') as Dexie & {
   products: EntityTable<OfflineProduct, 'id'>;
   customers: EntityTable<OfflineCustomer, 'id'>;
@@ -72,7 +92,21 @@ export const db = new Dexie('amroding_pos') as Dexie & {
   categories: EntityTable<OfflineCategory, 'id'>;
   settings: EntityTable<OfflineSettings, 'key'>;
   syncQueue: EntityTable<SyncTask, 'id'>;
+  stockMovements: EntityTable<OfflineStockMovement, 'id'>;
+  expiryAlerts: EntityTable<OfflineExpiryAlert, 'id'>;
 };
+
+// Version 5 — adds stockMovements, expiryAlerts tables
+db.version(5).stores({
+  products: 'id, name, sku, barcode, categoryName',
+  customers: 'id, name',
+  drivers: 'id, name, status',
+  categories: 'id, name',
+  settings: 'key',
+  syncQueue: '++id, type, action, syncStatus, createdAt, idempotencyKey',
+  stockMovements: 'id, productId, type, date',
+  expiryAlerts: 'id, productId, batchNumber'
+});
 
 // Version 4 — adds drivers, categories, settings tables
 db.version(4).stores({

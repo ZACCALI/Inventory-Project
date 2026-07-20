@@ -58,10 +58,16 @@ export default function UsersPage() {
       }
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      return { data, totalCount: parseInt(res.headers.get('X-Total-Count') || '0', 10) };
+      const totalCount = parseInt(res.headers.get('X-Total-Count') || '0', 10);
+      try {
+        localStorage.setItem(`cached_users_${getQueryString()}`, JSON.stringify({ data, totalCount, timestamp: Date.now() }));
+      } catch (e) {}
+      return { data, totalCount };
     },
     { refreshInterval: 30000 }
   );
+  
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   // Stop skeleton after 2s if offline with no cache
   useEffect(() => {
@@ -73,10 +79,23 @@ export default function UsersPage() {
       if (Array.isArray(swrRes.data)) {
         setUsers(swrRes.data);
         setTotalUsers(swrRes.totalCount);
+        setLastUpdated(Date.now());
       } else {
         setUsers([]);
         setTotalUsers(0);
       }
+    } else if ((swrError || (typeof navigator !== 'undefined' && !navigator.onLine))) {
+      try {
+        const cached = localStorage.getItem(`cached_users_${getQueryString()}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed.data)) {
+            setUsers(parsed.data);
+            setTotalUsers(parsed.totalCount || parsed.data.length);
+            setLastUpdated(parsed.timestamp);
+          }
+        }
+      } catch (e) {}
     }
     setLoading(false);
   }, [swrRes, swrError]);
@@ -236,8 +255,8 @@ export default function UsersPage() {
           <AlertTriangle size={16} color="#92400e" />
           <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>
             {isPageOffline
-              ? '⚠️ You are offline — showing last cached data. User changes (create, edit, delete) require an internet connection.'
-              : '⚠️ Could not load user data. Check your connection.'}
+              ? `⚠️ You are offline — showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. User changes (create, edit, delete) require an internet connection.`
+              : `⚠️ Could not load recent user data. Showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. Check your connection.`}
           </span>
         </div>
       )}

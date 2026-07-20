@@ -27,6 +27,7 @@ export default function HistoryPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const limit = 50;
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
@@ -51,7 +52,11 @@ export default function HistoryPage() {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      return { data, totalCount: parseInt(res.headers.get('X-Total-Count') || '0', 10) };
+      const totalCount = parseInt(res.headers.get('X-Total-Count') || '0', 10);
+      try {
+        localStorage.setItem(`cached_history_${getQueryString()}`, JSON.stringify({ data, totalCount, timestamp: Date.now() }));
+      } catch (e) { console.warn('Failed to cache history', e); }
+      return { data, totalCount };
     },
     { refreshInterval: 60000 }
   );
@@ -89,6 +94,19 @@ export default function HistoryPage() {
       if (swrRes && Array.isArray(swrRes.data)) {
         finalLogs = [...swrRes.data];
         finalCount = swrRes.totalCount || 0;
+        setLastUpdated(Date.now());
+      } else if (!navigator.onLine || swrError) {
+        try {
+          const cached = localStorage.getItem(`cached_history_${getQueryString()}`);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed.data)) {
+              finalLogs = [...parsed.data];
+              finalCount = parsed.totalCount || 0;
+              setLastUpdated(parsed.timestamp);
+            }
+          }
+        } catch (e) { console.warn('Failed to parse cached history', e); }
       }
 
       try {
@@ -133,7 +151,12 @@ export default function HistoryPage() {
         const data = await res.json();
         setLogs(data);
         const total = res.headers.get('X-Total-Count');
-        if (total) setTotalCount(parseInt(total));
+        const count = total ? parseInt(total) : 0;
+        if (total) setTotalCount(count);
+        try {
+          localStorage.setItem(`cached_history_${getQueryString()}`, JSON.stringify({ data, totalCount: count, timestamp: Date.now() }));
+        } catch (e) { console.warn('Failed to cache history', e); }
+        setLastUpdated(Date.now());
       }
     } catch (e) {
       console.error('Failed to fetch history logs', e);
@@ -201,8 +224,8 @@ export default function HistoryPage() {
           <AlertTriangle size={16} color="#92400e" />
           <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>
             {!navigator.onLine
-              ? '⚠️ You are offline — showing pending offline actions only. Server audit logs will load when reconnected.'
-              : '⚠️ Could not load audit logs. Check your connection.'}
+              ? `⚠️ You are offline — showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. Pending actions will sync when reconnected.`
+              : `⚠️ Could not load recent audit logs. Showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}.`}
           </span>
         </div>
       )}
