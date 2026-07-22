@@ -544,7 +544,7 @@ export default function ExpensesPage() {
       </div>
 
       {isModalOpen && (
-        <div className="modal-overlay" style={{  }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '440px', borderRadius: '24px', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
             <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{editId ? 'Edit Expense' : 'Log New Expense'}</h2>

@@ -583,7 +583,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
 
       {/* Alert Modal */}
       {alertModal.isOpen && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '380px' }}>
             <div className="modal-header">
               <h2 className="modal-title">{alertModal.title}</h2>
@@ -601,7 +601,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
 
       {/* Edit Product Image Modal */}
       {editImageModal.isOpen && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '420px' }}>
             <div className="modal-header">
               <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

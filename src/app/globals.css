@@ -722,13 +722,17 @@ p {
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100vw;
+  height: 100vh;
   background: var(--bg-modal-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: var(--space-md);
-  animation: fadeIn var(--transition-fast);
+  margin: 0;
+  animation: overlayFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
 }
 
 .modal {
@@ -742,7 +746,25 @@ p {
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  animation: slideUp var(--transition-base);
+  margin: auto;
+  transform-origin: center center;
+  animation: modalPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+@keyframes modalPopIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .modal-layout-form {

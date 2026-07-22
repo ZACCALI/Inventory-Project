@@ -448,7 +448,7 @@ export default function UsersPage() {
 
       {/* Create User Modal */}
       {showModal && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '480px' }}>
             <div className="modal-header">
               <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -499,7 +499,7 @@ export default function UsersPage() {
 
       {/* Edit User Modal */}
       {showEditModal && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '480px' }}>
             <div className="modal-header">
               <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -555,7 +555,7 @@ export default function UsersPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
               <h2 className="modal-title">Delete User?</h2>

@@ -1537,7 +1537,7 @@ export default function CreateOrderPage() {
 
       {/* UOM Selection Modal - Enterprise Dual Card Design */}
       {selectedProductForUom && (
-        <div className="modal-overlay" style={{  }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ width: '100%', maxWidth: '500px', padding: '32px', borderRadius: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>
@@ -1597,7 +1597,7 @@ export default function CreateOrderPage() {
 
       {/* View All Items Modal */}
       {isViewItemsOpen && (
-        <div className="modal-overlay" style={{  }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '800px', borderRadius: '24px', overflow: 'hidden' }}>
             <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)' }}>
               <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '20px' }}>
@@ -1702,7 +1702,7 @@ export default function CreateOrderPage() {
 
       {/* Checkout Confirmation Modal */}
       {showConfirmCheckout && (
-        <div className="modal-overlay" style={{ zIndex: 1000,  }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '440px', borderRadius: '24px', textAlign: 'center', padding: '32px' }}>
             <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
               <ShoppingCart size={32} />
@@ -1728,7 +1728,7 @@ export default function CreateOrderPage() {
 
       {/* Clear Cart Confirmation Modal */}
       {showClearConfirm && (
-        <div className="modal-overlay" style={{ zIndex: 1000,  }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '400px', borderRadius: '24px', textAlign: 'center', padding: '32px' }}>
             <div style={{ width: '64px', height: '64px', background: 'var(--danger-light)', color: 'var(--danger)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
               <Trash2 size={32} />
@@ -1746,7 +1746,7 @@ export default function CreateOrderPage() {
 
       {/* Success Modal - Enterprise Layout */}
       {isSuccessOpen && (
-        <div className="modal-overlay" style={{ zIndex: 1000, padding: '16px' }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '600px', width: '100%', maxHeight: '90vh', borderRadius: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: 0 }}>
             <div style={{ padding: '24px 32px', textAlign: 'center', borderBottom: '1px solid var(--border)' }}>
               <div style={{ width: '64px', height: '64px', background: 'var(--success-light)', color: 'var(--success)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.15)' }}>

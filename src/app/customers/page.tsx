@@ -513,7 +513,7 @@ export default function CustomersPage() {
       </div>
 
       {isModalOpen && (
-        <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '700px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div className="modal-header">
               <h2 className="modal-title">

@@ -1907,7 +1907,7 @@ export default function OrdersPage() {
 
       {/* UOM Selection Modal for Edit Items */}
       {selectedProductForUom && (
-        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ width: '100%', maxWidth: '400px', minWidth: '320px' }}>
             <div className="modal-header">
               <h2 className="modal-title">Select Unit</h2>
@@ -1975,7 +1975,7 @@ export default function OrdersPage() {
       )}
 
       {receiptOrder && (
-        <div className="modal-overlay" style={{ zIndex: 1100,  }}>
+        <div className="modal-overlay">
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '480px', width: '100%', borderRadius: '24px', overflow: 'hidden', padding: 0 }}>
             <div style={{ padding: '32px 32px 24px', textAlign: 'center', borderBottom: '1px solid var(--border)' }}>
               <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
