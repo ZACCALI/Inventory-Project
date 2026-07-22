@@ -58,6 +58,18 @@ function getRelativeTime(dateStr: string) {
 
 export default function Navbar({ onMenuToggle }: NavbarProps) {
   const { data: session } = useSession();
+  const [cachedSession, setCachedSession] = useState<any>(null);
+  
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('amroding_cached_session');
+      if (stored) {
+        setCachedSession(JSON.parse(stored));
+      }
+    } catch (e) {}
+  }, []);
+
+  const activeSession = session || cachedSession;
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -214,7 +226,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
   }, [notificationsOpen]);
 
   useEffect(() => {
-    if (!session?.user) return;
+    if (!activeSession?.user) return;
     
     const fetchNotifications = async () => {
       try {
@@ -235,7 +247,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
 // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id]);
+  }, [activeSession?.user?.id]);
 
   const handleMarkAllRead = useCallback(async () => {
     // Only fire if there are actually unread notifications
@@ -327,7 +339,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
           <span className="system-name" style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{companyName}</span>
         </Link>
         <div className="navbar-greeting" style={{ marginLeft: '16px', display: 'none' }}>
-          {getGreeting()}, <strong>{session?.user?.name || 'User'}</strong>
+          {getGreeting()}, <strong>{activeSession?.user?.name || 'User'}</strong>
         </div>
       </div>
 
@@ -482,15 +494,15 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
             className="navbar-profile-btn"
             onClick={() => setDropdownOpen(!dropdownOpen)}
           >
-            {(session?.user as { avatar?: string })?.avatar ? (
-              <Image width={400} height={400} src={(session?.user as { avatar?: string }).avatar || '/icon.svg'} alt="Avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+            {(activeSession?.user as { avatar?: string })?.avatar ? (
+              <Image width={400} height={400} src={(activeSession?.user as { avatar?: string }).avatar || '/icon.svg'} alt="Avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
               <span className="navbar-avatar-circle">
-                {session?.user?.name ? getInitials(session.user.name) : 'U'}
+                {activeSession?.user?.name ? getInitials(activeSession.user.name) : 'U'}
               </span>
             )}
             <span className="admin-name" style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-family)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
-              {session?.user?.name || 'User'}
+              {activeSession?.user?.name || 'User'}
             </span>
             <ChevronDown size={14} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
           </button>
@@ -499,13 +511,13 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
             <div className="dropdown-menu">
               <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-light)' }}>
                 <div style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  {session?.user?.name}
+                  {activeSession?.user?.name}
                 </div>
                 <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>
-                  {session?.user?.email}
+                  {activeSession?.user?.email}
                 </div>
                 <span className="badge badge-primary" style={{ marginTop: '4px' }}>
-                  {(session?.user as { role?: string })?.role || 'user'}
+                  {(activeSession?.user as { role?: string })?.role || 'user'}
                 </span>
               </div>
               <button className="dropdown-item" onClick={() => { setDropdownOpen(false); router.push('/settings'); }}>
@@ -515,7 +527,12 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
               <div className="dropdown-divider" />
               <button
                 className="dropdown-item danger"
-                onClick={() => signOut({ callbackUrl: '/login' })}
+                onClick={() => {
+                  try {
+                    localStorage.removeItem('amroding_cached_session');
+                  } catch (e) {}
+                  signOut({ callbackUrl: '/login' });
+                }}
               >
                 <LogOut size={16} strokeWidth={1.75} />
                 Sign Out

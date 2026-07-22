@@ -10,6 +10,7 @@ import { db } from '@/lib/db';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
+  const [cachedSession, setCachedSession] = useState<any>(null);
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -17,7 +18,30 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [settings, setSettings] = useState<any>(null);
 
-  const userRole = (session?.user as { role?: string })?.role;
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('amroding_cached_session');
+      if (stored) {
+        setCachedSession(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (session) {
+      try {
+        localStorage.setItem('amroding_cached_session', JSON.stringify(session));
+        setCachedSession(session);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [session]);
+
+  const activeSession = session || cachedSession;
+  const userRole = (activeSession?.user as { role?: string })?.role;
 
   // Public pages that don't require auth
   const isPublicPage = pathname === '/login' || pathname === '/';
@@ -40,7 +64,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Fetch settings once per session
   useEffect(() => {
-    if (session && !settings) {
+    if (activeSession && !settings) {
       fetch('/api/settings')
         .then(res => {
           if (!res.ok) throw new Error('Settings fetch failed');
@@ -62,7 +86,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           setSettings({}); 
         });
     }
-  }, [session, settings]);
+  }, [activeSession, settings]);
 
   // Global fix: Prevent mouse scroll from changing number inputs
   useEffect(() => {
@@ -114,7 +138,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // Show loading state while checking auth or loading dynamic permissions
-  const isLoadingSettings = session && userRole !== 'admin' && !settings;
+  const isLoadingSettings = activeSession && userRole !== 'admin' && !settings;
   if (status === 'loading' || isLoadingSettings) {
     return (
         <div className="loading-page" style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
@@ -129,7 +153,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // If not authenticated, return null while redirect happens
-  if (!session) {
+  if (!activeSession) {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return (
+        <div className="loading-page" style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-md)' }}>
+            <div className="premium-loader-icon" style={{ width: '64px', height: '64px', borderRadius: 'var(--radius-lg)', background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', boxShadow: '0 8px 24px rgba(37,99,235,0.35)' }}>
+              <Truck size={32} color="white" />
+            </div>
+            <p className="premium-loader-text" style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: 'var(--font-md)', letterSpacing: '0.3px' }}>Offline - Waiting for connection...</p>
+          </div>
+        </div>
+      );
+    }
     return null;
   }
 
