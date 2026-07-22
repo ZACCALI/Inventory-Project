@@ -120,6 +120,7 @@ export default function SyncStatusBanner() {
       {/* Live pending queue indicator / Offline Status */}
       {(isOffline || pendingCount > 0 || syncingCount > 0) && (
         <div
+          className="offline-banner-floating"
           style={{
             position: 'fixed',
             bottom: '20px',
@@ -206,6 +207,11 @@ export default function SyncStatusBanner() {
         </div>
       )}
       <style>{`
+        @media (min-width: 769px) {
+          .offline-banner-floating {
+            display: none !important;
+          }
+        }
         @keyframes slideUp {
           from { opacity: 0; transform: translateX(-50%) translateY(20px); }
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
