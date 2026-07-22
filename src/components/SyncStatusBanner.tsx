@@ -26,6 +26,7 @@ interface SyncBannerState {
 export default function SyncStatusBanner() {
   const [banner, setBanner] = useState<SyncBannerState | null>(null);
   const [visible, setVisible] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const pendingCount = useLiveQuery(
     () => db.syncQueue.where('syncStatus').equals('pending').count(),
@@ -36,6 +37,31 @@ export default function SyncStatusBanner() {
     () => db.syncQueue.where('syncStatus').equals('syncing').count(),
     []
   ) || 0;
+
+  useEffect(() => {
+    const checkOnline = async () => {
+      if (!navigator.onLine) {
+        setIsOffline(true);
+        return;
+      }
+      try {
+        await fetch(`/api/test-ping?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+        setIsOffline(false);
+      } catch {
+        setIsOffline(true);
+      }
+    };
+
+    checkOnline();
+    window.addEventListener('online', checkOnline);
+    window.addEventListener('offline', checkOnline);
+    const interval = setInterval(checkOnline, 5000);
+    return () => {
+      window.removeEventListener('online', checkOnline);
+      window.removeEventListener('offline', checkOnline);
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     const handleSynced = (e: Event) => {
@@ -91,15 +117,15 @@ export default function SyncStatusBanner() {
 
   return (
     <>
-      {/* Live pending queue indicator */}
-      {(pendingCount > 0 || syncingCount > 0) && (
+      {/* Live pending queue indicator / Offline Status */}
+      {(isOffline || pendingCount > 0 || syncingCount > 0) && (
         <div
           style={{
             position: 'fixed',
             bottom: '20px',
             right: '20px',
             zIndex: 99998,
-            background: syncingCount > 0 ? '#3b82f6' : '#f59e0b',
+            background: isOffline ? '#ef4444' : syncingCount > 0 ? '#3b82f6' : '#f59e0b',
             color: 'white',
             padding: '8px 12px',
             borderRadius: '20px',
@@ -112,15 +138,19 @@ export default function SyncStatusBanner() {
             animation: 'fadeIn 0.3s ease'
           }}
         >
-          {syncingCount > 0 ? (
+          {isOffline ? (
+            <CloudOff size={14} />
+          ) : syncingCount > 0 ? (
             <RefreshCw size={14} className="spin" />
           ) : (
             <CloudOff size={14} />
           )}
           <span>
-            {syncingCount > 0 
-              ? `Syncing ${syncingCount} item${syncingCount !== 1 ? 's' : ''}...` 
-              : `${pendingCount} offline item${pendingCount !== 1 ? 's' : ''} pending`}
+            {isOffline 
+              ? `Offline Mode (Working Offline)${pendingCount > 0 ? ` - ${pendingCount} pending` : ''}`
+              : syncingCount > 0 
+                ? `Syncing ${syncingCount} item${syncingCount !== 1 ? 's' : ''}...` 
+                : `${pendingCount} offline item${pendingCount !== 1 ? 's' : ''} pending`}
           </span>
         </div>
       )}

@@ -22,11 +22,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Public pages that don't require auth
   const isPublicPage = pathname === '/login' || pathname === '/';
 
-  // Redirect to login if not authenticated (skip public pages and offline state)
+  // Redirect to login if not authenticated (skip public pages)
   useEffect(() => {
-    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-    if (status === 'unauthenticated' && !isPublicPage && !isOffline) {
-      router.push('/login');
+    if (status === 'unauthenticated' && !isPublicPage) {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      
+      // Ping check to avoid redirecting if just network throttled
+      fetch(`/api/test-ping?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' })
+        .then(() => {
+          router.push('/login');
+        })
+        .catch(() => {
+          console.warn("AppShell: Cannot reach server, ignoring unauthenticated status.");
+        });
     }
   }, [status, pathname, router, isPublicPage]);
 
