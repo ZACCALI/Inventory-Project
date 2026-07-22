@@ -354,63 +354,109 @@ p {
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   text-decoration: none;
   line-height: 1.4;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  will-change: transform, box-shadow;
+}
+
+.btn svg {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+}
+
+.btn:hover:not(:disabled) svg {
+  transform: scale(1.12) translateY(-1px);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96) translateY(0) !important;
+  box-shadow: none !important;
+  transition-duration: 0.08s;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .btn-primary {
   background: var(--primary);
   color: var(--text-white);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
-  box-shadow: 0 4px 12px rgba(0, 97, 255, 0.3);
-  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+  transform: translateY(-2px);
 }
 
 .btn-secondary {
   background: var(--bg-hover);
   color: var(--text-primary);
   border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--border);
+  background: var(--border-light);
+  border-color: var(--primary-light);
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
 .btn-success {
   background: var(--success);
   color: var(--text-white);
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
 }
 
 .btn-success:hover:not(:disabled) {
   background: var(--success-dark);
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.35);
+  transform: translateY(-2px);
 }
 
 .btn-danger {
   background: var(--danger);
   color: var(--text-white);
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2);
 }
 
 .btn-danger:hover:not(:disabled) {
   background: var(--danger-dark);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
+  transform: translateY(-2px);
 }
 
 .btn-warning {
   background: var(--warning);
   color: var(--text-white);
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.2);
 }
 
 .btn-warning:hover:not(:disabled) {
   background: var(--warning-dark);
+  box-shadow: 0 6px 18px rgba(217, 119, 6, 0.35);
+  transform: translateY(-2px);
 }
 
 .btn-ghost {
@@ -420,7 +466,8 @@ p {
 
 .btn-ghost:hover:not(:disabled) {
   background: var(--bg-hover);
-  color: var(--text-primary);
+  color: var(--primary);
+  transform: translateY(-1px);
 }
 
 .btn-sm {
@@ -435,8 +482,22 @@ p {
 
 .btn-icon {
   padding: 8px;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-icon:hover:not(:disabled) {
+  transform: scale(1.08) translateY(-1px);
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+
+.btn-icon:active:not(:disabled) {
+  transform: scale(0.92) translateY(0);
 }
 
 /* ============================================================

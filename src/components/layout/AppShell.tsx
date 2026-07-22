@@ -22,9 +22,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Public pages that don't require auth
   const isPublicPage = pathname === '/login' || pathname === '/';
 
-  // Redirect to login if not authenticated (skip public pages)
+  // Redirect to login if not authenticated (skip public pages and offline state)
   useEffect(() => {
-    if (status === 'unauthenticated' && !isPublicPage) {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+    if (status === 'unauthenticated' && !isPublicPage && !isOffline) {
       router.push('/login');
     }
   }, [status, pathname, router, isPublicPage]);

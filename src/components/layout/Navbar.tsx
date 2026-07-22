@@ -75,13 +75,21 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
   // Monitor Offline Status & Sync Queue
   useEffect(() => {
     const checkOnlineStatus = async () => {
-      if (!navigator.onLine) {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
         setIsOffline(true);
         return;
       }
-      // navigator.onLine is true, but Windows virtual adapters can spoof this. Ping to verify.
+      // navigator.onLine is true, but virtual adapters can spoof this. Ping with timeout to verify.
       try {
-        await fetch(`/api/test-ping?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch(`/api/test-ping?t=${Date.now()}`, {
+          method: 'HEAD',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (!res.ok) throw new Error('Ping failed');
         setIsOffline(false);
         handleBackgroundSync();
       } catch {
