@@ -833,54 +833,71 @@ export default function CreateOrderPage() {
     lines.push('');
     lines.push('');
 
-    const PX_W = 384;
-    const FONT_SIZE = 18;
-    const LINE_H = 24;
-    const PAD = 8;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = PX_W;
-    canvas.height = PAD + lines.length * LINE_H + PAD;
-    const ctx = canvas.getContext('2d')!;
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = '#000000';
-    ctx.strokeStyle = '#000000';
-    ctx.font = `900 ${FONT_SIZE}px "Consolas", "Courier New", monospace`;
-    ctx.imageSmoothingEnabled = false;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (ctx as any).textRendering = 'geometricPrecision';
-
-    lines.forEach((line, idx) => {
-      const y = PAD + (idx + 1) * LINE_H - 4;
-      ctx.fillText(line, PAD, y, PX_W - PAD * 2);
-      ctx.lineWidth = 0.5;
-      ctx.strokeText(line, PAD, y, PX_W - PAD * 2);
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-
     const printWindow = window.open('', '_blank');
     if (!printWindow) { showToast('Please allow popups to print receipt.', 'error'); return; }
 
-    const imgHeightMm = Math.ceil((canvas.height / PX_W) * 48);
+    const escapeHtml = (unsafe: string) => {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    };
 
-    const html = `
-      <html>
-        <head>
-          <title>Receipt</title>
-          <style>
-            @page { margin: 0; size: 58mm auto; }
-            html { margin: 0; padding: 0; height: ${imgHeightMm}mm; overflow: hidden; }
-            body { margin: 0; padding: 0; background: white; height: ${imgHeightMm}mm; overflow: hidden; page-break-after: avoid; }
-            img { display: block; width: 48mm; height: auto; image-rendering: pixelated; page-break-after: avoid; }
-          </style>
-        </head>
-        <body><img src="${imgData}" /></body>
-      </html>
-    `;
+    const escapedTextLines = escapeHtml(lines.join('\n'));
+
+    const html = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Receipt</title>
+    <style>
+      @page {
+        size: 58mm auto;
+        margin: 0;
+      }
+      @media print {
+        html, body {
+          width: 58mm;
+          margin: 0;
+          padding: 0;
+          background: #ffffff !important;
+          color: #000000 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        width: 58mm;
+        margin: 0 auto;
+        padding: 4px;
+        font-family: "Courier New", Courier, "Consolas", monospace;
+        font-size: 12px;
+        line-height: 1.25;
+        font-weight: 700;
+        color: #000000;
+        background: #ffffff;
+      }
+      pre {
+        font-family: "Courier New", Courier, "Consolas", monospace;
+        font-size: 12px;
+        line-height: 1.25;
+        font-weight: 700;
+        color: #000000;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <pre>${escapedTextLines}</pre>
+  </body>
+</html>`;
 
     printWindow.document.write(html);
     printWindow.document.close();
