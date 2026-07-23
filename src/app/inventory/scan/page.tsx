@@ -178,20 +178,32 @@ export default function BarcodeScannerPage() {
       setShowFallbackDropdown(false);
       return;
     }
+    
+    // Instant local Dexie search response
+    const searchLocal = async () => {
+      try {
+        const allProducts = await db.products.toArray();
+        const q = fallbackQuery.toLowerCase();
+        const results = allProducts
+          .filter((p: OfflineProduct) => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q))
+          .slice(0, 5);
+        if (results.length > 0) {
+          setFallbackResults(results);
+          setShowFallbackDropdown(true);
+        }
+      } catch (err) {}
+    };
+    
+    // Fire instant local search
+    searchLocal();
 
     const timer = setTimeout(async () => {
       setIsSearchingFallback(true);
       try {
-        // Offline: use local Dexie cache
+        // Offline: stop here, local search already ran
         const isOffline = !isOnline;
         if (isOffline) {
-          const allProducts = await db.products.toArray();
-          const q = fallbackQuery.toLowerCase();
-          const results = allProducts
-            .filter((p: OfflineProduct) => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q))
-            .slice(0, 5);
-          setFallbackResults(results);
-          setShowFallbackDropdown(results.length > 0);
+          setIsSearchingFallback(false);
           return;
         }
         const res = await fetch(`/api/products?search=${encodeURIComponent(fallbackQuery)}&limit=5`);
@@ -208,7 +220,7 @@ export default function BarcodeScannerPage() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [fallbackQuery]);
+  }, [fallbackQuery, isOnline]);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFallbackSelect = (product: any) => {
@@ -701,8 +713,14 @@ export default function BarcodeScannerPage() {
                     onFocus={() => fallbackQuery.trim().length >= 2 && setShowFallbackDropdown(true)}
                     style={{ paddingLeft: '40px', width: '100%', fontSize: 'var(--font-md)', borderRadius: 'var(--radius-full)', padding: '12px 16px 12px 40px' }}
                   />
+                  <style>{`
+                    @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                    }
+                  `}</style>
                   {isSearchingFallback && (
-                    <Loader2 size={16} className="spin" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} />
+                    <Loader2 size={16} style={{ position: 'absolute', right: '16px', top: '50%', marginTop: '-8px', color: 'var(--primary)', animation: 'spin 0.6s linear infinite' }} />
                   )}
                 </div>
 

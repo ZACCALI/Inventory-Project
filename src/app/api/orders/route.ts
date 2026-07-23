@@ -96,8 +96,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: firstError.message }, { status: 400 });
     }
 
-    const { customerId, items, orderReference, orderType, status, paymentStatus, amountPaid, isDelivery, deliveryDriverId, deliveryDriverName, deliveryDate, isOfflineSync, customerName } = parsed.data;
+    const { customerId, items, orderReference, orderType, status, paymentStatus, amountPaid, isDelivery, deliveryDriverName, deliveryDate, isOfflineSync, customerName } = parsed.data;
     let { notes, discount, orderDate } = parsed.data;
+    let deliveryDriverId: string | null | undefined = parsed.data.deliveryDriverId;
+
+    // Sanitize deliveryDriverId
+    if (!deliveryDriverId || deliveryDriverId === 'unassigned' || deliveryDriverId === '') {
+      deliveryDriverId = null;
+    }
 
     if (!notes && orderReference) {
       notes = orderReference;
@@ -353,7 +359,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Security Fix: Prevent internal database/architecture errors from leaking to the client.
-    return NextResponse.json({ error: 'An internal server error occurred while processing your order.' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'An internal server error occurred while processing your order.' }, { status: 500 });
   }
 }
 

@@ -106,6 +106,27 @@ export default function StockInOutPage() {
       let finalLogs: StockLog[] = [];
       if (swrRes) {
         finalLogs = Array.isArray(swrRes) ? [...swrRes] : [];
+      } else {
+        try {
+          const cached = await db.stockMovements.toArray();
+          finalLogs = cached.map(m => ({
+            id: m.id,
+            date: m.date,
+            product: products.find(p => p.id === m.productId)?.name || 'Unknown',
+            sku: products.find(p => p.id === m.productId)?.sku || '',
+            category: products.find(p => p.id === m.productId)?.category?.name || '',
+            type: m.type,
+            quantity: m.quantity,
+            reference: m.reason,
+            source: m.source,
+            user: 'Offline User',
+            productId: m.productId,
+            isVoided: false
+          })) as unknown as StockLog[];
+          finalLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        } catch (e) {
+          console.warn('No stockMovements cache', e);
+        }
       }
       
       try {
@@ -163,6 +184,22 @@ export default function StockInOutPage() {
       if (!res.ok) throw new Error('Network response was not ok');
       const data = await res.json();
       setLogs(data);
+      
+      try {
+        await db.stockMovements.clear();
+        await db.stockMovements.bulkAdd(data.map((l: any) => ({
+          id: l.id,
+          productId: l.productId,
+          type: l.type,
+          quantity: l.quantity,
+          reason: l.reference,
+          source: l.source,
+          date: l.date,
+          lastSynced: Date.now()
+        })));
+      } catch (err) {
+        console.warn('Failed to cache stock logs', err);
+      }
     } catch (error: unknown) {
       if ((error as Error)?.message === 'Failed to fetch' || error instanceof TypeError) return;
     } finally {

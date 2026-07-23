@@ -628,7 +628,7 @@ export default function CreateOrderPage() {
         amountPaid: paidAmount,
         status: orderStatus,
         isDelivery: fulfillmentMode === 'delivery',
-        deliveryDriverId: fulfillmentMode === 'delivery' ? deliveryDriverId : undefined,
+        deliveryDriverId: fulfillmentMode === 'delivery' ? (deliveryDriverId === 'unassigned' || deliveryDriverId === '' ? undefined : deliveryDriverId) : undefined,
         deliveryDriverName: fulfillmentMode === 'delivery' ? deliveryDriverName : undefined,
         deliveryDate: fulfillmentMode === 'delivery' ? (deliveryDate ? new Date(deliveryDate).toISOString() : undefined) : undefined,
         userId,
