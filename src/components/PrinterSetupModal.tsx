@@ -198,9 +198,26 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
               </button>
             </div>
             {status === 'failed' && (
-              <p style={{ fontSize: '12px', color: '#ef4444', margin: '8px 0 0', lineHeight: 1.5 }}>
-                Make sure QZ Tray is running on this PC (look for the printer icon in the system tray), then click Connect again.
-              </p>
+              <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginTop: '8px' }}>
+                <p style={{ fontSize: '12px', color: '#b91c1c', margin: '0 0 8px', lineHeight: 1.5, fontWeight: 500 }}>
+                  <strong>QZ Tray is running, but browser blocked the HTTPS connection.</strong>
+                </p>
+                <p style={{ fontSize: '12px', color: '#7f1d1d', margin: '0 0 10px', lineHeight: 1.5 }}>
+                  Because your app is on HTTPS, Chrome/Edge requires accepting QZ Tray&apos;s local security certificate once.
+                </p>
+                <a
+                  href="https://localhost:8181"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '12px', padding: '6px 12px', background: '#fff', color: '#b91c1c', border: '1px solid #fca5a5', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                >
+                  🔒 Allow HTTPS Certificate (Click Here) →
+                </a>
+                <p style={{ fontSize: '11px', color: '#991b1b', margin: '6px 0 0', lineHeight: 1.4 }}>
+                  (Click the link above, click <strong>Advanced</strong> → <strong>Proceed to localhost (unsafe)</strong>, then come back and click <strong>Connect</strong>)
+                </p>
+              </div>
             )}
           </div>
 
