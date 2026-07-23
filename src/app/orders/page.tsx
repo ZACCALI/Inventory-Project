@@ -470,67 +470,43 @@ export default function OrdersPage() {
     } catch (e) {
       showAlert('error', 'Action Failed', 'Failed to unarchive order due to a network error.');
     }
-  };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const printThermalReceipt = (order: any) => {
     if (!order) return;
 
-    const W = 32;
-    const center = (s: string) => { const p = Math.max(0, Math.floor((W - s.length) / 2)); return ' '.repeat(p) + s; };
-    const lr = (l: string, r: string) => { const sp = Math.max(1, W - l.length - r.length); return l + ' '.repeat(sp) + r; };
-    const D = '--------------------------------';
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) { showAlert('error', 'Action Failed', 'Please allow popups to print receipt.'); return; }
 
-    const lines: string[] = [
-      center(companyName.toUpperCase()),
-      center('SARIMANOK ST. MARAWI'),
-      center('CITY 2ND BRANCH'),
-      center('ALHAMDULILLAH'),
-      '',
-      'Trx: ' + ((order.orderNumber || '').split('-').pop() || ''),
-      'By: ' + (order.createdBy?.name || 'ADMIN').substring(0, W - 4),
-      new Date(order.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',',''),
-      D,
-    ];
-
+    const orderNo = ((order.orderNumber || '').split('-').pop() || '');
+    const createdBy = (order.createdBy?.name || 'ADMIN');
+    const dateStr = new Date(order.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',','');
+    
+    let itemsHtml = '';
     let totalQty = 0;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
     order.items.forEach((i: any) => {
       const name = (i.product?.name || 'Item').toUpperCase();
       const uom = i.uomName ? ` (${i.uomName})` : '';
-      const label = name + uom;
-      for (let j = 0; j < label.length; j += W) lines.push(label.substring(j, j + W));
-      const qty = Number(i.quantity); totalQty += qty;
-      lines.push(lr(' ' + qty + ' x ' + Number(i.price).toFixed(2), (qty * Number(i.price)).toFixed(2)));
+      const qty = Number(i.quantity);
+      totalQty += qty;
+      const price = Number(i.price).toFixed(2);
+      const total = (qty * Number(i.price)).toFixed(2);
+      itemsHtml += `
+        <div style="margin-bottom: 2px;">${name}${uom}</div>
+        <div class="flex-row">
+          <span>&nbsp;&nbsp;${qty} x ${price}</span>
+          <span>${total}</span>
+        </div>
+      `;
     });
-    lines.push(lr('', '(' + totalQty + ') Items'));
-    lines.push(D);
 
     const sub = (order.totalAmount + (order.discount || 0)).toFixed(2);
-    lines.push(lr('TOTAL SALE:', sub));
-    lines.push(lr('DISCOUNT:', (order.discount || 0).toFixed(2)));
-    lines.push(lr('AMOUNT DUE:', order.totalAmount.toFixed(2)));
-    lines.push(D);
-    lines.push('');
-    lines.push(center('** OFFICIAL RECEIPT **'));
-    lines.push(center('FACEBOOK:'));
-    lines.push(center(companyName.toUpperCase()));
-    lines.push('');
-    lines.push('');
+    const discount = (order.discount || 0).toFixed(2);
+    const amountDue = order.totalAmount.toFixed(2);
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) { showAlert('error', 'Action Failed', 'Please allow popups to print receipt.'); return; }
-
-    const escapeHtmlReceipt = (unsafe: string) => {
-      return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    };
-
-    const escapedTextLines = escapeHtmlReceipt(lines.join('\n'));
+    const driverHtml = order.deliveryDriverName ? `<div>Driver: ${order.deliveryDriverName}</div>` : '';
+    const dateHtml = order.deliveryDate ? `<div>Date: ${new Date(order.deliveryDate).toLocaleDateString()}</div>` : '';
+    const notesHtml = order.notes ? `<div>Notes: ${order.notes}</div>` : '';
 
     const html = `<!DOCTYPE html>
 <html>
@@ -545,46 +521,73 @@ export default function OrdersPage() {
       @media print {
         html, body {
           width: 100%;
-          max-width: 80mm;
-          margin: 0 !important;
+          max-width: 72mm;
+          margin: 0 auto !important;
           padding: 0 !important;
-          background: #ffffff !important;
-          color: #000000 !important;
+          background: #fff !important;
+          color: #000 !important;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
       }
       * {
         box-sizing: border-box;
-        line-height: 1.0 !important;
       }
       body {
         width: 100%;
-        max-width: 80mm;
+        max-width: 72mm;
         margin: 0 auto !important;
         padding: 4px !important;
         font-family: "Courier New", Courier, "Consolas", monospace;
         font-size: 12px;
-        line-height: 1.0 !important;
+        line-height: 1.15 !important;
         font-weight: 700;
-        color: #000000 !important;
-        background: #ffffff !important;
+        color: #000 !important;
+        background: #fff !important;
       }
-      pre {
-        font-family: "Courier New", Courier, "Consolas", monospace;
-        font-size: 12px;
-        line-height: 1.0 !important;
-        font-weight: 700;
-        color: #000000 !important;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
+      .center { text-align: center; }
+      .flex-row { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; margin: 0 !important; padding: 0 !important; }
+      .divider { border-bottom: 1px dashed #000; margin: 4px 0; width: 100%; }
+      .mt-1 { margin-top: 4px; }
+      .mb-1 { margin-bottom: 4px; }
+      div { margin: 0 !important; padding: 0 !important; }
     </style>
   </head>
   <body>
-    <pre>${escapedTextLines}</pre>
+    <div class="center">${companyName.toUpperCase()}</div>
+    <div class="center">SARIMANOK ST. MARAWI</div>
+    <div class="center">CITY 2ND BRANCH</div>
+    <div class="center">ALHAMDULILLAH</div>
+    
+    <div class="mt-1">Order No: ${orderNo}</div>
+    <div>By: ${createdBy}</div>
+    <div>${dateStr}</div>
+    ${driverHtml}
+    ${dateHtml}
+    ${notesHtml}
+    
+    <div class="divider"></div>
+    
+    ${itemsHtml}
+    
+    <div class="flex-row">
+      <span></span>
+      <span>(${totalQty}) Items</span>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <div class="flex-row"><span>TOTAL SALE:</span><span>${sub}</span></div>
+    <div class="flex-row"><span>DISCOUNT:</span><span>${discount}</span></div>
+    <div class="flex-row"><span>AMOUNT DUE:</span><span>${amountDue}</span></div>
+    
+    <div class="divider"></div>
+    <br/>
+    <div class="center">** OFFICIAL RECEIPT **</div>
+    <div class="center">FACEBOOK:</div>
+    <div class="center">${companyName.toUpperCase()}</div>
+    <br/>
+    <br/>
   </body>
 </html>`;
 
@@ -2052,4 +2055,6 @@ export default function OrdersPage() {
       )}
     </>
   );
+}
+
 }
