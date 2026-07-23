@@ -45,7 +45,10 @@ export default function CreateOrderPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [idempotencyKey, setIdempotencyKey] = useState<string>('');
 
-  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
+  const [isOnline, setIsOnline] = useState(true);
+  useEffect(() => {
+    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  }, []);
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);

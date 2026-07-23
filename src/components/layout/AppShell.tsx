@@ -10,15 +10,14 @@ import { db } from '@/lib/db';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
-  const [cachedSession, setCachedSession] = useState<any>(() => {
-    if (typeof window === 'undefined') return null;
+  const [cachedSession, setCachedSession] = useState<any>(null);
+
+  useEffect(() => {
     try {
       const saved = localStorage.getItem('amroding_cached_session');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+      if (saved) setCachedSession(JSON.parse(saved));
+    } catch (e) {}
+  }, []);
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
