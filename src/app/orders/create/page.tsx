@@ -854,14 +854,15 @@ export default function CreateOrderPage() {
     <title>Receipt</title>
     <style>
       @page {
-        size: 58mm auto;
+        size: auto;
         margin: 0;
       }
       @media print {
         html, body {
-          width: 58mm;
-          margin: 0;
-          padding: 0;
+          width: 100%;
+          max-width: 80mm;
+          margin: 0 !important;
+          padding: 0 !important;
           background: #ffffff !important;
           color: #000000 !important;
           -webkit-print-color-adjust: exact;
@@ -870,27 +871,30 @@ export default function CreateOrderPage() {
       }
       * {
         box-sizing: border-box;
+        line-height: 1.0 !important;
       }
       body {
-        width: 58mm;
-        margin: 0 auto;
-        padding: 4px;
+        width: 100%;
+        max-width: 80mm;
+        margin: 0 auto !important;
+        padding: 4px !important;
         font-family: "Courier New", Courier, "Consolas", monospace;
         font-size: 12px;
-        line-height: 1.25;
+        line-height: 1.0 !important;
         font-weight: 700;
-        color: #000000;
-        background: #ffffff;
+        color: #000000 !important;
+        background: #ffffff !important;
       }
       pre {
         font-family: "Courier New", Courier, "Consolas", monospace;
         font-size: 12px;
-        line-height: 1.25;
+        line-height: 1.0 !important;
         font-weight: 700;
-        color: #000000;
+        color: #000000 !important;
         white-space: pre-wrap;
         word-wrap: break-word;
-        margin: 0;
+        margin: 0 !important;
+        padding: 0 !important;
       }
     </style>
   </head>
