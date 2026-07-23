@@ -254,9 +254,11 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
   const p = new EscPos(paper);
   const w = getLineWidth(paper);
 
+  const cleanCompanyName = data.companyName.replace(/^[bB]\s*/, '').replace(/b(?=amroding)/i, '');
+
   // ── Header ──────────────────────────────────────────────────────────────────
   p.bold(true)
-   .centerLine(data.companyName.toUpperCase(), true)
+   .centerLine(cleanCompanyName.toUpperCase(), true)
    .normalSize()
    .bold(true)
    .centerLine(data.address.toUpperCase())
@@ -310,7 +312,7 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
    .centerLine('** OFFICIAL RECEIPT **')
    .centerLine('FACEBOOK:')
    .bold(true)
-   .centerLine(data.companyName.toUpperCase())
+   .centerLine(cleanCompanyName.toUpperCase())
    .bold(false)
    .lf(1)
    .cutPaper();
