@@ -75,25 +75,21 @@ export async function connectQZ(): Promise<boolean> {
       return true;
     }
 
-    // Set unsigned security handler (QZ Tray will show an approval prompt on your PC)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    qz.security.setCertificatePromise((resolve: any) => {
-      resolve();
+    // Disable certificate requirement for local use
+    qz.security.setCertificatePromise((_resolve: (val: string) => void, reject: (val: string) => void) => {
+      reject('Unsigned');
     });
     qz.security.setSignatureAlgorithm('SHA512');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     qz.security.setSignaturePromise(() => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (resolve: any) => {
-        resolve();
+      return (_resolve: (val: string) => void, reject: (val: string) => void) => {
+        reject('Unsigned');
       };
     });
 
-    await qz.websocket.connect({ retries: 3, delay: 0.5 });
+    await qz.websocket.connect({ retries: 1, delay: 0.5 });
     qzInstance = qz;
     return true;
-  } catch (err) {
-    console.error('[QZ] Connection error:', err);
+  } catch {
     qzInstance = null;
     return false;
   }
