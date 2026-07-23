@@ -63,11 +63,8 @@ export default function LoginPage() {
 
       // Always strip auth-related query params from the URL so stale errors don't re-show on refresh
       if (urlError !== null || urlCode !== null) {
-        const cleaned = new URLSearchParams(params);
-        cleaned.delete('error');
-        cleaned.delete('code');
-        const qs = cleaned.toString();
-        router.replace(`${pathname}${qs ? '?' + qs : ''}`, { scroll: false });
+        // As requested, explicitly use router.replace(pathname) to cleanly remove the query params
+        router.replace(pathname);
       }
 
       // Ignore garbage values NextAuth passes when it has no real error code
@@ -130,11 +127,14 @@ export default function LoginPage() {
       }
 
       if (result.error) {
-        // result.error is always 'CredentialsSignin' for credential failures.
-        // The specific cause is in result.code (set by our DatabaseError/RateLimitError subclasses).
-        if ((result as { code?: string }).code === 'DatabaseError') {
+        // With our auth.ts overrides, result.error will be 'RateLimitError' or 'DatabaseError' directly.
+        // Fallback to checking code just in case.
+        const code = (result as { code?: string }).code;
+        const errType = result.error;
+
+        if (code === 'DatabaseError' || errType === 'DatabaseError') {
           setError('Database connection error. Please try again later.');
-        } else if ((result as { code?: string }).code === 'RateLimitError') {
+        } else if (code === 'RateLimitError' || errType === 'RateLimitError') {
           setError('Too many login attempts. Please try again in 15 minutes.');
         } else {
           setError('Invalid email or password. Please try again.');

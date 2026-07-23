@@ -27,11 +27,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const email = (credentials.email as string).toLowerCase().trim();
 
-        // Rate limit: 5 login attempts per email per 15 minutes
+        // Rate limit: 20 login attempts per email per 15 minutes
         if (process.env.NODE_ENV !== 'development') {
           try {
-            const { allowed } = rateLimit(`login:${email}`, 5, 15 * 60 * 1000);
+            const { allowed } = rateLimit(`login:${email}`, 20, 15 * 60 * 1000);
             if (!allowed) {
+              console.warn(`Rate limit exceeded for login: ${email}`);
               throw new RateLimitError();
             }
           } catch (rlError) {
