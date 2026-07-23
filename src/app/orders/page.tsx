@@ -521,7 +521,7 @@ export default function OrdersPage() {
       @media print {
         html, body {
           width: 100%;
-          max-width: 72mm;
+          max-width: 58mm;
           margin: 0 auto !important;
           padding: 0 !important;
           background: #fff !important;
@@ -535,13 +535,13 @@ export default function OrdersPage() {
       }
       body {
         width: 100%;
-        max-width: 72mm;
+        max-width: 58mm;
         margin: 0 auto !important;
-        padding: 4px !important;
-        font-family: "Courier New", Courier, "Consolas", monospace;
-        font-size: 12px;
+        padding: 0 !important;
+        font-family: "Consolas", "Courier New", monospace !important;
+        font-size: 14px !important;
         line-height: 1.15 !important;
-        font-weight: 700;
+        font-weight: 900 !important;
         color: #000 !important;
         background: #fff !important;
       }
@@ -551,13 +551,14 @@ export default function OrdersPage() {
       .mt-1 { margin-top: 4px; }
       .mb-1 { margin-bottom: 4px; }
       div { margin: 0 !important; padding: 0 !important; }
+      .store-title { font-size: 16px !important; font-weight: 900 !important; }
     </style>
   </head>
   <body>
-    <div class="center">${companyName.toUpperCase()}</div>
-    <div class="center">SARIMANOK ST. MARAWI</div>
-    <div class="center">CITY 2ND BRANCH</div>
-    <div class="center">ALHAMDULILLAH</div>
+    <div class="center store-title">${companyName.toUpperCase()}</div>
+    <div class="center store-title">SARIMANOK ST. MARAWI</div>
+    <div class="center store-title">CITY 2ND BRANCH</div>
+    <div class="center store-title">ALHAMDULILLAH</div>
     
     <div class="mt-1">Order No: ${orderNo}</div>
     <div>By: ${createdBy}</div>
