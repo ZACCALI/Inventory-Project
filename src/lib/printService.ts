@@ -57,7 +57,7 @@ export async function printThermal(
       const bytes = buildReceipt({
         companyName: data.companyName,
         address: 'SARIMANOK ST. MARAWI CITY',
-        branch: '2ND',
+        branch: '2ND BRANCH',
         slogan: 'ALHAMDULILLAH',
         orderNo: data.orderNo,
         createdBy: data.createdBy,
@@ -137,7 +137,7 @@ function printHtmlFallback(data: ThermalReceiptData): boolean {
 <body>
   <div class="center title">${data.companyName.toUpperCase()}</div>
   <div class="center title">SARIMANOK ST. MARAWI CITY</div>
-  <div class="center title">2ND</div>
+  <div class="center title">2ND BRANCH</div>
   <div class="center title">ALHAMDULILLAH</div>
   <div class="divider"></div>
   <div>Order No: ${data.orderNo}</div>

@@ -487,7 +487,7 @@ export default function OrdersPage() {
     const deliv      = Array.isArray(order.delivery) ? order.delivery[0] : order.delivery;
 
     const result = await printThermal({
-      companyName: companyName.replace(/\b[bB]\b/g, '').replace(/\s+/g, ' ').trim(),
+      companyName,
       orderNo,
       createdBy,
       dateStr,

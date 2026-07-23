@@ -165,9 +165,18 @@ export class EscPos {
 
   // ── Text Lines ─────────────────────────────────────────────────────────────
 
-  /** Print a line of centered text */
-  centerLine(str: string): this {
-    return this.center().text(center(str, this.width)).lf().left();
+  /** Print centered text line(s) using printer hardware alignment and word wrapping */
+  centerLine(str: string, isDoubleSize = false): this {
+    const maxChars = isDoubleSize ? Math.floor(this.width / 2) : this.width;
+    const lines = wrapText(str, maxChars);
+    this.center();
+    if (isDoubleSize) this.doubleSize();
+    for (const l of lines) {
+      this.text(l).lf();
+    }
+    if (isDoubleSize) this.normalSize();
+    this.left();
+    return this;
   }
 
   /** Print a full-width left-aligned text line */
@@ -246,9 +255,8 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
   const w = getLineWidth(paper);
 
   // ── Header ──────────────────────────────────────────────────────────────────
-  p.center()
-   .doubleSize()
-   .centerLine(data.companyName.toUpperCase())
+  p.bold(true)
+   .centerLine(data.companyName.toUpperCase(), true)
    .normalSize()
    .bold(true)
    .centerLine(data.address.toUpperCase())
