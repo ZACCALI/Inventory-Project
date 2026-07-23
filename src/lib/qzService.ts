@@ -39,8 +39,8 @@ function loadQzScript(): Promise<QZ> {
     }
 
     const script = document.createElement('script');
-    // Load QZ Tray v2.2 from CDN
-    script.src = 'https://cdn.qz.io/qz-tray/2.2.4/qz-tray.js';
+    // Load QZ Tray v2.2.6 from jsDelivr CDN
+    script.src = 'https://cdn.jsdelivr.net/npm/qz-tray@2.2.6/qz-tray.min.js';
     script.async = true;
     script.onload = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -75,21 +75,26 @@ export async function connectQZ(): Promise<boolean> {
       return true;
     }
 
-    // Disable certificate requirement for local use
-    qz.security.setCertificatePromise((_resolve: (val: string) => void, reject: (val: string) => void) => {
-      reject('Unsigned');
+    // Allow unsigned connections — QZ Tray will show an approval prompt on the PC
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    qz.security.setCertificatePromise(function(resolve: any) {
+      resolve(); // No certificate needed — allow unsigned
     });
     qz.security.setSignatureAlgorithm('SHA512');
-    qz.security.setSignaturePromise(() => {
-      return (_resolve: (val: string) => void, reject: (val: string) => void) => {
-        reject('Unsigned');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    qz.security.setSignaturePromise(function() {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return function(resolve: any) {
+        resolve(); // No signature needed — allow unsigned
       };
     });
 
-    await qz.websocket.connect({ retries: 1, delay: 0.5 });
+    await qz.websocket.connect({ retries: 3, delay: 1 });
     qzInstance = qz;
+    console.log('[QZ] Connected successfully to QZ Tray');
     return true;
-  } catch {
+  } catch (err) {
+    console.error('[QZ] Connection failed:', err);
     qzInstance = null;
     return false;
   }
