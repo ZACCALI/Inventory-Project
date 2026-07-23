@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Truck } from 'lucide-react';
+import { Truck, CloudOff } from 'lucide-react';
 import Sidebar from '@/components/layout/Sidebar';
 import Navbar from '@/components/layout/Navbar';
 import { db } from '@/lib/db';
@@ -25,6 +25,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [settings, setSettings] = useState<any>(null);
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (session) {
@@ -46,7 +64,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Redirect to login if not authenticated (skip public pages)
   useEffect(() => {
     if (status === 'unauthenticated' && !isPublicPage) {
-      if (typeof navigator !== 'undefined' && (!navigator.onLine || cachedSession)) return;
+      if (!isOnline || cachedSession) return;
       
       // Ping check to avoid redirecting if just network throttled
       fetch(`/api/test-ping?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' })
@@ -57,7 +75,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           console.warn("AppShell: Cannot reach server, ignoring unauthenticated status.");
         });
     }
-  }, [status, pathname, router, isPublicPage]);
+  }, [status, pathname, router, isPublicPage, isOnline, cachedSession]);
 
   // Fetch settings once per session
   useEffect(() => {
@@ -136,7 +154,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Show loading state while checking auth or loading dynamic permissions
   const isLoadingSettings = activeSession && userRole !== 'admin' && !settings;
-  if (status === 'loading' || isLoadingSettings) {
+  if ((status === 'loading' && !activeSession) || isLoadingSettings) {
     return (
         <div className="loading-page" style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-md)' }}>
@@ -151,6 +169,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // If not authenticated, return null while redirect happens
   if (!activeSession) {
+    if (!isOnline) {
+      return (
+        <div className="loading-page" style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-md)' }}>
+            <CloudOff size={48} color="var(--danger)" style={{ opacity: 0.8 }} />
+            <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Offline. Please connect to internet to log in.</p>
+          </div>
+        </div>
+      );
+    }
     return null;
   }
 

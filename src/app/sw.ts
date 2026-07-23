@@ -38,14 +38,7 @@ const customCache: RuntimeCaching[] = [
     matcher: /\/api\/(customers|drivers|products|orders|expenses|history|categories|units|reports).*/i,
     handler: new NetworkFirst({
       cacheName: "core-api-data",
-      networkTimeoutSeconds: 10,
-    }),
-  },
-  {
-    matcher: ({ request }) => request.mode === 'navigate',
-    handler: new NetworkFirst({
-      cacheName: "page-navigations",
-      networkTimeoutSeconds: 10,
+      networkTimeoutSeconds: 3,
     }),
   },
   ...defaultCache,
