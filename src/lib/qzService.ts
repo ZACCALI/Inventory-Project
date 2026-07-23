@@ -172,8 +172,13 @@ export async function printRaw(bytes: number[]): Promise<boolean> {
     const connected = await connectQZ();
     if (!connected) return false;
 
-    // Build QZ print data — raw byte array as hex strings
-    const data = bytes.map(b => String.fromCharCode(b)).join('');
+    // Convert byte array to Base64 binary string to guarantee exact ESC/POS byte delivery
+    const uint8 = new Uint8Array(bytes);
+    let binary = '';
+    for (let i = 0; i < uint8.length; i++) {
+      binary += String.fromCharCode(uint8[i]);
+    }
+    const base64Data = btoa(binary);
 
     const printConfig = qzInstance.configs.create(config.printerName, {
       raw: true,
@@ -183,8 +188,9 @@ export async function printRaw(bytes: number[]): Promise<boolean> {
     await qzInstance.print(printConfig, [
       {
         type: 'raw',
-        format: 'plain',
-        data,
+        format: 'command',
+        flavor: 'base64',
+        data: base64Data,
       },
     ]);
 
