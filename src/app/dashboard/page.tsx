@@ -94,11 +94,7 @@ export default function DashboardPage() {
   const salesData = salesResult?.dailySales || [];
   const loading = isDashLoading || isSalesLoading;
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
+
 
   if (status === 'loading' || loading) {
     return (

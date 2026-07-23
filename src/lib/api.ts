@@ -19,7 +19,9 @@ async function handleResponse<T>(res: Response): Promise<ApiResponse<T>> {
   if (res.status === 401) {
     // Session expired — redirect to login
     if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+      if (navigator.onLine) {
+        window.location.href = '/login';
+      }
     }
     return { data: null, error: 'Session expired. Redirecting to login...', status: 401, ok: false };
   }
