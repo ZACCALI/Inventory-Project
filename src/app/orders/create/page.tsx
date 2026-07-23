@@ -788,7 +788,7 @@ export default function CreateOrderPage() {
     const subtotal  = lastOrder.subtotal || (lastOrder.totalAmount + (lastOrder.discount || 0));
 
     const result = await printThermal({
-      companyName,
+      companyName: companyName.replace(/\b[bB]\b/g, '').replace(/\s+/g, ' ').trim(),
       orderNo,
       createdBy,
       dateStr,
@@ -843,7 +843,7 @@ export default function CreateOrderPage() {
         <body>
           <div class="header">
             <h1>{companyName}</h1>
-            <p>Sarimanok St. Marawi City 2nd Branch</p>
+            <p>Sarimanok St. Marawi City 2nd</p>
             <p style="margin-top: 8px; font-weight: 600; color: #000000;">OFFICIAL RECEIPT</p>
           </div>
 

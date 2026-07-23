@@ -111,6 +111,13 @@ export default function StockInOutPage() {
         finalLogs = Array.isArray(swrRes) ? [...swrRes] : [];
       } else {
         try {
+          const cachedStr = localStorage.getItem('amroding_stock_logs_cache');
+          if (cachedStr) {
+            finalLogs = JSON.parse(cachedStr);
+            if (finalLogs.length > 0) setLogs(finalLogs);
+          }
+        } catch {}
+        try {
           const cached = await db.stockMovements.toArray();
           finalLogs = cached.map(m => ({
             id: m.id,
@@ -187,6 +194,7 @@ export default function StockInOutPage() {
       if (!res.ok) throw new Error('Network response was not ok');
       const data = await res.json();
       setLogs(data);
+      localStorage.setItem('amroding_stock_logs_cache', JSON.stringify(data));
       
       try {
         await db.stockMovements.clear();
@@ -302,6 +310,7 @@ export default function StockInOutPage() {
       if (!res.ok) throw new Error('Network response was not ok');
       const data = await res.json();
       setStats(data);
+      localStorage.setItem(`amroding_stock_stats_${statsTimeframe}`, JSON.stringify(data));
     } catch (error: unknown) {
       if ((error as Error)?.message === 'Failed to fetch' || error instanceof TypeError) return;
     }
@@ -321,6 +330,10 @@ export default function StockInOutPage() {
   }, []);
 
   useEffect(() => {
+    const cachedStats = localStorage.getItem(`amroding_stock_stats_${statsTimeframe}`);
+    if (cachedStats) {
+      try { setStats(JSON.parse(cachedStats)); } catch {}
+    }
     fetchStats();
     
     // Realtime Auto-Polling for Stats

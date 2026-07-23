@@ -90,7 +90,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
     const bytes = buildReceipt({
       companyName: 'AMRODING GENERAL MERCHANDISE',
       address: 'SARIMANOK ST. MARAWI CITY',
-      branch: '2ND BRANCH',
+      branch: '2ND',
       slogan: 'ALHAMDULILLAH',
       orderNo: 'TEST-001',
       createdBy: 'ADMIN',

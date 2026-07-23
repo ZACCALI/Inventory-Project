@@ -132,7 +132,6 @@ export class EscPos {
   constructor(paper: PaperWidth = '58') {
     this.width = getLineWidth(paper);
     this.add(CMD.INIT);
-    this.add(CMD.BOLD_ON);
   }
 
   private add(bytes: readonly number[] | number[]): this {

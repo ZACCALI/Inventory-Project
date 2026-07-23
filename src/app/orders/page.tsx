@@ -487,7 +487,7 @@ export default function OrdersPage() {
     const deliv      = Array.isArray(order.delivery) ? order.delivery[0] : order.delivery;
 
     const result = await printThermal({
-      companyName,
+      companyName: companyName.replace(/\b[bB]\b/g, '').replace(/\s+/g, ' ').trim(),
       orderNo,
       createdBy,
       dateStr,
@@ -540,7 +540,7 @@ export default function OrdersPage() {
         <body>
           <div class="header">
             <h1>${companyName}</h1>
-            <p>Sarimanok St. Marawi City 2nd Branch</p>
+            <p>Sarimanok St. Marawi City 2nd</p>
             <p style="margin-top: 8px; font-weight: 600; color: #000000;">OFFICIAL RECEIPT</p>
           </div>
 
