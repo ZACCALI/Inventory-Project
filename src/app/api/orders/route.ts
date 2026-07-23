@@ -342,7 +342,7 @@ export async function POST(request: NextRequest) {
       });
 
       return newOrder;
-    });
+    }, { maxWait: 10000, timeout: 30000 });
 
     return NextResponse.json(order, { status: 201 });
   } catch (error: unknown) {

@@ -292,7 +292,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       });
 
       return updatedOrder;
-    });
+    }, { maxWait: 10000, timeout: 30000 });
 
     return NextResponse.json(order);
   } catch (error: unknown) {
@@ -341,7 +341,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
           mode: isOfflineSync ? 'offline' : 'online',
         }
       });
-    });
+    }, { maxWait: 10000, timeout: 30000 });
 
     return NextResponse.json({ message: 'Order archived successfully' });
   } catch (error) {

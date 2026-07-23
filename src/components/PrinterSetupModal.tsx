@@ -120,6 +120,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
         background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '16px',
+        overflowY: 'auto',
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
@@ -129,8 +130,9 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
           width: '100%', maxWidth: '520px',
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
           boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-          overflow: 'hidden',
         }}
       >
         {/* Header */}

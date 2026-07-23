@@ -49,7 +49,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       });
 
       return payment;
-    });
+    }, { maxWait: 10000, timeout: 30000 });
 
     return NextResponse.json(result, { status: 201 });
   } catch (err: unknown) {
