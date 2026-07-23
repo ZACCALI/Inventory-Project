@@ -10,6 +10,7 @@ import { db } from '@/lib/db';
 import { useBarcodeScanner } from '@/lib/useBarcodeScanner';
 import { addSyncTask } from '@/lib/offlineSync';
 import { printThermal } from '@/lib/printService';
+import { loadPrinterConfig } from '@/lib/qzService';
 
 import Image from "next/image";
 interface Product {
@@ -85,6 +86,19 @@ export default function CreateOrderPage() {
   const [deliveryDriverId, setDeliveryDriverId] = useState('');
   const [deliveryDriverName, setDeliveryDriverName] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
+  const [paperWidth, setPaperWidth] = useState('58');
+
+  useEffect(() => {
+    const loadConfig = () => {
+      const cfg = loadPrinterConfig();
+      if (cfg?.paperWidth) setPaperWidth(cfg.paperWidth);
+    };
+    loadConfig();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('printerConfigUpdated', loadConfig);
+      return () => window.removeEventListener('printerConfigUpdated', loadConfig);
+    }
+  }, []);
 
   // Auto-set logical order status when fulfillment mode changes
   useEffect(() => {
@@ -1708,8 +1722,8 @@ export default function CreateOrderPage() {
                   <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-main)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
                     <Receipt size={20} />
                   </div>
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>Print Thermal</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', textAlign: 'center' }}>58mm POS receipt</div>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>Print Thermal ({paperWidth}mm)</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', textAlign: 'center' }}>{paperWidth}mm POS receipt</div>
                 </button>
               </div>
               

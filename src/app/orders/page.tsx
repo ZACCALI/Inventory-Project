@@ -12,6 +12,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db } from '@/lib/db';
 import { printThermal } from '@/lib/printService';
+import { loadPrinterConfig } from '@/lib/qzService';
 
 import Image from "next/image";
 interface Order {
@@ -69,6 +70,19 @@ export default function OrdersPage() {
   const [lockOrderDelete, setLockOrderDelete] = useState(true);
   const [lockOrderEdit, setLockOrderEdit] = useState(false);
   const [companyName, setCompanyName] = useState('Amroding General Merchandise');
+  const [paperWidth, setPaperWidth] = useState('58');
+
+  useEffect(() => {
+    const loadConfig = () => {
+      const cfg = loadPrinterConfig();
+      if (cfg?.paperWidth) setPaperWidth(cfg.paperWidth);
+    };
+    loadConfig();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('printerConfigUpdated', loadConfig);
+      return () => window.removeEventListener('printerConfigUpdated', loadConfig);
+    }
+  }, []);
 
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
@@ -1952,8 +1966,8 @@ export default function OrdersPage() {
                   <Receipt size={24} />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>Thermal Roll</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '4px' }}>58mm POS thermal printer</div>
+                  <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>Thermal Roll ({paperWidth}mm)</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '4px' }}>{paperWidth}mm POS thermal printer</div>
                 </div>
               </button>
             </div>
