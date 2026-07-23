@@ -11,6 +11,7 @@ import autoTable from 'jspdf-autotable';
 import { useDebounce } from '@/hooks/useDebounce';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db } from '@/lib/db';
+import { printThermal } from '@/lib/printService';
 
 import Image from "next/image";
 interface Order {
@@ -476,132 +477,32 @@ export default function OrdersPage() {
   };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const printThermalReceipt = (order: any) => {
+  const printThermalReceipt = async (order: any) => {
     if (!order) return;
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) { showAlert('error', 'Action Failed', 'Please allow popups to print receipt.'); return; }
+    const orderNo    = ((order.orderNumber || '').split('-').pop() || '');
+    const createdBy  = (order.createdBy?.name || 'ADMIN');
+    const dateStr    = new Date(order.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',','');
+    const subtotal   = order.totalAmount + (order.discount || 0);
+    const deliv      = Array.isArray(order.delivery) ? order.delivery[0] : order.delivery;
 
-    const orderNo = ((order.orderNumber || '').split('-').pop() || '');
-    const createdBy = (order.createdBy?.name || 'ADMIN');
-    const dateStr = new Date(order.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',','');
-    
-    let itemsHtml = '';
-    let totalQty = 0;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    order.items.forEach((i: any) => {
-      const name = (i.product?.name || 'Item').toUpperCase();
-      const uom = i.uomName ? ` (${i.uomName})` : '';
-      const qty = Number(i.quantity);
-      totalQty += qty;
-      const price = Number(i.price).toFixed(2);
-      const total = (qty * Number(i.price)).toFixed(2);
-      itemsHtml += `
-        <div style="margin-bottom: 2px;">${name}${uom}</div>
-        <div class="flex-row">
-          <span>&nbsp;&nbsp;${qty} x ${price}</span>
-          <span>${total}</span>
-        </div>
-      `;
-    });
+    const result = await printThermal({
+      companyName,
+      orderNo,
+      createdBy,
+      dateStr,
+      driverName:   deliv?.driverName || order.deliveryDriverName || undefined,
+      deliveryDate: deliv?.scheduledDate ? new Date(deliv.scheduledDate).toLocaleDateString() : order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : undefined,
+      notes:        order.notes || undefined,
+      items:        order.items || [],
+      subtotal,
+      discount:     order.discount || 0,
+      amountDue:    order.totalAmount,
+    }, () => showToast('offline', 'QZ Tray not configured — using browser print. Set up Printer in Settings → Thermal Printer.'));
 
-    const sub = (order.totalAmount + (order.discount || 0)).toFixed(2);
-    const discount = (order.discount || 0).toFixed(2);
-    const amountDue = order.totalAmount.toFixed(2);
-
-    const driverHtml = order.deliveryDriverName ? `<div>Driver: ${order.deliveryDriverName}</div>` : '';
-    const dateHtml = order.deliveryDate ? `<div>Date: ${new Date(order.deliveryDate).toLocaleDateString()}</div>` : '';
-    const notesHtml = order.notes ? `<div>Notes: ${order.notes}</div>` : '';
-
-    const html = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Receipt</title>
-    <style>
-      @page {
-        size: auto;
-        margin: 0;
-      }
-      @media print {
-        html, body {
-          width: 100%;
-          max-width: 58mm;
-          margin: 0 auto !important;
-          padding: 0 !important;
-          background: #fff !important;
-          color: #000 !important;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-      }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        width: 100%;
-        max-width: 58mm;
-        margin: 0 auto !important;
-        padding: 0 !important;
-        font-family: "Consolas", "Courier New", monospace !important;
-        font-size: 14px !important;
-        line-height: 1.15 !important;
-        font-weight: 900 !important;
-        color: #000 !important;
-        background: #fff !important;
-      }
-      .center { text-align: center; }
-      .flex-row { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; margin: 0 !important; padding: 0 !important; }
-      .divider { border-bottom: 1px dashed #000; margin: 4px 0; width: 100%; }
-      .mt-1 { margin-top: 4px; }
-      .mb-1 { margin-bottom: 4px; }
-      div { margin: 0 !important; padding: 0 !important; }
-      .store-title { font-size: 16px !important; font-weight: 900 !important; }
-    </style>
-  </head>
-  <body>
-    <div class="center store-title">${companyName.toUpperCase()}</div>
-    <div class="center store-title">SARIMANOK ST. MARAWI</div>
-    <div class="center store-title">CITY 2ND BRANCH</div>
-    <div class="center store-title">ALHAMDULILLAH</div>
-    
-    <div class="mt-1">Order No: ${orderNo}</div>
-    <div>By: ${createdBy}</div>
-    <div>${dateStr}</div>
-    ${driverHtml}
-    ${dateHtml}
-    ${notesHtml}
-    
-    <div class="divider"></div>
-    
-    ${itemsHtml}
-    
-    <div class="flex-row">
-      <span></span>
-      <span>(${totalQty}) Items</span>
-    </div>
-    
-    <div class="divider"></div>
-    
-    <div class="flex-row"><span>TOTAL SALE:</span><span>${sub}</span></div>
-    <div class="flex-row"><span>DISCOUNT:</span><span>${discount}</span></div>
-    <div class="flex-row"><span>AMOUNT DUE:</span><span>${amountDue}</span></div>
-    
-    <div class="divider"></div>
-    <br/>
-    <div class="center">** OFFICIAL RECEIPT **</div>
-    <div class="center">FACEBOOK:</div>
-    <div class="center">${companyName.toUpperCase()}</div>
-    <br/>
-    <br/>
-  </body>
-</html>`;
-
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => { printWindow.print(); printWindow.close(); }, 800);
-
+    if (result === 'error') {
+      showAlert('error', 'Print Failed', 'Could not print receipt. Please allow popups or set up QZ Tray in Settings.');
+    }
   };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

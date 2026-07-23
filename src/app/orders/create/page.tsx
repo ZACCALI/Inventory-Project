@@ -9,6 +9,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { db } from '@/lib/db';
 import { useBarcodeScanner } from '@/lib/useBarcodeScanner';
 import { addSyncTask } from '@/lib/offlineSync';
+import { printThermal } from '@/lib/printService';
 
 import Image from "next/image";
 interface Product {
@@ -778,135 +779,33 @@ export default function CreateOrderPage() {
 
   // ===== RECEIPT PRINTING =====
 
-  const printThermalReceipt = () => {
+  const printThermalReceipt = async () => {
     if (!lastOrder) return;
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) { showToast('Please allow popups to print receipt.', 'error'); return; }
-
-    const orderNo = ((lastOrder.orderNumber || '').split('-').pop() || '');
+    const orderNo   = ((lastOrder.orderNumber || '').split('-').pop() || '');
     const createdBy = (lastOrder.createdBy?.name || 'ADMIN');
-    const dateStr = new Date(lastOrder.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',','');
-    
-    let itemsHtml = '';
-    let totalQty = 0;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    lastOrder.items.forEach((i: any) => {
-      const name = (i.product?.name || 'Item').toUpperCase();
-      const uom = i.uomName ? ` (${i.uomName})` : '';
-      const qty = Number(i.quantity);
-      totalQty += qty;
-      const price = Number(i.price).toFixed(2);
-      const total = (qty * Number(i.price)).toFixed(2);
-      itemsHtml += `
-        <div style="margin-bottom: 2px;">${name}${uom}</div>
-        <div class="flex-row">
-          <span>&nbsp;&nbsp;${qty} x ${price}</span>
-          <span>${total}</span>
-        </div>
-      `;
-    });
+    const dateStr   = new Date(lastOrder.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',','');
+    const subtotal  = lastOrder.subtotal || (lastOrder.totalAmount + (lastOrder.discount || 0));
 
-    const sub = (lastOrder.subtotal || (lastOrder.totalAmount + (lastOrder.discount || 0))).toFixed(2);
-    const discount = (lastOrder.discount || 0).toFixed(2);
-    const amountDue = lastOrder.totalAmount.toFixed(2);
-    const cash = (lastOrder.tendered || 0).toFixed(2);
-    const change = (lastOrder.change || 0).toFixed(2);
+    const result = await printThermal({
+      companyName,
+      orderNo,
+      createdBy,
+      dateStr,
+      driverName:   lastOrder.delivery?.driverName || undefined,
+      deliveryDate: lastOrder.delivery?.scheduledDate ? new Date(lastOrder.delivery.scheduledDate).toLocaleDateString() : undefined,
+      notes:        lastOrder.notes || undefined,
+      items:        lastOrder.items || [],
+      subtotal,
+      discount:     lastOrder.discount || 0,
+      amountDue:    lastOrder.totalAmount,
+      cash:         lastOrder.tendered || undefined,
+      change:       lastOrder.change   || undefined,
+    }, () => showToast('QZ Tray not configured \u2014 using browser print. Set up printer in Settings.', 'warning'));
 
-    const driverHtml = lastOrder.delivery?.driverName ? `<div>Driver: ${lastOrder.delivery.driverName}</div>` : '';
-    const dateHtml = lastOrder.delivery?.scheduledDate ? `<div>Date: ${new Date(lastOrder.delivery.scheduledDate).toLocaleDateString()}</div>` : '';
-    const notesHtml = lastOrder.notes ? `<div>Notes: ${lastOrder.notes}</div>` : '';
-
-    const html = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Receipt</title>
-    <style>
-      @page {
-        size: auto;
-        margin: 0;
-      }
-      @media print {
-        html, body {
-          width: 100%;
-          max-width: 58mm;
-          margin: 0 auto !important;
-          padding: 0 !important;
-          background: #fff !important;
-          color: #000 !important;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-      }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        width: 100%;
-        max-width: 58mm;
-        margin: 0 auto !important;
-        padding: 0 !important;
-        font-family: "Consolas", "Courier New", monospace !important;
-        font-size: 14px !important;
-        line-height: 1.15 !important;
-        font-weight: 900 !important;
-        color: #000 !important;
-        background: #fff !important;
-      }
-      .center { text-align: center; }
-      .flex-row { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; margin: 0 !important; padding: 0 !important; }
-      .divider { border-bottom: 1px dashed #000; margin: 4px 0; width: 100%; }
-      .mt-1 { margin-top: 4px; }
-      .mb-1 { margin-bottom: 4px; }
-      div { margin: 0 !important; padding: 0 !important; }
-      .store-title { font-size: 16px !important; font-weight: 900 !important; }
-    </style>
-  </head>
-  <body>
-    <div class="center store-title">${companyName.toUpperCase()}</div>
-    <div class="center store-title">SARIMANOK ST. MARAWI</div>
-    <div class="center store-title">CITY 2ND BRANCH</div>
-    <div class="center store-title">ALHAMDULILLAH</div>
-    
-    <div class="mt-1">Order No: ${orderNo}</div>
-    <div>By: ${createdBy}</div>
-    <div>${dateStr}</div>
-    ${driverHtml}
-    ${dateHtml}
-    ${notesHtml}
-    
-    <div class="divider"></div>
-    
-    ${itemsHtml}
-    
-    <div class="flex-row">
-      <span></span>
-      <span>(${totalQty}) Items</span>
-    </div>
-    
-    <div class="divider"></div>
-    
-    <div class="flex-row"><span>TOTAL SALE:</span><span>${sub}</span></div>
-    <div class="flex-row"><span>DISCOUNT:</span><span>${discount}</span></div>
-    <div class="flex-row"><span>AMOUNT DUE:</span><span>${amountDue}</span></div>
-    <div class="flex-row"><span>CASH:</span><span>${cash}</span></div>
-    <div class="flex-row"><span>CHANGE:</span><span>${change}</span></div>
-    
-    <div class="divider"></div>
-    <br/>
-    <div class="center">** OFFICIAL RECEIPT **</div>
-    <div class="center">FACEBOOK:</div>
-    <div class="center">${companyName.toUpperCase()}</div>
-    <br/>
-    <br/>
-  </body>
-</html>`;
-
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => { printWindow.print(); printWindow.close(); }, 800);
+    if (result === 'error') {
+      showToast('Could not print receipt. Please allow popups or set up QZ Tray in Settings.', 'error');
+    }
   };
 
   const printBondReceipt = () => {

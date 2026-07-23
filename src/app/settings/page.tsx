@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
 import { useSession} from 'next-auth/react';
-import { Save, Shield,  Settings as  Building,  Lock, User, Info } from 'lucide-react';
+import { Save, Shield, Settings as Building, Lock, User, Info, Printer } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
 import { db } from '@/lib/db';
 import { addSyncTask } from '@/lib/offlineSync';
+import PrinterSetupModal from '@/components/PrinterSetupModal';
+import { loadPrinterConfig } from '@/lib/qzService';
 
 import Image from "next/image";
 
@@ -40,6 +42,8 @@ export default function SettingsPage() {
   const currentUserEmail = session?.user?.email;
 
   const [activeTab, setActiveTab] = useState('profile');
+  const [isPrinterModalOpen, setIsPrinterModalOpen] = useState(false);
+  const [savedPrinterName, setSavedPrinterName] = useState<string>('');
   const [settings, setSettings] = useState<SettingsData>({
     companyName: '', email: '', phone: '', address: '', currency: 'PHP', taxRate: 0, cleanupMode: false,
     lockProductDelete: true, lockProductEdit: false, lockOrderDelete: true, lockOrderEdit: false, lockOrderCancel: false, lockOrderDate: false, lockStockVoid: false,
@@ -348,6 +352,9 @@ export default function SettingsPage() {
       setProfileData({ name: session.user.name || '', email: session.user.email || '', avatar: session.user.avatar || '' });
     }
     fetchSettings();
+    // Load saved printer config
+    const cfg = loadPrinterConfig();
+    if (cfg?.printerName) setSavedPrinterName(cfg.printerName);
 // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
 
@@ -419,6 +426,16 @@ export default function SettingsPage() {
               }}
             >
               <Shield size={18} /> My Security
+            </button>
+
+            <button
+              onClick={() => setActiveTab('printer')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: 'none', background: activeTab === 'printer' ? 'var(--primary-light)' : 'transparent',
+                color: activeTab === 'printer' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'printer' ? 600 : 500, borderLeft: activeTab === 'printer' ? '3px solid var(--primary)' : '3px solid transparent'
+              }}
+            >
+              <Printer size={18} /> Thermal Printer
             </button>
           </div>
         </div>
@@ -750,9 +767,80 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {activeTab === 'printer' && (
+            <div>
+              <div className="card-header">
+                <h2 className="card-title">Thermal Printer Setup</h2>
+              </div>
+              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px' }}>
+                <div style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>CURRENT PRINTER</div>
+                  {savedPrinterName ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Printer size={16} color="var(--primary)" />
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{savedPrinterName}</span>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No printer configured yet.</span>
+                  )}
+                </div>
+
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>What is QZ Tray?</strong>
+                  QZ Tray is a free background app that lets your browser send raw ESC/POS commands directly to your thermal printer — giving you:
+                  <ul style={{ marginTop: '8px', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <li>✅ Zero white lines — perfect print quality</li>
+                    <li>✅ No print dialog — instant silent printing</li>
+                    <li>✅ Automatic paper cut after each receipt</li>
+                    <li>✅ Works on all thermal printers (58mm, 80mm)</li>
+                    <li>✅ No driver paper size configuration needed</li>
+                  </ul>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => { setIsPrinterModalOpen(true); }}
+                    className="btn btn-primary"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <Printer size={16} />
+                    {savedPrinterName ? 'Change Printer Setup' : 'Setup Thermal Printer'}
+                  </button>
+                  <a
+                    href="https://qz.io/download/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    Download QZ Tray
+                  </a>
+                </div>
+
+                <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: 'var(--radius-md)', padding: '14px 16px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '4px' }}>📋 Setup Steps:</strong>
+                  1. Download and install QZ Tray on this PC<br/>
+                  2. Make sure QZ Tray is running (printer icon in system tray)<br/>
+                  3. Click &quot;Setup Thermal Printer&quot; above<br/>
+                  4. Click Connect → Select your printer → Choose paper size → Save<br/>
+                  5. Click Test Print to verify
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 
+      <PrinterSetupModal
+        isOpen={isPrinterModalOpen}
+        onClose={() => {
+          setIsPrinterModalOpen(false);
+          // Refresh saved printer name after modal closes
+          const cfg = loadPrinterConfig();
+          setSavedPrinterName(cfg?.printerName || '');
+        }}
+      />
 
     </>
   );
