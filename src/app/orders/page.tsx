@@ -473,7 +473,9 @@ export default function OrdersPage() {
     } catch (e) {
       showAlert('error', 'Action Failed', 'Failed to unarchive order due to a network error.');
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const printThermalReceipt = (order: any) => {
     if (!order) return;
 
@@ -2059,6 +2061,4 @@ export default function OrdersPage() {
       )}
     </>
   );
-}
-
 }
