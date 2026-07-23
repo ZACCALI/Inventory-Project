@@ -28,6 +28,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
   const [isTestPrinting, setIsTestPrinting] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'failed' | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Load saved config on open
   useEffect(() => {
@@ -130,7 +131,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
           width: '100%', maxWidth: '520px',
-          maxHeight: 'calc(100vh - 32px)',
+          maxHeight: '560px',
           overflowY: 'auto',
           boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
         }}
@@ -151,10 +152,10 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
           </button>
         </div>
 
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
           {/* QZ Tray Installation Notice */}
-          <div style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
               <Settings size={15} />
               Requirements
@@ -303,22 +304,84 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
           {/* Actions */}
           <div style={{ display: 'flex', gap: '10px', paddingTop: '4px' }}>
             <button
+              onClick={() => setShowPreview(!showPreview)}
+              className="btn btn-secondary"
+              style={{ flex: 1, fontSize: '13px', padding: '8px' }}
+            >
+              📋 {showPreview ? 'Hide Preview' : 'View Preview'}
+            </button>
+            <button
               onClick={handleTestPrint}
               disabled={!selectedPrinter || isTestPrinting}
               className="btn btn-secondary"
-              style={{ flex: 1, fontSize: '13px' }}
+              style={{ flex: 1, fontSize: '13px', padding: '8px' }}
             >
-              {isTestPrinting ? 'Printing...' : '🖨 Test Print'}
+              {isTestPrinting ? 'Printing...' : '🖨 Test'}
             </button>
             <button
               onClick={handleSave}
               disabled={!selectedPrinter}
               className="btn btn-primary"
-              style={{ flex: 1, fontSize: '13px' }}
+              style={{ flex: 1, fontSize: '13px', padding: '8px' }}
             >
-              {isSaved ? '✓ Saved!' : 'Save Config'}
+              {isSaved ? '✓ Saved!' : 'Save'}
             </button>
           </div>
+
+          {showPreview && (
+            <div style={{
+              background: '#fff', color: '#000', padding: '16px', borderRadius: '4px',
+              fontFamily: '"Consolas", "Courier New", monospace', fontSize: '12px',
+              lineHeight: 1.2, width: paperWidth === '58' ? '58mm' : '80mm',
+              margin: '0 auto', border: '1px solid #ccc',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}>
+              <div style={{ textAlign: 'center', fontWeight: 'bold' }}>AMRODING GENERAL MERCHANDISE</div>
+              <div style={{ textAlign: 'center' }}>SARIMANOK ST. MARAWI CITY</div>
+              <div style={{ textAlign: 'center' }}>2ND BRANCH</div>
+              <div style={{ textAlign: 'center' }}>ALHAMDULILLAH</div>
+              <div style={{ borderBottom: '1px dashed #000', margin: '4px 0' }}></div>
+              <div>Order No: TEST-001</div>
+              <div>By: ADMIN</div>
+              <div>{new Date().toLocaleString('en-GB').replace(',', '')}</div>
+              <div style={{ borderBottom: '1px dashed #000', margin: '4px 0' }}></div>
+              <div style={{ marginBottom: '1px' }}>SAMPLE PRODUCT (PCS)</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>&nbsp;&nbsp;2 x 50.00</span>
+                <span>100.00</span>
+              </div>
+              <div style={{ marginBottom: '1px' }}>ANOTHER ITEM</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>&nbsp;&nbsp;1 x 120.00</span>
+                <span>120.00</span>
+              </div>
+              <div style={{ borderBottom: '1px dashed #000', margin: '4px 0' }}></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span></span><span>(3) Items</span>
+              </div>
+              <div style={{ borderBottom: '1px dashed #000', margin: '4px 0' }}></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>TOTAL SALE:</span><span>220.00</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>DISCOUNT:</span><span>0.00</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+                <span>AMOUNT DUE:</span><span>220.00</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>CASH:</span><span>300.00</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>CHANGE:</span><span>80.00</span>
+              </div>
+              <div style={{ borderBottom: '1px dashed #000', margin: '4px 0' }}></div>
+              <br/>
+              <div style={{ textAlign: 'center' }}>** OFFICIAL RECEIPT **</div>
+              <div style={{ textAlign: 'center' }}>FACEBOOK:</div>
+              <div style={{ textAlign: 'center', fontWeight: 'bold' }}>AMRODING GENERAL MERCHANDISE</div>
+            </div>
+          )}
 
           <button
             onClick={handleClear}

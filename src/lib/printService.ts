@@ -42,11 +42,10 @@ export async function printThermal(
 ): Promise<'qz' | 'html' | 'error'> {
   // ── Try QZ Tray ─────────────────────────────────────────────────────────────
   const config = loadPrinterConfig();
+  const paper: PaperWidth = config?.paperWidth || '58';
 
   if (config?.printerName) {
     try {
-      const paper: PaperWidth = config.paperWidth || '58';
-
       const receiptItems = data.items.map((i) => ({
         name: (i.product?.name || i.name || 'Item'),
         uom: i.uomName || i.uom || undefined,
@@ -82,12 +81,12 @@ export async function printThermal(
 
   // ── Fallback: HTML window.print() ───────────────────────────────────────────
   if (onFallback) onFallback();
-  return printHtmlFallback(data) ? 'html' : 'error';
+  return printHtmlFallback(data, paper) ? 'html' : 'error';
 }
 
 // ─── HTML Fallback ─────────────────────────────────────────────────────────────
 
-function printHtmlFallback(data: ThermalReceiptData): boolean {
+function printHtmlFallback(data: ThermalReceiptData, paper: PaperWidth = '58'): boolean {
   try {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return false;
@@ -124,9 +123,9 @@ function printHtmlFallback(data: ThermalReceiptData): boolean {
   <title>Receipt</title>
   <style>
     @page { size: auto; margin: 0; }
-    @media print { html,body { width:100%; max-width:58mm; margin:0 auto!important; padding:0!important; background:#fff!important; color:#000!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+    @media print { html,body { width:100%; max-width:${paper}mm; margin:0 auto!important; padding:0!important; background:#fff!important; color:#000!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
     * { box-sizing:border-box; }
-    body { width:100%; max-width:58mm; margin:0 auto!important; padding:0!important; font-family:"Consolas","Courier New",monospace!important; font-size:14px!important; line-height:1.15!important; font-weight:900!important; color:#000!important; background:#fff!important; }
+    body { width:100%; max-width:${paper}mm; margin:0 auto!important; padding:0!important; font-family:"Consolas","Courier New",monospace!important; font-size:14px!important; line-height:1.15!important; font-weight:900!important; color:#000!important; background:#fff!important; }
     .center { text-align:center; }
     .flex-row { display:flex; justify-content:space-between; align-items:flex-start; width:100%; margin:0!important; padding:0!important; }
     .divider { border-bottom:1px dashed #000; margin:4px 0; width:100%; }

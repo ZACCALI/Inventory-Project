@@ -353,8 +353,13 @@ export default function SettingsPage() {
     }
     fetchSettings();
     // Load saved printer config
-    const cfg = loadPrinterConfig();
-    if (cfg?.printerName) setSavedPrinterName(cfg.printerName);
+    const loadConfig = () => {
+      const cfg = loadPrinterConfig();
+      setSavedPrinterName(cfg?.printerName || '');
+    };
+    loadConfig();
+    window.addEventListener('printerConfigUpdated', loadConfig);
+    return () => window.removeEventListener('printerConfigUpdated', loadConfig);
 // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
 

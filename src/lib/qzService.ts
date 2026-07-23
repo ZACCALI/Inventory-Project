@@ -135,6 +135,7 @@ const STORAGE_KEY = 'qz_printer_config';
 export function savePrinterConfig(config: PrinterConfig): void {
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    window.dispatchEvent(new Event('printerConfigUpdated'));
   }
 }
 
@@ -152,6 +153,7 @@ export function loadPrinterConfig(): PrinterConfig | null {
 export function clearPrinterConfig(): void {
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem(STORAGE_KEY);
+    window.dispatchEvent(new Event('printerConfigUpdated'));
   }
 }
 
