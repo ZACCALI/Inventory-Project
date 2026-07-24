@@ -1322,6 +1322,8 @@ export default function OrdersPage() {
                           {isStrictlyLocked ? <Eye size={16} /> : <Edit size={16} />}
                         </button>
                         
+                        <button onClick={() => setReceiptOrder(order)} className="btn btn-icon btn-ghost" title="Print & Preview Receipt"><Printer size={16} /></button>
+
                         <div className="action-dropdown-container" style={{ position: 'relative' }}>
                           <button
                             onClick={() => setActiveDropdown(activeDropdown === order.id ? null : order.id)}
@@ -1363,7 +1365,7 @@ export default function OrdersPage() {
                               
                               <button
                                 className="dropdown-item"
-                                onClick={() => { handleGenerateInvoice(order); setActiveDropdown(null); }}
+                                onClick={() => { setReceiptOrder(order); setActiveDropdown(null); }}
                                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text-primary)', border: 'none', background: 'transparent', width: '100%', textAlign: 'left', borderRadius: '4px', cursor: 'pointer' }}
                                 onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
                                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -1903,8 +1905,8 @@ export default function OrdersPage() {
                 </div>
               </div>
               <div className="modal-footer edit-modal-footer" style={{ background: 'var(--bg-main)', borderTop: '1px solid var(--border)', padding: '16px 24px' }}>
-                <button type="button" className="btn btn-outline" onClick={() => handleGenerateInvoice(editingOrder)} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <Download size={16} /> Download Invoice
+                <button type="button" className="btn btn-outline" onClick={() => { setReceiptOrder(editingOrder); setIsEditOpen(false); }} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <Printer size={16} /> Preview & Print Receipt
                 </button>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button type="button" className="btn btn-secondary" onClick={() => setIsEditOpen(false)} disabled={isSaving}>Cancel</button>
