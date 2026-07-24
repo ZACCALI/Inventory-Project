@@ -127,6 +127,22 @@ export default function OrdersPage() {
 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
+  // Auto-update amountPaid if paymentStatus is paid
+  useEffect(() => {
+    if (!editingOrder || editForm.paymentStatus !== 'paid') return;
+    const subtotal = editingOrder.items?.reduce((sum, item) => sum + item.subtotal, 0) || editingOrder.totalAmount + (editingOrder.discount || 0);
+    let parsedDiscount = parseFloat(editForm.discountValue) || 0;
+    if (parsedDiscount < 0) parsedDiscount = 0;
+    if (editForm.discountType === 'percent' && parsedDiscount > 100) parsedDiscount = 100;
+    const flatDiscount = editForm.discountType === 'percent' ? (parsedDiscount / 100) * subtotal : parsedDiscount;
+    const newTotal = Math.max(0, subtotal - flatDiscount);
+    
+    // Only update if it actually differs to prevent infinite loops
+    if (parseFloat(editForm.amountPaid || '0') !== newTotal) {
+      setEditForm(prev => ({ ...prev, amountPaid: newTotal.toString() }));
+    }
+  }, [editingOrder?.items, editForm.discountValue, editForm.discountType, editForm.paymentStatus, editingOrder?.totalAmount, editingOrder?.discount]);
+
   const getQueryString = () => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.append('search', debouncedSearch);
@@ -683,14 +699,17 @@ export default function OrdersPage() {
 
       const newTotal = Math.max(0, subtotal - flatDiscount);
 
-      if (parsedAmount > newTotal + 0.01) {
-        showAlert('error', 'Validation Error', `Payment amount (₱${parsedAmount.toFixed(2)}) cannot exceed the total bill (₱${newTotal.toFixed(2)})`);
-        setIsSaving(false);
-        return;
+      if (editForm.paymentStatus === 'paid') {
+        updatedNotes = `${editForm.orderReference || 'Order'} | Paid via ${paymentMethod} (Amount Paid: ${formatCurrency(newTotal)}, Balance: ₱0.00)`;
+      } else {
+        if (parsedAmount > newTotal + 0.01) {
+          showAlert('error', 'Validation Error', `Payment amount (₱${parsedAmount.toFixed(2)}) cannot exceed the total bill (₱${newTotal.toFixed(2)})`);
+          setIsSaving(false);
+          return;
+        }
+        const calculatedBalance = Math.max(0, newTotal - parsedAmount);
+        updatedNotes = `${editForm.orderReference || 'Order'} | Paid via ${paymentMethod} (Amount Paid: ${formatCurrency(parsedAmount)}, Balance: ${formatCurrency(calculatedBalance)})`;
       }
-
-      const calculatedBalance = Math.max(0, newTotal - parsedAmount);
-      updatedNotes = `${editForm.orderReference || 'Order'} | Paid via ${paymentMethod} (Amount Paid: ${formatCurrency(parsedAmount)}, Balance: ${formatCurrency(calculatedBalance)})`;
 
       const itemsModified = JSON.stringify(originalItems) !== JSON.stringify(editingOrder.items);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1804,8 +1823,22 @@ export default function OrdersPage() {
                         <label htmlFor="edit-order-discount" className="form-label" style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                           Discount
                           <div style={{ display: 'flex', background: 'var(--bg-main)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                            <button type="button" onClick={() => setEditForm({...editForm, discountType: 'percent'})} style={{ padding: '2px 8px', border: 'none', background: editForm.discountType === 'percent' ? 'var(--primary)' : 'transparent', color: editForm.discountType === 'percent' ? 'white' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>%</button>
-                            <button type="button" onClick={() => setEditForm({...editForm, discountType: 'flat'})} style={{ padding: '2px 8px', border: 'none', background: editForm.discountType === 'flat' ? 'var(--primary)' : 'transparent', color: editForm.discountType === 'flat' ? 'white' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>₱</button>
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                if (editForm.discountType === 'percent') return;
+                                setEditForm({ ...editForm, discountType: 'percent', discountValue: '' });
+                              }} 
+                              style={{ padding: '2px 8px', border: 'none', background: editForm.discountType === 'percent' ? 'var(--primary)' : 'transparent', color: editForm.discountType === 'percent' ? 'white' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}
+                            >%</button>
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                if (editForm.discountType === 'flat') return;
+                                setEditForm({ ...editForm, discountType: 'flat', discountValue: '' });
+                              }} 
+                              style={{ padding: '2px 8px', border: 'none', background: editForm.discountType === 'flat' ? 'var(--primary)' : 'transparent', color: editForm.discountType === 'flat' ? 'white' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}
+                            >₱</button>
                           </div>
                         </label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
