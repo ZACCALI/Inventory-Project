@@ -279,20 +279,18 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
    .line(data.dateStr);
 
   if (data.driverName)   p.line(`Driver: ${data.driverName}`);
-  if (data.deliveryDate) p.line(`Date: ${data.deliveryDate}`);
-  
   if (data.notes) {
-    // Strip internal system payment tracking from notes (e.g. "Order | Paid via Cash (Amount Paid: ₱900.00, Balance: ₱0.00)")
-    let cleanNotes = data.notes
-      .replace(/₱/g, 'P')  // Convert ₱ to P for thermal compatibility
-      .trim();
-    // Remove the entire system payment tracking pattern
-    const systemPattern = /^.+\|\s*Paid via\s+\w+\s*\(Amount Paid:.*?\)$/i;
-    if (systemPattern.test(cleanNotes)) {
-      // Extract only the order reference part before " | Paid via"
-      const refPart = cleanNotes.split(/\s*\|\s*Paid via/i)[0]?.trim();
-      cleanNotes = (refPart && refPart !== 'Order') ? refPart : '';
+    // Strip all system payment tracking phrases
+    let cleanNotes = data.notes.replace(/₱/g, 'P').trim();
+    
+    // If notes contains system payment tracking text, remove the payment part
+    if (/Paid via|Amount Paid:|Balance:/i.test(cleanNotes)) {
+      // Keep only text before "Paid via" or "|" if any
+      const parts = cleanNotes.split(/\s*\|\s*Paid via|\s*Paid via/i);
+      const userNote = parts[0]?.trim();
+      cleanNotes = (userNote && userNote !== 'Order' && userNote !== 'Walk-in Order') ? userNote : '';
     }
+    
     if (cleanNotes) {
       p.wrappedLine(`Notes: ${cleanNotes}`);
     }
@@ -333,14 +331,19 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
     p.divider();
     if (data.paymentStatus === 'paid') {
       p.bold(true).centerLine('** FULLY PAID **').bold(false);
+      p.divider();
     } else if (data.paymentStatus === 'partial') {
       const paidAmt = (data.amountPaid ?? 0).toFixed(2);
       const balanceAmt = (data.amountDue - (data.amountPaid ?? 0)).toFixed(2);
       p.bold(true).centerLine('PARTIAL PAYMENT').bold(false);
       p.row('PAID:', paidAmt);
       p.row('BALANCE:', balanceAmt);
+      p.divider();
     } else {
+      const balanceAmt = (data.amountDue - (data.amountPaid ?? 0)).toFixed(2);
       p.bold(true).centerLine('UNPAID').bold(false);
+      p.row('BALANCE:', balanceAmt);
+      p.divider();
     }
   }
 

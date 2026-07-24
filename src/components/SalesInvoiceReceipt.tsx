@@ -189,6 +189,39 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
         </div>
       </div>
 
+      {/* PAYMENT STATUS */}
+      {order.paymentStatus && (
+        <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', fontFamily: 'monospace' }}>
+          <div style={{ borderTop: '1px dashed black', borderBottom: '1px dashed black', padding: '10px 0', width: '300px', margin: '0 auto' }}>
+            {order.paymentStatus === 'paid' && (
+              <div style={{ fontWeight: 'bold' }}>** FULLY PAID **</div>
+            )}
+            {order.paymentStatus === 'partial' && (
+              <>
+                <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>PARTIAL PAYMENT</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>PAID:</span>
+                  <span>{(order.amountPaid || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>BALANCE:</span>
+                  <span>{(totalAmount - (order.amountPaid || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </>
+            )}
+            {order.paymentStatus === 'unpaid' && (
+              <>
+                <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>UNPAID</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>BALANCE:</span>
+                  <span>{(totalAmount - (order.amountPaid || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* FOOTER */}
       <div style={{ marginTop: '40px', fontSize: '10px', borderTop: '1px solid black', paddingTop: '10px' }}>
         <p style={{ margin: '0 0 10px 0', textAlign: 'justify' }}>
