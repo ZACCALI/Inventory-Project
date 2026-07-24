@@ -22,14 +22,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { id } = await params;
     const body = await request.json();
     const { amount, method, reference, notes } = body;
-    if (!amount || amount <= 0) return NextResponse.json({ error: 'Valid amount required' }, { status: 400 });
+    const parsedAmount = parseFloat(amount);
+    if (!amount || isNaN(parsedAmount) || parsedAmount < 0.01) {
+      return NextResponse.json({ error: 'Payment amount must be at least ₱0.01' }, { status: 400 });
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({ where: { id }, include: { payments: true } });
       if (!order) throw new Error('Order not found');
 
       const previousTotal = order.payments.reduce((s, p) => s + p.amount, 0);
-      const parsedAmount = parseFloat(amount);
       const remainingBalance = order.totalAmount - previousTotal;
 
       if (parsedAmount > remainingBalance + 0.01) {
@@ -45,7 +47,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await tx.order.update({ where: { id }, data: { paymentStatus: newStatus } });
 
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'CREATE', entity: 'Payment', details: `Recorded payment of ₱${amount} (${method || 'cash'}) for order ${order.orderNumber}` }
+        data: { userId: user.id, action: 'CREATE', entity: 'Payment', details: `Recorded payment of ₱${parsedAmount.toFixed(2)} (${method || 'cash'}) for order ${order.orderNumber}` }
       });
 
       return payment;
@@ -54,6 +56,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json(result, { status: 201 });
   } catch (err: unknown) {
     console.error('Payments POST error:', err);
-    return NextResponse.json({ error: (err as Error).message || 'Failed' }, { status: 500 });
+    const msg = (err as Error).message || 'Failed';
+    const isBusinessError = msg.startsWith('Payment amount') || msg.startsWith('Order not found');
+    return NextResponse.json({ error: msg }, { status: isBusinessError ? 400 : 500 });
   }
 }

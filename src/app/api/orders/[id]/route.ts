@@ -201,7 +201,25 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       };
 
       if (body.isArchived !== undefined) updateData.isArchived = body.isArchived;
-      if (body.discount !== undefined) updateData.discount = body.discount || 0;
+
+      if (body.discount !== undefined) {
+        const newDiscount = Math.max(0, body.discount || 0);
+        updateData.discount = newDiscount;
+
+        // Fix: recalculate totalAmount when discount changes even if items haven't changed
+        if (calculatedTotal === undefined) {
+          // No items were submitted — use the existing items' subtotal
+          const existingSubtotal = existingOrder.items.reduce(
+            (sum, item) => sum + item.quantity * item.price, 0
+          );
+          // Guard: flat discount cannot exceed the subtotal
+          if (newDiscount > existingSubtotal + 0.01) {
+            throw new Error(`Discount (₱${newDiscount.toFixed(2)}) cannot exceed the order subtotal (₱${existingSubtotal.toFixed(2)}).`);
+          }
+          calculatedTotal = Math.max(0, existingSubtotal - newDiscount);
+        }
+      }
+
       if (calculatedTotal !== undefined) updateData.totalAmount = calculatedTotal;
 
       const updatedOrder = await tx.order.update({

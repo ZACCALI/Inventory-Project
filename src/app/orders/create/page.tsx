@@ -552,12 +552,13 @@ export default function CreateOrderPage() {
   const parsedDiscount = Math.max(0, parseFloat(discountValue) || 0);
   const finalParsedDiscount = discountType === 'percent' && parsedDiscount > 100 ? 100 : parsedDiscount;
 
-  const discountAmount = discountType === 'percent' 
-    ? totalAmount * (finalParsedDiscount / 100) 
-    : finalParsedDiscount;
-    
+  const discountAmount = discountType === 'percent'
+    ? totalAmount * (finalParsedDiscount / 100)
+    // Flat discount: cap at the subtotal so finalTotal never goes below 0
+    : Math.min(finalParsedDiscount, totalAmount);
+
   const finalTotal = Math.max(0, totalAmount - discountAmount);
-  
+
   // Payment auto-fill logic
   useEffect(() => {
     if (paymentStatus === 'paid') {

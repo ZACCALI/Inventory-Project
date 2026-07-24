@@ -673,6 +673,14 @@ export default function OrdersPage() {
       const flatDiscount = editForm.discountType === 'percent'
         ? (parsedDiscount / 100) * subtotal
         : parsedDiscount;
+
+      // Guard: flat discount cannot exceed the subtotal
+      if (flatDiscount > subtotal + 0.01) {
+        showAlert('error', 'Validation Error', `Discount (₱${flatDiscount.toFixed(2)}) cannot exceed the order subtotal (₱${subtotal.toFixed(2)}).`);
+        setIsSaving(false);
+        return;
+      }
+
       const newTotal = Math.max(0, subtotal - flatDiscount);
 
       if (parsedAmount > newTotal + 0.01) {
@@ -1806,8 +1814,18 @@ export default function OrdersPage() {
                             name="discountValue"
                             aria-label="Discount amount"
                             type="number" 
-                            min="0" step="0.01"
+                            min="0"
+                            max={editForm.discountType === 'percent' ? 100 : (editingOrder.items?.reduce((sum, i) => sum + i.subtotal, 0) || editingOrder.totalAmount + (editingOrder.discount || 0))}
+                            step="0.01"
                             onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                            onBlur={(e) => {
+                              // Clamp on blur: ensure value doesn't exceed subtotal (flat) or 100 (percent)
+                              const v = parseFloat(e.target.value) || 0;
+                              const sub = editingOrder.items?.reduce((sum, i) => sum + i.subtotal, 0) || editingOrder.totalAmount + (editingOrder.discount || 0);
+                              const maxVal = editForm.discountType === 'percent' ? 100 : sub;
+                              if (v < 0) setEditForm({ ...editForm, discountValue: '0' });
+                              else if (v > maxVal) setEditForm({ ...editForm, discountValue: maxVal.toFixed(2) });
+                            }}
                             className="form-input" 
                             style={{ height: '32px', fontSize: '13px', width: '80px', textAlign: 'right' }}
                             value={editForm.discountValue}
