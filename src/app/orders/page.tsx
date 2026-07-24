@@ -1355,17 +1355,7 @@ export default function OrdersPage() {
                             >
                               <button
                                 className="dropdown-item"
-                                onClick={() => { setReceiptOrder(order); setActiveDropdown(null); }}
-                                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text-primary)', border: 'none', background: 'transparent', width: '100%', textAlign: 'left', borderRadius: '4px', cursor: 'pointer' }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                              >
-                                <Printer size={14} /> Print Receipt
-                              </button>
-                              
-                              <button
-                                className="dropdown-item"
-                                onClick={() => { setReceiptOrder(order); setActiveDropdown(null); }}
+                                onClick={() => { handleGenerateInvoice(order); setActiveDropdown(null); }}
                                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text-primary)', border: 'none', background: 'transparent', width: '100%', textAlign: 'left', borderRadius: '4px', cursor: 'pointer' }}
                                 onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
                                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
