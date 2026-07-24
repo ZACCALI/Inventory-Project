@@ -71,6 +71,8 @@ export default function OrdersPage() {
   const [lockOrderEdit, setLockOrderEdit] = useState(false);
   const [companyName, setCompanyName] = useState('Amroding General Merchandise');
   const [paperWidth, setPaperWidth] = useState('58');
+  const [receiptTab, setReceiptTab] = useState<'thermal' | 'bond'>('thermal');
+  const [previewPaperWidth, setPreviewPaperWidth] = useState<'58' | '80'>('58');
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -1987,58 +1989,316 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {receiptOrder && (
-        <div className="modal-overlay">
-          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '480px', width: '100%', borderRadius: '24px', overflow: 'hidden', padding: 0 }}>
-            <div style={{ padding: '32px 32px 24px', textAlign: 'center', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ width: '64px', height: '64px', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <Printer size={32} />
-              </div>
-              <h2 style={{ fontSize: '24px', fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>Print Receipt</h2>
-              <p style={{ fontSize: '15px', color: 'var(--text-secondary)', marginTop: '8px', marginBottom: 0 }}>Select your preferred receipt format</p>
-              <button className="btn btn-icon btn-ghost" onClick={() => setReceiptOrder(null)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'var(--bg-main)' }}><X size={20} /></button>
-            </div>
-            
-            <div style={{ padding: '32px', background: 'var(--bg-main)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <button 
-                onClick={() => { printBondReceipt(receiptOrder); setReceiptOrder(null); }} 
-                style={{ 
-                  display: 'flex', flexDirection: 'column', gap: '12px', padding: '32px 24px', height: 'auto', alignItems: 'center', textAlign: 'center', 
-                  border: '1px solid var(--border)', background: '#FFFFFF', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s ease' 
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(37, 99, 235, 0.1)'; e.currentTarget.style.transform = 'translateY(-4px)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none' }}
-              >
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Printer size={24} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>Bond Paper</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '4px' }}>A4 / Letter size formal receipt</div>
-                </div>
-              </button>
+      {receiptOrder && (() => {
+        const subtotal = receiptOrder.totalAmount + (receiptOrder.discount || 0);
+        const totalItemsQty = receiptOrder.items?.reduce((sum: number, item: any) => sum + Number(item.quantity || item.qty || 1), 0) || 0;
+        let paidAmount = 0;
+        if (receiptOrder.paymentStatus === 'paid') {
+          paidAmount = receiptOrder.totalAmount;
+        } else if (receiptOrder.paymentStatus === 'partial') {
+          if (receiptOrder.payments?.length) {
+            paidAmount = receiptOrder.payments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+          } else {
+            const match = receiptOrder.notes?.match(/Amount Paid:\s*[₱P]?\s*([\d,.]+)/i);
+            if (match) paidAmount = parseFloat(match[1].replace(/,/g, ''));
+          }
+        }
+        const balanceAmount = Math.max(0, receiptOrder.totalAmount - paidAmount);
+
+        // Filter custom notes
+        let customNotes = (receiptOrder.notes || '').replace(/₱/g, 'P').trim();
+        if (/Paid via|Amount Paid:|Balance:/i.test(customNotes)) {
+          const parts = customNotes.split(/\s*\|\s*Paid via|\s*Paid via/i);
+          const userRef = parts[0]?.trim();
+          customNotes = (userRef && !/^(Order|WALKIN|HOME|STORE|DELIVERY)$/i.test(userRef)) ? userRef : '';
+        }
+
+        const deliv = Array.isArray(receiptOrder.delivery) ? receiptOrder.delivery[0] : receiptOrder.delivery;
+        const driverName = deliv?.driverName || receiptOrder.deliveryDriverName;
+        const deliveryDate = deliv?.scheduledDate ? new Date(deliv.scheduledDate).toLocaleDateString() : receiptOrder.deliveryDate ? new Date(receiptOrder.deliveryDate).toLocaleDateString() : undefined;
+
+        return (
+          <div className="modal-overlay" style={{ zIndex: 1100 }}>
+            <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '720px', width: '100%', borderRadius: '20px', overflow: 'hidden', padding: 0, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
               
-              <button 
-                onClick={() => { printThermalReceipt(receiptOrder); setReceiptOrder(null); }} 
-                style={{ 
-                  display: 'flex', flexDirection: 'column', gap: '12px', padding: '32px 24px', height: 'auto', alignItems: 'center', textAlign: 'center', 
-                  border: '1px solid var(--border)', background: '#FFFFFF', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s ease' 
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(37, 99, 235, 0.1)'; e.currentTarget.style.transform = 'translateY(-4px)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none' }}
-              >
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--bg-main)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
-                  <Receipt size={24} />
-                </div>
+              {/* Modal Header */}
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>Thermal Roll ({paperWidth}mm)</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '4px' }}>{paperWidth}mm POS thermal printer</div>
+                  <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Receipt size={20} color="var(--primary)" /> Receipt Preview & Print
+                  </h2>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                    Order No: <strong style={{ color: 'var(--primary)' }}>{receiptOrder.orderNumber}</strong> • {receiptOrder.customer?.name || 'Walk-in Customer'}
+                  </p>
                 </div>
-              </button>
+                <button className="btn btn-icon btn-ghost" onClick={() => setReceiptOrder(null)} style={{ borderRadius: '50%' }}>
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Format Switcher Tabs */}
+              <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', padding: '8px 16px', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setReceiptTab('thermal')}
+                  style={{
+                    flex: 1, padding: '10px 16px', borderRadius: '10px', border: 'none',
+                    background: receiptTab === 'thermal' ? 'var(--primary)' : 'transparent',
+                    color: receiptTab === 'thermal' ? '#ffffff' : 'var(--text-secondary)',
+                    fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <Receipt size={16} /> Thermal Roll ({previewPaperWidth}mm)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReceiptTab('bond')}
+                  style={{
+                    flex: 1, padding: '10px 16px', borderRadius: '10px', border: 'none',
+                    background: receiptTab === 'bond' ? 'var(--primary)' : 'transparent',
+                    color: receiptTab === 'bond' ? '#ffffff' : 'var(--text-secondary)',
+                    fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <Printer size={16} /> Bond Paper / Sales Invoice
+                </button>
+              </div>
+
+              {/* Tab Body */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: 'var(--bg-main)' }}>
+                {receiptTab === 'thermal' ? (
+                  <div>
+                    {/* Thermal Controls Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px', background: 'var(--bg-card)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600 }}>
+                        <span>Paper Width:</span>
+                        <div style={{ display: 'flex', background: 'var(--bg-main)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewPaperWidth('58')}
+                            style={{
+                              padding: '4px 12px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                              background: previewPaperWidth === '58' ? 'var(--primary)' : 'transparent',
+                              color: previewPaperWidth === '58' ? '#ffffff' : 'var(--text-secondary)'
+                            }}
+                          >
+                            58mm
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewPaperWidth('80')}
+                            style={{
+                              padding: '4px 12px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                              background: previewPaperWidth === '80' ? 'var(--primary)' : 'transparent',
+                              color: previewPaperWidth === '80' ? '#ffffff' : 'var(--text-secondary)'
+                            }}
+                          >
+                            80mm
+                          </button>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => printThermalReceipt(receiptOrder)}
+                        className="btn btn-primary"
+                        style={{ fontSize: '13px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Printer size={16} /> Print Thermal Receipt
+                      </button>
+                    </div>
+
+                    {/* On-Screen Thermal Paper Live Preview */}
+                    <div
+                      style={{
+                        background: '#ffffff', color: '#000000', padding: '16px', borderRadius: '6px',
+                        fontFamily: '"Consolas", "Courier New", monospace', fontSize: '12px', lineHeight: 1.2,
+                        width: previewPaperWidth === '58' ? '58mm' : '80mm', margin: '0 auto',
+                        border: '1px solid #d1d5db', boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+                      }}
+                    >
+                      <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '13px' }}>AMRODING GENERAL MERCHANDISE</div>
+                      <div style={{ textAlign: 'center', fontSize: '11px' }}>SARIMANOK ST. MARAWI CITY</div>
+                      <div style={{ textAlign: 'center', fontSize: '11px' }}>2ND BRANCH</div>
+                      <div style={{ textAlign: 'center', fontSize: '11px' }}>ALHAMDULILLAH</div>
+                      <div style={{ borderBottom: '1px dashed #000', margin: '6px 0' }}></div>
+                      
+                      <div>Order No: {(receiptOrder.orderNumber || '').split('-').pop()}</div>
+                      <div>By: {receiptOrder.createdBy?.name || 'ADMIN'}</div>
+                      <div>{new Date(receiptOrder.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',','')}</div>
+                      {driverName && <div>Driver: {driverName}</div>}
+                      {deliveryDate && <div>Date: {deliveryDate}</div>}
+                      {customNotes && <div>Notes: {customNotes}</div>}
+                      
+                      <div style={{ borderBottom: '1px dashed #000', margin: '6px 0' }}></div>
+
+                      {/* Items */}
+                      {receiptOrder.items?.map((item: any, idx: number) => {
+                        const uom = item.uomName || item.uom || item.product?.unit || '';
+                        const uomStr = uom ? ` (${uom.toUpperCase()})` : '';
+                        const qty = Number(item.quantity ?? item.qty ?? 1);
+                        const price = Number(item.price ?? 0);
+                        const lineTotal = (qty * price).toFixed(2);
+                        return (
+                          <div key={item.id || idx} style={{ marginBottom: '6px' }}>
+                            <div style={{ fontWeight: 'bold', wordBreak: 'break-word' }}>
+                              {(item.product?.name || item.name || 'Item').toUpperCase()}{uomStr}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span>&nbsp;&nbsp;{qty} x {price.toFixed(2)}</span>
+                              <span>{lineTotal}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <div style={{ borderBottom: '1px dashed #000', margin: '6px 0' }}></div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span></span><span>({totalItemsQty}) Items</span>
+                      </div>
+                      <div style={{ borderBottom: '1px dashed #000', margin: '6px 0' }}></div>
+
+                      {/* Totals */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>TOTAL SALE:</span><span>{subtotal.toFixed(2)}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>DISCOUNT:</span><span>{(receiptOrder.discount || 0).toFixed(2)}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+                        <span>AMOUNT DUE:</span><span>{receiptOrder.totalAmount.toFixed(2)}</span>
+                      </div>
+
+                      {/* Payment Status Banner */}
+                      <div style={{ borderBottom: '1px dashed #000', margin: '6px 0' }}></div>
+                      {receiptOrder.paymentStatus === 'paid' && (
+                        <div style={{ textAlign: 'center', fontWeight: 'bold', padding: '2px 0' }}>** FULLY PAID **</div>
+                      )}
+                      {receiptOrder.paymentStatus === 'partial' && (
+                        <div>
+                          <div style={{ textAlign: 'center', fontWeight: 'bold' }}>PARTIAL PAYMENT</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>PAID:</span><span>{paidAmount.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>BALANCE:</span><span>{balanceAmount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
+                      {(!receiptOrder.paymentStatus || receiptOrder.paymentStatus === 'unpaid') && (
+                        <div>
+                          <div style={{ textAlign: 'center', fontWeight: 'bold' }}>UNPAID</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>BALANCE:</span><span>{receiptOrder.totalAmount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ borderBottom: '1px dashed #000', margin: '6px 0' }}></div>
+                      <div style={{ textAlign: 'center', marginTop: '8px' }}>** OFFICIAL RECEIPT **</div>
+                      <div style={{ textAlign: 'center', fontSize: '10px' }}>FACEBOOK:</div>
+                      <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '11px' }}>AMRODING GENERAL MERCHANDISE</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    {/* Bond Controls Header */}
+                    <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', marginBottom: '16px', background: 'var(--bg-card)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                      <div>
+                        <span style={{ fontWeight: 600, fontSize: '13px' }}>Bond Paper Formal Invoice (A4 / Letter)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => printBondReceipt(receiptOrder)}
+                        className="btn btn-primary"
+                        style={{ fontSize: '13px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Printer size={16} /> Print Bond Paper
+                      </button>
+                    </div>
+
+                    {/* Bond Paper On-Screen Live Invoice Preview */}
+                    <div
+                      style={{
+                        background: '#ffffff', color: '#000000', padding: '24px', borderRadius: '8px',
+                        fontFamily: 'Arial, sans-serif', fontSize: '12px', lineHeight: 1.4,
+                        border: '1px solid #d1d5db', boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+                      }}
+                    >
+                      <div style={{ textAlign: 'center', marginBottom: '20px', position: 'relative' }}>
+                        <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#000000' }}>{companyName.toUpperCase()}</h2>
+                        <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#555' }}>
+                          Marawi City, Lanao del Sur, Philippines
+                          <br />
+                          VAT Reg. TIN: 000-000-000-00000
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', borderTop: '2px solid #000', borderBottom: '2px solid #000', padding: '8px 0' }}>
+                        <div>
+                          <div><strong>SOLD TO:</strong> {receiptOrder.customer?.name || 'Walk-in Customer'}</div>
+                          <div><strong>ADDRESS:</strong> {receiptOrder.customer?.address || 'N/A'}</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div><strong>SALES INVOICE NO:</strong> <span style={{ color: '#d97706', fontWeight: 'bold' }}>{receiptOrder.orderNumber}</span></div>
+                          <div><strong>DATE:</strong> {new Date(receiptOrder.createdAt).toLocaleDateString('en-US')}</div>
+                          <div><strong>STATUS:</strong> <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{receiptOrder.paymentStatus || 'UNPAID'}</span></div>
+                        </div>
+                      </div>
+
+                      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px', fontSize: '12px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid #000', background: '#f3f4f6' }}>
+                            <th style={{ textAlign: 'left', padding: '6px 4px' }}>Item Description</th>
+                            <th style={{ textAlign: 'center', padding: '6px 4px' }}>Qty</th>
+                            <th style={{ textAlign: 'right', padding: '6px 4px' }}>Unit Price</th>
+                            <th style={{ textAlign: 'right', padding: '6px 4px' }}>Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {receiptOrder.items?.map((item: any, idx: number) => {
+                            const uom = item.uomName || item.uom || item.product?.unit || 'PCS';
+                            const qty = Number(item.quantity ?? item.qty ?? 1);
+                            const price = Number(item.price ?? 0);
+                            const lineTotal = qty * price;
+                            return (
+                              <tr key={item.id || idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                <td style={{ padding: '6px 4px' }}>
+                                  <div style={{ fontWeight: 'bold' }}>{(item.product?.name || item.name || 'Item').toUpperCase()} ({uom.toUpperCase()})</div>
+                                </td>
+                                <td style={{ textAlign: 'center', padding: '6px 4px' }}>{qty}</td>
+                                <td style={{ textAlign: 'right', padding: '6px 4px' }}>₱{price.toFixed(2)}</td>
+                                <td style={{ textAlign: 'right', padding: '6px 4px' }}>₱{lineTotal.toFixed(2)}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '2px solid #000', paddingTop: '12px' }}>
+                        <div style={{ width: '220px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                            <span>Subtotal:</span><span>₱{subtotal.toFixed(2)}</span>
+                          </div>
+                          {receiptOrder.discount > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: '#dc2626' }}>
+                              <span>Discount:</span><span>-₱{receiptOrder.discount.toFixed(2)}</span>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontWeight: 'bold', borderTop: '1px solid #000', fontSize: '13px' }}>
+                            <span>TOTAL AMOUNT DUE:</span><span>₱{receiptOrder.totalAmount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </>
   );
 }
