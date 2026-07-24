@@ -265,6 +265,12 @@ export const settingsSchema = z.object({
   stockInReasons: z.string().optional(),
   stockOutReasons: z.string().optional(),
   expenseCategories: z.string().optional(),
+  printerName: safeOptionalString(200),
+  paperWidth: z.string().optional(),
+  autoPrintOrder: z.boolean().optional(),
+  connectionType: z.string().optional(),
+  printerIp: safeOptionalString(50),
+  printerPort: safeOptionalString(10),
 });
 
 // ============================================================

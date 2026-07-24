@@ -73,8 +73,8 @@ export default function OrdersPage() {
   const [paperWidth, setPaperWidth] = useState('58');
 
   useEffect(() => {
-    const loadConfig = () => {
-      const cfg = loadPrinterConfig();
+    const loadConfig = async () => {
+      const cfg = await loadPrinterConfig();
       if (cfg?.paperWidth) setPaperWidth(cfg.paperWidth);
     };
     loadConfig();

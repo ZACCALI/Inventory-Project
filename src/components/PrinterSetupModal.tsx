@@ -33,11 +33,15 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
   // Load saved config on open
   useEffect(() => {
     if (!isOpen) return;
-    const config = loadPrinterConfig();
-    if (config) {
-      setSelectedPrinter(config.printerName);
-      setPaperWidth(config.paperWidth);
-    }
+    
+    const loadConfig = async () => {
+      const config = await loadPrinterConfig();
+      if (config) {
+        setSelectedPrinter(config.printerName);
+        setPaperWidth(config.paperWidth);
+      }
+    };
+    loadConfig();
 
     // Check if already connected
     isQZConnected().then(connected => {

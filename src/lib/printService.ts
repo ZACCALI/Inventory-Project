@@ -41,7 +41,7 @@ export async function printThermal(
   onFallback?: () => void,
 ): Promise<'qz' | 'html' | 'error'> {
   // ── Try QZ Tray ─────────────────────────────────────────────────────────────
-  const config = loadPrinterConfig();
+  const config = await loadPrinterConfig();
   const paper: PaperWidth = config?.paperWidth || '58';
 
   if (config?.printerName) {

@@ -14,6 +14,10 @@ import type { PaperWidth } from './escpos';
 export interface PrinterConfig {
   printerName: string;
   paperWidth: PaperWidth;
+  autoPrintOrder?: boolean;
+  connectionType?: string;
+  printerIp?: string;
+  printerPort?: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -132,22 +136,71 @@ export async function getAvailablePrinters(): Promise<string[]> {
 
 const STORAGE_KEY = 'qz_printer_config';
 
-export function savePrinterConfig(config: PrinterConfig): void {
+export async function savePrinterConfig(config: PrinterConfig): Promise<void> {
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
     window.dispatchEvent(new Event('printerConfigUpdated'));
   }
+  
+  // Persist to DB
+  try {
+    await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        printerName: config.printerName,
+        paperWidth: config.paperWidth,
+        autoPrintOrder: config.autoPrintOrder,
+        connectionType: config.connectionType,
+        printerIp: config.printerIp,
+        printerPort: config.printerPort,
+      })
+    });
+  } catch (err) {
+    console.warn('[QZ] Failed to persist printer config to DB:', err);
+  }
 }
 
-export function loadPrinterConfig(): PrinterConfig | null {
+export function loadPrinterConfigSync(): PrinterConfig | null {
   try {
-    if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as PrinterConfig;
-  } catch {
-    return null;
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw) as PrinterConfig;
+    }
+  } catch {}
+  return null;
+}
+
+export async function loadPrinterConfig(): Promise<PrinterConfig | null> {
+  const syncConfig = loadPrinterConfigSync();
+  if (syncConfig) return syncConfig;
+  
+  try {
+    // Fetch from DB if localStorage is cleared or empty
+    const res = await fetch('/api/settings');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.printerName) {
+        const fetchedConfig: PrinterConfig = {
+          printerName: data.printerName,
+          paperWidth: (data.paperWidth as PaperWidth) || '58',
+          autoPrintOrder: data.autoPrintOrder,
+          connectionType: data.connectionType,
+          printerIp: data.printerIp,
+          printerPort: data.printerPort,
+        };
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(fetchedConfig));
+          window.dispatchEvent(new Event('printerConfigUpdated'));
+        }
+        return fetchedConfig;
+      }
+    }
+  } catch (err) {
+    console.warn('[QZ] Failed to fetch printer config from DB:', err);
   }
+  
+  return null;
 }
 
 export function clearPrinterConfig(): void {
@@ -165,7 +218,7 @@ export function clearPrinterConfig(): void {
  */
 export async function printRaw(bytes: number[]): Promise<boolean> {
   try {
-    const config = loadPrinterConfig();
+    const config = await loadPrinterConfig();
     if (!config?.printerName) {
       console.warn('[QZ] No printer configured');
       return false;

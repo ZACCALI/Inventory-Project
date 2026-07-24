@@ -68,7 +68,13 @@ export async function PUT(request: NextRequest) {
           cashierPermissions: body.cashierPermissions,
           ...(body.stockInReasons !== undefined && { stockInReasons: body.stockInReasons }),
           ...(body.stockOutReasons !== undefined && { stockOutReasons: body.stockOutReasons }),
-          ...(body.expenseCategories !== undefined && { expenseCategories: body.expenseCategories })
+          ...(body.expenseCategories !== undefined && { expenseCategories: body.expenseCategories }),
+          ...(body.printerName !== undefined && { printerName: body.printerName }),
+          ...(body.paperWidth !== undefined && { paperWidth: body.paperWidth }),
+          ...(body.autoPrintOrder !== undefined && { autoPrintOrder: body.autoPrintOrder }),
+          ...(body.connectionType !== undefined && { connectionType: body.connectionType }),
+          ...(body.printerIp !== undefined && { printerIp: body.printerIp }),
+          ...(body.printerPort !== undefined && { printerPort: body.printerPort })
         },
         create: {
           id: "1",
@@ -91,7 +97,13 @@ export async function PUT(request: NextRequest) {
           cashierPermissions: body.cashierPermissions,
           ...(body.stockInReasons !== undefined && { stockInReasons: body.stockInReasons }),
           ...(body.stockOutReasons !== undefined && { stockOutReasons: body.stockOutReasons }),
-          ...(body.expenseCategories !== undefined && { expenseCategories: body.expenseCategories })
+          ...(body.expenseCategories !== undefined && { expenseCategories: body.expenseCategories }),
+          ...(body.printerName !== undefined && { printerName: body.printerName }),
+          ...(body.paperWidth !== undefined && { paperWidth: body.paperWidth }),
+          ...(body.autoPrintOrder !== undefined && { autoPrintOrder: body.autoPrintOrder }),
+          ...(body.connectionType !== undefined && { connectionType: body.connectionType }),
+          ...(body.printerIp !== undefined && { printerIp: body.printerIp }),
+          ...(body.printerPort !== undefined && { printerPort: body.printerPort })
         }
       });
 

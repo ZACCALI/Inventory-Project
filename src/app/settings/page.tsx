@@ -9,7 +9,7 @@ import { useAlert } from '@/components/AlertModal';
 import { db } from '@/lib/db';
 import { addSyncTask } from '@/lib/offlineSync';
 import PrinterSetupModal from '@/components/PrinterSetupModal';
-import { loadPrinterConfig } from '@/lib/qzService';
+import { loadPrinterConfig, loadPrinterConfigSync } from '@/lib/qzService';
 
 import Image from "next/image";
 
@@ -353,8 +353,8 @@ export default function SettingsPage() {
     }
     fetchSettings();
     // Load saved printer config
-    const loadConfig = () => {
-      const cfg = loadPrinterConfig();
+    const loadConfig = async () => {
+      const cfg = await loadPrinterConfig();
       setSavedPrinterName(cfg?.printerName || '');
     };
     loadConfig();
@@ -842,7 +842,7 @@ export default function SettingsPage() {
         onClose={() => {
           setIsPrinterModalOpen(false);
           // Refresh saved printer name after modal closes
-          const cfg = loadPrinterConfig();
+          const cfg = loadPrinterConfigSync();
           setSavedPrinterName(cfg?.printerName || '');
         }}
       />

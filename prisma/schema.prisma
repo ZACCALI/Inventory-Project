@@ -257,6 +257,12 @@ model SystemSettings {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   expenseCategories  String   @default("[\"Rent & Lease\",\"Utilities\",\"Payroll & Salary\",\"Office Supplies\",\"Marketing\",\"Maintenance\",\"Transportation\",\"Other\"]")
+  printerName        String?
+  paperWidth         String   @default("58")
+  autoPrintOrder     Boolean  @default(false)
+  connectionType     String   @default("qz")
+  printerIp          String?
+  printerPort        String?
 }
 
 model AuditLog {
