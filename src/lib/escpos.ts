@@ -22,7 +22,7 @@ export const CMD = {
   DOUBLE_SIZE:    [GS, 0x21, 0x11],          // Double width + height
   NORMAL_SIZE:    [GS, 0x21, 0x00],          // Normal size
   CUT_FULL:       [GS, 0x56, 0x41, NUL],    // Full paper cut
-  CUT_PARTIAL:    [GS, 0x56, 0x42, NUL],    // Partial paper cut
+  CUT_PARTIAL:    [GS, 0x56, 0x01],          // Partial paper cut (GS V 1 — avoids 0x42='B' bleed)
   FEED_3:         [ESC, 0x64, 0x03],         // Feed 3 lines
   UNDERLINE_ON:   [ESC, 0x2d, 0x01],        // Underline on
   UNDERLINE_OFF:  [ESC, 0x2d, 0x00],        // Underline off
@@ -131,6 +131,9 @@ export class EscPos {
 
   constructor(paper: PaperWidth = '58') {
     this.width = getLineWidth(paper);
+    // Send a NUL byte first to flush any stale buffered bytes from a previous print job
+    // (prevents carry-over 0x42='B' from CUT_PARTIAL bleeding into the next receipt)
+    this.bytes.push(NUL);
     this.add(CMD.INIT);
   }
 
