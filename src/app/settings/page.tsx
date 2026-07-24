@@ -9,7 +9,7 @@ import { useAlert } from '@/components/AlertModal';
 import { db } from '@/lib/db';
 import { addSyncTask } from '@/lib/offlineSync';
 import PrinterSetupModal from '@/components/PrinterSetupModal';
-import { loadPrinterConfig, loadPrinterConfigSync } from '@/lib/qzService';
+import { loadPrinterConfig } from '@/lib/qzService';
 
 import Image from "next/image";
 
@@ -839,10 +839,10 @@ export default function SettingsPage() {
 
       <PrinterSetupModal
         isOpen={isPrinterModalOpen}
-        onClose={() => {
+        onClose={async () => {
           setIsPrinterModalOpen(false);
           // Refresh saved printer name after modal closes
-          const cfg = loadPrinterConfigSync();
+          const cfg = await loadPrinterConfig();
           setSavedPrinterName(cfg?.printerName || '');
         }}
       />

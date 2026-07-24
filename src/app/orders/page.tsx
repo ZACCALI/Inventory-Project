@@ -78,9 +78,10 @@ export default function OrdersPage() {
       if (cfg?.paperWidth) setPaperWidth(cfg.paperWidth);
     };
     loadConfig();
+    const listener = () => { loadConfig(); };
     if (typeof window !== 'undefined') {
-      window.addEventListener('printerConfigUpdated', loadConfig);
-      return () => window.removeEventListener('printerConfigUpdated', loadConfig);
+      window.addEventListener('printerConfigUpdated', listener);
+      return () => window.removeEventListener('printerConfigUpdated', listener);
     }
   }, []);
 

@@ -7,6 +7,7 @@ import { Truck, CloudOff } from 'lucide-react';
 import Sidebar from '@/components/layout/Sidebar';
 import Navbar from '@/components/layout/Navbar';
 import { db } from '@/lib/db';
+import { loadPrinterConfig } from '@/lib/qzService';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -17,6 +18,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem('amroding_cached_session');
       if (saved) setCachedSession(JSON.parse(saved));
     } catch (e) {}
+
+    // Hydrate printer config on startup (restores from DB if local storage was cleared)
+    loadPrinterConfig().catch(console.error);
   }, []);
   const pathname = usePathname();
   const router = useRouter();

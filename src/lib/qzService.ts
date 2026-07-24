@@ -161,46 +161,46 @@ export async function savePrinterConfig(config: PrinterConfig): Promise<void> {
   }
 }
 
-export function loadPrinterConfigSync(): PrinterConfig | null {
+export async function loadPrinterConfig(): Promise<PrinterConfig | null> {
+  let localConfig: PrinterConfig | null = null;
   try {
     if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as PrinterConfig;
-    }
-  } catch {}
-  return null;
-}
-
-export async function loadPrinterConfig(): Promise<PrinterConfig | null> {
-  const syncConfig = loadPrinterConfigSync();
-  if (syncConfig) return syncConfig;
-  
-  try {
-    // Fetch from DB if localStorage is cleared or empty
-    const res = await fetch('/api/settings');
-    if (res.ok) {
-      const data = await res.json();
-      if (data.printerName) {
-        const fetchedConfig: PrinterConfig = {
-          printerName: data.printerName,
-          paperWidth: (data.paperWidth as PaperWidth) || '58',
-          autoPrintOrder: data.autoPrintOrder,
-          connectionType: data.connectionType,
-          printerIp: data.printerIp,
-          printerPort: data.printerPort,
-        };
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(fetchedConfig));
-          window.dispatchEvent(new Event('printerConfigUpdated'));
-        }
-        return fetchedConfig;
+      if (raw) {
+        localConfig = JSON.parse(raw) as PrinterConfig;
       }
     }
-  } catch (err) {
-    console.warn('[QZ] Failed to fetch printer config from DB:', err);
+  } catch {
+    // Ignore local storage error
   }
   
-  return null;
+  if (!localConfig) {
+    try {
+      // Fetch from DB
+      const res = await fetch('/api/settings');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.printerName) {
+          const fetchedConfig: PrinterConfig = {
+            printerName: data.printerName,
+            paperWidth: data.paperWidth || '58',
+            autoPrintOrder: data.autoPrintOrder,
+            connectionType: data.connectionType,
+            printerIp: data.printerIp,
+            printerPort: data.printerPort,
+          };
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(fetchedConfig));
+          }
+          return fetchedConfig;
+        }
+      }
+    } catch (err) {
+      console.warn('[QZ] Failed to fetch printer config from DB:', err);
+    }
+  }
+
+  return localConfig;
 }
 
 export function clearPrinterConfig(): void {
