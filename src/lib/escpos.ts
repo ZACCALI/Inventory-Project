@@ -249,6 +249,8 @@ export interface ReceiptData {
   amountDue: number;
   cash?: number;
   change?: number;
+  paymentStatus?: string;
+  amountPaid?: number;
 }
 
 /**
@@ -280,13 +282,19 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
   if (data.deliveryDate) p.line(`Date: ${data.deliveryDate}`);
   
   if (data.notes) {
-    // Filter out internal system payment tracking strings (e.g. "Order | Paid via Cash...") from receipt notes
-    const isSystemPaymentNote = /^(Order|WALKIN|HOME|STORE|DELIVERY)\s*\|\s*Paid via/i.test(data.notes.trim());
-    if (!isSystemPaymentNote) {
-      const cleanNotes = data.notes.replace(/₱/g, 'P').trim();
-      if (cleanNotes) {
-        p.wrappedLine(`Notes: ${cleanNotes}`);
-      }
+    // Strip internal system payment tracking from notes (e.g. "Order | Paid via Cash (Amount Paid: ₱900.00, Balance: ₱0.00)")
+    let cleanNotes = data.notes
+      .replace(/₱/g, 'P')  // Convert ₱ to P for thermal compatibility
+      .trim();
+    // Remove the entire system payment tracking pattern
+    const systemPattern = /^.+\|\s*Paid via\s+\w+\s*\(Amount Paid:.*?\)$/i;
+    if (systemPattern.test(cleanNotes)) {
+      // Extract only the order reference part before " | Paid via"
+      const refPart = cleanNotes.split(/\s*\|\s*Paid via/i)[0]?.trim();
+      cleanNotes = (refPart && refPart !== 'Order') ? refPart : '';
+    }
+    if (cleanNotes) {
+      p.wrappedLine(`Notes: ${cleanNotes}`);
     }
   }
 
@@ -319,6 +327,22 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
 
   if (data.cash !== undefined)   p.row('CASH:', data.cash.toFixed(2));
   if (data.change !== undefined) p.row('CHANGE:', data.change.toFixed(2));
+
+  // ── Payment Status ─────────────────────────────────────────────────────────
+  if (data.paymentStatus) {
+    p.divider();
+    if (data.paymentStatus === 'paid') {
+      p.bold(true).centerLine('** FULLY PAID **').bold(false);
+    } else if (data.paymentStatus === 'partial') {
+      const paidAmt = (data.amountPaid ?? 0).toFixed(2);
+      const balanceAmt = (data.amountDue - (data.amountPaid ?? 0)).toFixed(2);
+      p.bold(true).centerLine('PARTIAL PAYMENT').bold(false);
+      p.row('PAID:', paidAmt);
+      p.row('BALANCE:', balanceAmt);
+    } else {
+      p.bold(true).centerLine('UNPAID').bold(false);
+    }
+  }
 
   // ── Footer ──────────────────────────────────────────────────────────────────
   p.divider()

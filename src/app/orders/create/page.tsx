@@ -817,7 +817,9 @@ export default function CreateOrderPage() {
       amountDue:    lastOrder.totalAmount,
       cash:         lastOrder.tendered || undefined,
       change:       lastOrder.change   || undefined,
-    }, () => showToast('QZ Tray not configured \u2014 using browser print. Set up printer in Settings.', 'warning'));
+      paymentStatus: lastOrder.paymentStatus || undefined,
+      amountPaid:   lastOrder.paymentStatus === 'paid' ? lastOrder.totalAmount : undefined,
+    }, () => showToast('QZ Tray not configured — using browser print. Set up printer in Settings.', 'warning'));
 
     if (result === 'error') {
       showToast('Could not print receipt. Please allow popups or set up QZ Tray in Settings.', 'error');

@@ -25,6 +25,8 @@ export interface ThermalReceiptData {
   amountDue: number;
   cash?: number;
   change?: number;
+  paymentStatus?: string;
+  amountPaid?: number;
 }
 
 // ─── Main Print Function ───────────────────────────────────────────────────────
@@ -70,6 +72,8 @@ export async function printThermal(
         amountDue: data.amountDue,
         cash: data.cash,
         change: data.change,
+        paymentStatus: data.paymentStatus,
+        amountPaid: data.amountPaid,
       }, paper);
 
       const success = await printRaw(bytes);

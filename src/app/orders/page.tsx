@@ -513,6 +513,21 @@ export default function OrdersPage() {
     const subtotal   = order.totalAmount + (order.discount || 0);
     const deliv      = Array.isArray(order.delivery) ? order.delivery[0] : order.delivery;
 
+    // Extract amount paid from payments array or notes
+    let orderAmountPaid: number | undefined;
+    if (order.paymentStatus === 'paid') {
+      orderAmountPaid = order.totalAmount;
+    } else if (order.paymentStatus === 'partial') {
+      // Try payments array first
+      if (order.payments?.length) {
+        orderAmountPaid = order.payments.reduce((s: number, p: { amount: number }) => s + p.amount, 0);
+      } else {
+        // Fallback: parse from notes
+        const amtMatch = order.notes?.match(/Amount Paid:\s*[₱P]?\s*([\d,.]+)/i);
+        if (amtMatch) orderAmountPaid = parseFloat(amtMatch[1].replace(/,/g, ''));
+      }
+    }
+
     const result = await printThermal({
       companyName,
       orderNo,
@@ -525,6 +540,8 @@ export default function OrdersPage() {
       subtotal,
       discount:     order.discount || 0,
       amountDue:    order.totalAmount,
+      paymentStatus: order.paymentStatus || undefined,
+      amountPaid:   orderAmountPaid,
     }, () => showToast('offline', 'QZ Tray not configured — using browser print. Set up Printer in Settings → Thermal Printer.'));
 
     if (result === 'error') {
