@@ -37,6 +37,7 @@ export function getLineWidth(paper: PaperWidth): number {
 
 // ─── Text Encoding ─────────────────────────────────────────────────────────────
 function encodeText(text: string): number[] {
+  text = text.replace(/₱/g, 'P');
   const bytes: number[] = [];
   for (let i = 0; i < text.length; i++) {
     const code = text.charCodeAt(i);
@@ -277,7 +278,17 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
 
   if (data.driverName)   p.line(`Driver: ${data.driverName}`);
   if (data.deliveryDate) p.line(`Date: ${data.deliveryDate}`);
-  if (data.notes)        p.wrappedLine(`Notes: ${data.notes}`);
+  
+  if (data.notes) {
+    // Filter out internal system payment tracking strings (e.g. "Order | Paid via Cash...") from receipt notes
+    const isSystemPaymentNote = /^(Order|WALKIN|HOME|STORE|DELIVERY)\s*\|\s*Paid via/i.test(data.notes.trim());
+    if (!isSystemPaymentNote) {
+      const cleanNotes = data.notes.replace(/₱/g, 'P').trim();
+      if (cleanNotes) {
+        p.wrappedLine(`Notes: ${cleanNotes}`);
+      }
+    }
+  }
 
   p.divider();
 

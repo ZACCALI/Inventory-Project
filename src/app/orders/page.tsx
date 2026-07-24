@@ -365,10 +365,6 @@ export default function OrdersPage() {
       amountPaid = order.totalAmount.toString();
     }
 
-    // Compute discount percentage from flat discount
-    const subtotal = order.totalAmount + (order.discount || 0);
-    const discountPercent = subtotal > 0 ? (((order.discount || 0) / subtotal) * 100) : 0;
-
     const deliv = Array.isArray(order.delivery) ? order.delivery[0] : order.delivery;
     const finalDriver = deliv?.driverName || '';
     const finalDate = deliv?.scheduledDate ? new Date(deliv.scheduledDate).toISOString().split('T')[0] : '';
@@ -381,8 +377,8 @@ export default function OrdersPage() {
       orderReference: orderRef,
       deliveryDriverName: finalDriver,
       deliveryDate: finalDate,
-      discountValue: discountPercent > 0 ? discountPercent.toFixed(2).replace(/\.?0+$/, '') : '',
-      discountType: 'percent'
+      discountValue: order.discount ? order.discount.toString() : '',
+      discountType: 'flat'
     });
     setOriginalItems(JSON.parse(JSON.stringify(order.items || [])));
     setIsUnlocked(false);
@@ -614,10 +610,10 @@ export default function OrdersPage() {
               </tr>
             </thead>
             <tbody>
-              ${order.items.map((i: { product?: { name: string }, uomName?: string, quantity: number, price: number, subtotal: number }, idx: number) => `
+              ${order.items.map((i: { product?: { name: string, unit?: string }, uomName?: string, quantity: number, price: number, subtotal: number }, idx: number) => `
                 <tr>
                   <td>${idx + 1}</td>
-                  <td>${escapeHtml(i.product?.name || 'Item')}${i.uomName ? ` <small style="color:#000000;">(${escapeHtml(i.uomName)})</small>` : ''}</td>
+                  <td>${escapeHtml(i.product?.name || 'Item')} <small style="color:#000000;">(${escapeHtml((i.uomName || i.product?.unit || 'PCS').toUpperCase())})</small></td>
                   <td>${i.quantity}</td>
                   <td>${Number(i.price).toFixed(2)}</td>
                   <td><strong>${(Number(i.quantity) * Number(i.price)).toFixed(2)}</strong></td>
@@ -701,7 +697,7 @@ export default function OrdersPage() {
       const newTotal = Math.max(0, subtotal - flatDiscount);
 
       if (editForm.paymentStatus === 'paid') {
-        updatedNotes = `${editForm.orderReference || 'Order'} | Paid via ${paymentMethod} (Amount Paid: ${formatCurrency(newTotal)}, Balance: ₱0.00)`;
+        updatedNotes = `${editForm.orderReference || 'Order'} | Paid via ${paymentMethod} (Amount Paid: P${newTotal.toFixed(2)}, Balance: P0.00)`;
       } else {
         if (parsedAmount > newTotal + 0.01) {
           showAlert('error', 'Validation Error', `Payment amount (₱${parsedAmount.toFixed(2)}) cannot exceed the total bill (₱${newTotal.toFixed(2)})`);
@@ -709,7 +705,7 @@ export default function OrdersPage() {
           return;
         }
         const calculatedBalance = Math.max(0, newTotal - parsedAmount);
-        updatedNotes = `${editForm.orderReference || 'Order'} | Paid via ${paymentMethod} (Amount Paid: ${formatCurrency(parsedAmount)}, Balance: ${formatCurrency(calculatedBalance)})`;
+        updatedNotes = `${editForm.orderReference || 'Order'} | Paid via ${paymentMethod} (Amount Paid: P${parsedAmount.toFixed(2)}, Balance: P${calculatedBalance.toFixed(2)})`;
       }
 
       const itemsModified = JSON.stringify(originalItems) !== JSON.stringify(editingOrder.items);

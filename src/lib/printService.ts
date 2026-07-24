@@ -48,7 +48,7 @@ export async function printThermal(
     try {
       const receiptItems = data.items.map((i) => ({
         name: (i.product?.name || i.name || 'Item'),
-        uom: i.uomName || i.uom || undefined,
+        uom: i.uomName || i.uom || i.product?.unit || undefined,
         qty: Number(i.quantity ?? i.qty ?? 1),
         price: Number(i.price ?? 0),
       }));
@@ -96,7 +96,7 @@ function printHtmlFallback(data: ThermalReceiptData, paper: PaperWidth = '58'): 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data.items.forEach((i: any) => {
       const name = ((i.product?.name || i.name || 'Item')).toUpperCase();
-      const uom = (i.uomName || i.uom) ? ` (${i.uomName || i.uom})` : '';
+      const uom = ` (${(i.uomName || i.uom || i.product?.unit || 'PCS').toUpperCase()})`;
       const qty = Number(i.quantity ?? i.qty ?? 1);
       totalQty += qty;
       const price = Number(i.price ?? 0).toFixed(2);

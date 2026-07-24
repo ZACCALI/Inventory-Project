@@ -110,11 +110,11 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
           {order.items?.map((item: any) => (
             <tr key={item.id}>
               <td style={{ padding: '8px 4px' }}>
-                <div style={{ fontWeight: 'bold' }}>{item.product?.name} {item.uomName ? `(${item.uomName})` : ''}</div>
+                <div style={{ fontWeight: 'bold' }}>{item.product?.name} {`(${((item.uomName || item.product?.unit || 'PCS') as string).toUpperCase()})`}</div>
                 <div style={{ fontSize: '10px', color: '#555' }}>{item.product?.sku}</div>
               </td>
               <td style={{ textAlign: 'center', padding: '8px 4px' }}>
-                <div>{item.quantity} {item.uomName || item.product?.unit || 'pcs'}</div>
+                <div>{item.quantity} {((item.uomName || item.product?.unit || 'PCS') as string).toUpperCase()}</div>
               </td>
               <td style={{ textAlign: 'right', padding: '8px 4px' }}>
                 {Number(item.price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
