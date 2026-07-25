@@ -92,7 +92,7 @@ export async function connectQZ(): Promise<boolean> {
       };
     });
 
-    await qz.websocket.connect({ retries: 3, delay: 1 });
+    await qz.websocket.connect({ host: ['localhost', '127.0.0.1'], retries: 3, delay: 1 });
     qzInstance = qz;
     console.log('[QZ] Connected successfully to QZ Tray');
     return true;

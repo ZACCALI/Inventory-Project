@@ -221,7 +221,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
                   Because your app is on HTTPS, Chrome/Edge requires accepting QZ Tray&apos;s local security certificate once.
                 </p>
                 <a
-                  href="https://localhost:8181"
+                  href="https://localhost:8182"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-secondary"
