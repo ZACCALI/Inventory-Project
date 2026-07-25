@@ -79,29 +79,16 @@ export async function connectQZ(): Promise<boolean> {
       return true;
     }
 
-    // Automatically register certificate and RSA SHA512 signature handler to authorize silent printing
+    // Allow clean connection without invalid certificate errors so Allow button is enabled
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    qz.security.setCertificatePromise(function(resolve: any, reject: any) {
-      fetch('/api/qz/cert')
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to fetch certificate');
-          return res.text();
-        })
-        .then(resolve)
-        .catch(() => resolve(null));
+    qz.security.setCertificatePromise(function(resolve: any) {
+      resolve();
     });
-    qz.security.setSignatureAlgorithm('SHA512');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    qz.security.setSignaturePromise(function(toSign: string) {
+    qz.security.setSignaturePromise(function() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return function(resolve: any, reject: any) {
-        fetch('/api/qz/sign?request=' + encodeURIComponent(toSign))
-          .then(res => {
-            if (!res.ok) throw new Error('Failed to fetch signature');
-            return res.text();
-          })
-          .then(resolve)
-          .catch(() => resolve(null));
+      return function(resolve: any) {
+        resolve();
       };
     });
 
