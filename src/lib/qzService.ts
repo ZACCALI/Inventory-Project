@@ -27,6 +27,7 @@ type QZ = any;
 
 let qzInstance: QZ = null;
 let loadPromise: Promise<QZ> | null = null;
+let securityConfigured = false;
 
 // ─── Load QZ Tray Script ───────────────────────────────────────────────────────
 
@@ -80,30 +81,33 @@ export async function connectQZ(): Promise<boolean> {
     }
 
     // Automatically register certificate and RSA SHA512 signature handler to authorize silent printing
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    qz.security.setCertificatePromise(function(resolve: any, reject: any) {
-      fetch('/api/qz/cert')
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to fetch certificate');
-          return res.text();
-        })
-        .then(cert => resolve(cert || null))
-        .catch(() => resolve()); // Resolve with undefined for graceful fallback (allows Untrusted prompt)
-    });
-    qz.security.setSignatureAlgorithm('SHA512');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    qz.security.setSignaturePromise(function(toSign: string) {
+    if (!securityConfigured) {
+      securityConfigured = true;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return function(resolve: any, reject: any) {
-        fetch('/api/qz/sign?request=' + encodeURIComponent(toSign))
+      qz.security.setCertificatePromise(function(resolve: any, reject: any) {
+        fetch('/api/qz/cert')
           .then(res => {
-            if (!res.ok) throw new Error('Failed to fetch signature');
+            if (!res.ok) throw new Error('Failed to fetch certificate');
             return res.text();
           })
-          .then(sign => resolve(sign || null))
-          .catch(() => resolve()); // Resolve with undefined for graceful fallback (allows Untrusted prompt)
-      };
-    });
+          .then(cert => resolve(cert || null))
+          .catch(() => resolve(null)); // Resolve with null for graceful fallback (allows Untrusted prompt)
+      });
+      qz.security.setSignatureAlgorithm('SHA512');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      qz.security.setSignaturePromise(function(toSign: string) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return function(resolve: any, reject: any) {
+          fetch('/api/qz/sign?request=' + encodeURIComponent(toSign))
+            .then(res => {
+              if (!res.ok) throw new Error('Failed to fetch signature');
+              return res.text();
+            })
+            .then(sign => resolve(sign || null))
+            .catch(() => resolve(null)); // Resolve with null for graceful fallback (allows Untrusted prompt)
+        };
+      });
+    }
 
     await qz.websocket.connect({ retries: 3, delay: 1 });
     qzInstance = qz;

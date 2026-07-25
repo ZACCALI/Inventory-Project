@@ -19,6 +19,11 @@ export function getQzKeys() {
       }
     } catch (err) {
       console.warn('Failed to parse .qz-keys.json, generating new keys...', err);
+      try {
+        fs.unlinkSync(keyPath);
+      } catch (e) {
+        // ignore
+      }
     }
   }
 

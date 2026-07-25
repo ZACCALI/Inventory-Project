@@ -207,6 +207,13 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, marginTop: '4px' }}>
               <strong>Tip:</strong> To enable instant 1-click silent printing without prompts, configure your QZ Tray certificate in the backend or use localhost for development.
             </p>
+            <div style={{ background: '#fffbeb', border: '1px solid #fbbf24', borderRadius: '6px', padding: '10px 12px', marginTop: '8px', fontSize: '12px', color: '#92400e' }}>
+              <strong>🔐 One-time setup:</strong> When the QZ Tray prompt appears:<br/>
+              1. Click <strong>"View request details"</strong><br/>
+              2. Check <strong>"Remember this decision"</strong><br/>
+              3. Click <strong>Allow</strong><br/>
+              This only needs to be done ONCE — future connections will be silent and automatic.
+            </div>
           </div>
 
           {/* Connection Status */}
