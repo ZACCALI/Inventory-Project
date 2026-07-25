@@ -819,7 +819,7 @@ export default function CreateOrderPage() {
   const printThermalReceipt = async () => {
     if (!lastOrder) return;
 
-    const orderNo   = ((lastOrder.orderNumber || '').split('-').pop() || '');
+    const orderNo   = lastOrder.orderNumber || '';
     const createdBy = (lastOrder.createdBy?.name || 'ADMIN');
     const dateStr   = new Date(lastOrder.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',','');
     const subtotal  = lastOrder.subtotal || (lastOrder.totalAmount + (lastOrder.discount || 0));

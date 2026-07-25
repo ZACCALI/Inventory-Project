@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
             productId: item.productId,
             type: 'OUT',
             quantity: item._totalStockNeeded,
-            reason: `${orderType === 'pos' ? 'Store' : (isDelivery ? 'Delivery' : 'Walk in')} (Order #${orderNumber.split('-').pop()} - Input: ${item.quantity} ${item.uomName || 'Pack/Pcs'})`,
+            reason: `${orderType === 'pos' ? 'Store' : (isDelivery ? 'Delivery' : 'Walk in')} (Order #${orderNumber} - Input: ${item.quantity} ${item.uomName || 'Pack/Pcs'})`,
             source: orderType === 'pos' ? 'WALK_IN_STORE' : (isDelivery ? 'DELIVERY' : 'WALK_IN_HOME'),
             userId: createdById,
           }
