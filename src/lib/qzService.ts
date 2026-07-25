@@ -79,17 +79,23 @@ export async function connectQZ(): Promise<boolean> {
       return true;
     }
 
-    // Allow unsigned connections — QZ Tray will show an approval prompt on the PC
+    // Automatically register certificate and RSA SHA512 signature handler to authorize silent printing
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    qz.security.setCertificatePromise(function(resolve: any) {
-      resolve(); // No certificate needed — allow unsigned
+    qz.security.setCertificatePromise(function(resolve: any, reject: any) {
+      fetch('/api/qz/cert')
+        .then(res => res.text())
+        .then(resolve)
+        .catch(reject);
     });
     qz.security.setSignatureAlgorithm('SHA512');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    qz.security.setSignaturePromise(function() {
+    qz.security.setSignaturePromise(function(toSign: string) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return function(resolve: any) {
-        resolve(); // No signature needed — allow unsigned
+      return function(resolve: any, reject: any) {
+        fetch('/api/qz/sign?request=' + encodeURIComponent(toSign))
+          .then(res => res.text())
+          .then(resolve)
+          .catch(reject);
       };
     });
 
