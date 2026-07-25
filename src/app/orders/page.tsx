@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
-import { Search, Filter,  Download, Edit, Eye, X, Save, Trash2, Archive, RefreshCw, DollarSign, ShoppingCart, User, Unlock, Lock,  ShoppingBag, Home, Truck, Store, Printer,  Receipt, MoreVertical, Package, Calendar, AlertCircle, Phone, Mail,    Star, Loader2 } from 'lucide-react';
+import { Search, Filter,  Download, Edit, Eye, X, Save, Trash2, Archive, RefreshCw, DollarSign, ShoppingCart, User, Unlock, Lock,  ShoppingBag, Home, Truck, Store, Printer,  Receipt, MoreVertical, Package, Calendar, AlertCircle, AlertTriangle, Phone, Mail,    Star, Loader2 } from 'lucide-react';
 import { APP_NAME, formatCurrency } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import jsPDF from 'jspdf';
@@ -544,6 +544,7 @@ export default function OrdersPage() {
       amountDue:    order.totalAmount,
       paymentStatus: order.paymentStatus || undefined,
       amountPaid:   orderAmountPaid,
+      orderStatus:  order.status,
     }, () => showToast('offline', 'QZ Tray not configured — using browser print. Set up Printer in Settings → Thermal Printer.'));
 
     if (result === 'error') {
@@ -2028,6 +2029,14 @@ export default function OrdersPage() {
                 </button>
               </div>
 
+              {/* Cancelled Order Safety Banner */}
+              {receiptOrder.status === 'cancelled' && (
+                <div style={{ background: '#fef2f2', borderBottom: '1px solid #fca5a5', padding: '10px 20px', color: '#991b1b', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertTriangle size={18} color="#dc2626" />
+                  <span>SAFETY WARNING: Order is CANCELLED. Any printed receipt will be watermarked as CANCELLED / VOID.</span>
+                </div>
+              )}
+
               {/* Format Switcher Tabs */}
               <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', padding: '8px 16px', gap: '8px' }}>
                 <button
@@ -2093,7 +2102,13 @@ export default function OrdersPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => printThermalReceipt(receiptOrder)}
+                        onClick={async () => {
+                          if (receiptOrder.status === 'cancelled') {
+                            const confirmed = await showConfirm('Cancelled Order', 'Order is Cancelled. Printed receipt will be watermarked as CANCELLED. Proceed?');
+                            if (!confirmed) return;
+                          }
+                          printThermalReceipt(receiptOrder);
+                        }}
                         className="btn btn-primary"
                         style={{ fontSize: '13px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
                       >
@@ -2104,12 +2119,24 @@ export default function OrdersPage() {
                     {/* On-Screen Thermal Paper Live Preview */}
                     <div
                       style={{
+                        position: 'relative',
                         background: '#ffffff', color: '#000000', padding: '16px', borderRadius: '6px',
                         fontFamily: '"Consolas", "Courier New", monospace', fontSize: '12px', lineHeight: 1.2,
                         width: previewPaperWidth === '58' ? '58mm' : '80mm', margin: '0 auto',
-                        border: '1px solid #d1d5db', boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+                        border: '1px solid #d1d5db', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                        overflow: 'hidden'
                       }}
                     >
+                      {receiptOrder.status === 'cancelled' && (
+                        <div style={{ position: 'absolute', top: '40%', left: '0', right: '0', textAlign: 'center', transform: 'rotate(-20deg)', color: 'rgba(220, 38, 38, 0.4)', fontSize: '24px', fontWeight: 900, pointerEvents: 'none', zIndex: 10, textTransform: 'uppercase', border: '4px solid rgba(220, 38, 38, 0.4)', padding: '8px', background: 'rgba(255, 255, 255, 0.7)' }}>
+                          CANCELLED ORDER<br/>VOID
+                        </div>
+                      )}
+                      {receiptOrder.status === 'cancelled' && (
+                        <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '12px', color: '#000', borderBottom: '1px dashed #000', paddingBottom: '4px', marginBottom: '4px' }}>
+                          *** CANCELLED / VOID ORDER ***
+                        </div>
+                      )}
                       <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '13px' }}>AMRODING GENERAL MERCHANDISE</div>
                       <div style={{ textAlign: 'center', fontSize: '11px' }}>SARIMANOK ST. MARAWI CITY</div>
                       <div style={{ textAlign: 'center', fontSize: '11px' }}>2ND BRANCH</div>
@@ -2164,10 +2191,11 @@ export default function OrdersPage() {
 
                       {/* Payment Status Banner */}
                       <div style={{ borderBottom: '1px dashed #000', margin: '6px 0' }}></div>
-                      {receiptOrder.paymentStatus === 'paid' && (
+                      {receiptOrder.status === 'cancelled' ? (
+                        <div style={{ textAlign: 'center', fontWeight: 'bold', padding: '2px 0' }}>*** VOID / CANCELLED ***</div>
+                      ) : receiptOrder.paymentStatus === 'paid' ? (
                         <div style={{ textAlign: 'center', fontWeight: 'bold', padding: '2px 0' }}>** FULLY PAID **</div>
-                      )}
-                      {receiptOrder.paymentStatus === 'partial' && (
+                      ) : receiptOrder.paymentStatus === 'partial' ? (
                         <div>
                           <div style={{ textAlign: 'center', fontWeight: 'bold' }}>PARTIAL PAYMENT</div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -2177,8 +2205,7 @@ export default function OrdersPage() {
                             <span>BALANCE:</span><span>{balanceAmount.toFixed(2)}</span>
                           </div>
                         </div>
-                      )}
-                      {(!receiptOrder.paymentStatus || receiptOrder.paymentStatus === 'unpaid') && (
+                      ) : (
                         <div>
                           <div style={{ textAlign: 'center', fontWeight: 'bold' }}>UNPAID</div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -2202,7 +2229,13 @@ export default function OrdersPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => printBondReceipt(receiptOrder)}
+                        onClick={async () => {
+                          if (receiptOrder.status === 'cancelled') {
+                            const confirmed = await showConfirm('Cancelled Order', 'Order is Cancelled. Printed receipt will be watermarked as CANCELLED. Proceed?');
+                            if (!confirmed) return;
+                          }
+                          printBondReceipt(receiptOrder);
+                        }}
                         className="btn btn-primary"
                         style={{ fontSize: '13px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
                       >
@@ -2219,6 +2252,17 @@ export default function OrdersPage() {
                       }}
                     >
                       <div style={{ textAlign: 'center', marginBottom: '20px', position: 'relative' }}>
+                        {receiptOrder.status === 'cancelled' && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-15deg)',
+                            fontSize: '36px', fontWeight: '900', color: 'rgba(220, 38, 38, 0.4)',
+                            border: '4px solid rgba(220, 38, 38, 0.4)', padding: '8px 16px',
+                            zIndex: 10, textTransform: 'uppercase', pointerEvents: 'none'
+                          }}>
+                            CANCELLED / VOID INVOICE
+                          </div>
+                        )}
                         <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#000000' }}>{companyName.toUpperCase()}</h2>
                         <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#555' }}>
                           Marawi City, Lanao del Sur, Philippines

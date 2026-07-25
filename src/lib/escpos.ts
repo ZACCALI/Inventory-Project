@@ -251,6 +251,7 @@ export interface ReceiptData {
   change?: number;
   paymentStatus?: string;
   amountPaid?: number;
+  orderStatus?: string;
 }
 
 /**
@@ -271,6 +272,10 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
    .centerLine(data.branch.toUpperCase())
    .centerLine(data.slogan.toUpperCase())
    .divider();
+
+  if (data.orderStatus === 'cancelled') {
+    p.bold(true).centerLine('*** CANCELLED / VOID ORDER ***').bold(false).divider();
+  }
 
   // ── Order Info ──────────────────────────────────────────────────────────────
   p.left()
@@ -327,24 +332,23 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
   if (data.change !== undefined) p.row('CHANGE:', data.change.toFixed(2));
 
   // ── Payment Status ─────────────────────────────────────────────────────────
-  if (data.paymentStatus) {
+  if (data.paymentStatus || data.orderStatus === 'cancelled') {
     p.divider();
-    if (data.paymentStatus === 'paid') {
+    if (data.orderStatus === 'cancelled') {
+      p.bold(true).centerLine('*** VOID / CANCELLED ***').bold(false);
+    } else if (data.paymentStatus === 'paid') {
       p.bold(true).centerLine('** FULLY PAID **').bold(false);
-      p.divider();
     } else if (data.paymentStatus === 'partial') {
       const paidAmt = (data.amountPaid ?? 0).toFixed(2);
       const balanceAmt = (data.amountDue - (data.amountPaid ?? 0)).toFixed(2);
       p.bold(true).centerLine('PARTIAL PAYMENT').bold(false);
       p.row('PAID:', paidAmt);
       p.row('BALANCE:', balanceAmt);
-      p.divider();
     } else {
-      const balanceAmt = (data.amountDue - (data.amountPaid ?? 0)).toFixed(2);
       p.bold(true).centerLine('UNPAID').bold(false);
-      p.row('BALANCE:', balanceAmt);
-      p.divider();
+      p.row('BALANCE:', data.amountDue.toFixed(2));
     }
+    p.divider();
   }
 
   // ── Footer ──────────────────────────────────────────────────────────────────

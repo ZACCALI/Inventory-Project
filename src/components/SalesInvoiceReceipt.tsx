@@ -38,6 +38,17 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
     }}>
       {/* HEADER */}
       <div style={{ textAlign: 'center', marginBottom: '20px', position: 'relative' }}>
+        {order.status === 'cancelled' && (
+          <div style={{
+            position: 'absolute',
+            top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-15deg)',
+            fontSize: '48px', fontWeight: '900', color: 'rgba(255, 0, 0, 0.5)',
+            border: '6px solid rgba(255, 0, 0, 0.5)', padding: '10px 20px',
+            zIndex: 10, textTransform: 'uppercase', pointerEvents: 'none'
+          }}>
+            CANCELLED / VOID INVOICE
+          </div>
+        )}
         <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>{companyName}</h1>
         <p style={{ margin: 0, fontSize: '11px' }}>
           Marawi City, Lanao del Sur, Philippines
@@ -190,13 +201,14 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
       </div>
 
       {/* PAYMENT STATUS */}
-      {order.paymentStatus && (
+      {(order.paymentStatus || order.status === 'cancelled') && (
         <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', fontFamily: 'monospace' }}>
           <div style={{ borderTop: '1px dashed black', borderBottom: '1px dashed black', padding: '10px 0', width: '300px', margin: '0 auto' }}>
-            {order.paymentStatus === 'paid' && (
+            {order.status === 'cancelled' ? (
+              <div style={{ fontWeight: 'bold' }}>** CANCELLED **</div>
+            ) : order.paymentStatus === 'paid' ? (
               <div style={{ fontWeight: 'bold' }}>** FULLY PAID **</div>
-            )}
-            {order.paymentStatus === 'partial' && (
+            ) : order.paymentStatus === 'partial' ? (
               <>
                 <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>PARTIAL PAYMENT</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -208,8 +220,7 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
                   <span>{(totalAmount - (order.amountPaid || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </>
-            )}
-            {order.paymentStatus === 'unpaid' && (
+            ) : order.paymentStatus === 'unpaid' ? (
               <>
                 <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>UNPAID</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -217,7 +228,7 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
                   <span>{(totalAmount - (order.amountPaid || 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </>
-            )}
+            ) : null}
           </div>
         </div>
       )}
