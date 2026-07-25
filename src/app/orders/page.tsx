@@ -158,7 +158,7 @@ export default function OrdersPage() {
     return params.toString();
   };
 
-  const { data: swrRes, error: swrError } = useSWR(
+  const { data: swrRes, error: swrError, mutate: mutateOrders } = useSWR(
     session ? `/api/orders?${getQueryString()}` : null,
     async (url) => {
       const res = await fetch(url);
@@ -167,6 +167,18 @@ export default function OrdersPage() {
       return { data, totalCount: parseInt(res.headers.get('X-Total-Count') || '0', 10) };
     }
   );
+
+  useEffect(() => {
+    const handleSync = () => {
+      mutateOrders();
+    };
+    window.addEventListener('amroding:synced', handleSync);
+    window.addEventListener('appDataSynced', handleSync);
+    return () => {
+      window.removeEventListener('amroding:synced', handleSync);
+      window.removeEventListener('appDataSynced', handleSync);
+    };
+  }, [mutateOrders]);
 
   // Stop skeleton after 2s if offline with no cache
   useEffect(() => {
@@ -319,7 +331,15 @@ export default function OrdersPage() {
       }
     }, 60000); // Poll every 60 seconds (online only)
 
-    return () => clearInterval(interval);
+    const handleAppSync = () => {
+      fetchOrders();
+    };
+    window.addEventListener('appDataSynced', handleAppSync);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('appDataSynced', handleAppSync);
+    };
 // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, statusFilter, paymentFilter, typeFilter, showArchived, page]);
 

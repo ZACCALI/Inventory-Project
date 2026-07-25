@@ -9,7 +9,7 @@ import { useAlert } from '@/components/AlertModal';
 import { db } from '@/lib/db';
 import { addSyncTask } from '@/lib/offlineSync';
 import PrinterSetupModal from '@/components/PrinterSetupModal';
-import { loadPrinterConfig } from '@/lib/qzService';
+import { loadPrinterConfig, isQZConnected } from '@/lib/qzService';
 
 import Image from "next/image";
 
@@ -44,6 +44,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const [isPrinterModalOpen, setIsPrinterModalOpen] = useState(false);
   const [savedPrinterName, setSavedPrinterName] = useState<string>('');
+  const [printerStatus, setPrinterStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [settings, setSettings] = useState<SettingsData>({
     companyName: '', email: '', phone: '', address: '', currency: 'PHP', taxRate: 0, cleanupMode: false,
     lockProductDelete: true, lockProductEdit: false, lockOrderDelete: true, lockOrderEdit: false, lockOrderCancel: false, lockOrderDate: false, lockStockVoid: false,
@@ -356,12 +357,23 @@ export default function SettingsPage() {
     const loadConfig = async () => {
       const cfg = await loadPrinterConfig();
       setSavedPrinterName(cfg?.printerName || '');
+      isQZConnected().then(connected => {
+        setPrinterStatus(connected ? 'connected' : 'disconnected');
+      });
     };
     loadConfig();
     window.addEventListener('printerConfigUpdated', loadConfig);
     return () => window.removeEventListener('printerConfigUpdated', loadConfig);
 // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (activeTab === 'printer') {
+      isQZConnected().then(connected => {
+        setPrinterStatus(connected ? 'connected' : 'disconnected');
+      });
+    }
+  }, [activeTab]);
 
 
   return (
@@ -779,7 +791,20 @@ export default function SettingsPage() {
               </div>
               <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '480px' }}>
                 <div style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>CURRENT PRINTER</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>CURRENT PRINTER</span>
+                    {printerStatus === 'connected' ? (
+                      <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span> Connected
+                      </span>
+                    ) : printerStatus === 'disconnected' ? (
+                      <span style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }}></span> Not Installed / Offline
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--text-tertiary)' }}>Checking status...</span>
+                    )}
+                  </div>
                   {savedPrinterName ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <Printer size={16} color="var(--primary)" />
@@ -844,6 +869,9 @@ export default function SettingsPage() {
           // Refresh saved printer name after modal closes
           const cfg = await loadPrinterConfig();
           setSavedPrinterName(cfg?.printerName || '');
+          isQZConnected().then(connected => {
+            setPrinterStatus(connected ? 'connected' : 'disconnected');
+          });
         }}
       />
 

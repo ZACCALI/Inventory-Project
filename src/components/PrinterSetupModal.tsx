@@ -12,6 +12,7 @@ import {
   printRaw,
 } from '@/lib/qzService';
 import { buildReceipt, type PaperWidth } from '@/lib/escpos';
+import { useAlert } from '@/components/AlertModal';
 
 interface PrinterSetupModalProps {
   isOpen: boolean;
@@ -26,9 +27,15 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
   const [selectedPrinter, setSelectedPrinter] = useState('');
   const [paperWidth, setPaperWidth] = useState<PaperWidth>('58');
   const [isTestPrinting, setIsTestPrinting] = useState(false);
-  const [testResult, setTestResult] = useState<'success' | 'failed' | null>(null);
-  const [isSaved, setIsSaved] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const { showToast } = useAlert();
+
+  // Auto-save preference
+  useEffect(() => {
+    if (selectedPrinter) {
+      savePrinterConfig({ printerName: selectedPrinter, paperWidth });
+    }
+  }, [selectedPrinter, paperWidth]);
 
   // Load saved config on open
   useEffect(() => {
@@ -54,7 +61,6 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
 
   const handleConnect = useCallback(async () => {
     setStatus('connecting');
-    setTestResult(null);
 
     const connected = await connectQZ();
     if (connected) {
@@ -72,8 +78,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
   const handleSave = () => {
     if (!selectedPrinter) return;
     savePrinterConfig({ printerName: selectedPrinter, paperWidth });
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2000);
+    showToast('success', 'Printer preferences saved.');
   };
 
   const handleClear = () => {
@@ -90,7 +95,6 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
     savePrinterConfig({ printerName: selectedPrinter, paperWidth });
 
     setIsTestPrinting(true);
-    setTestResult(null);
 
     const bytes = buildReceipt({
       companyName: 'AMRODING GENERAL MERCHANDISE',
@@ -112,7 +116,11 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
     }, paperWidth);
 
     const success = await printRaw(bytes);
-    setTestResult(success ? 'success' : 'failed');
+    if (success) {
+      showToast('success', 'Test print sent successfully!');
+    } else {
+      showToast('error', 'Test print failed — check printer connection.');
+    }
     setIsTestPrinting(false);
   };
 
@@ -186,13 +194,13 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
                 display: 'flex', alignItems: 'center', gap: '10px',
               }}>
                 {status === 'connected' ? (
-                  <><Wifi size={16} color="#10b981" /><span style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>Connected to QZ Tray</span></>
+                  <><Wifi size={16} color="#10b981" /><span style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>Connected</span></>
                 ) : status === 'failed' ? (
-                  <><WifiOff size={16} color="#ef4444" /><span style={{ fontSize: '13px', color: '#ef4444', fontWeight: 600 }}>QZ Tray not detected</span></>
+                  <><WifiOff size={16} color="#ef4444" /><span style={{ fontSize: '13px', color: '#ef4444', fontWeight: 600 }}>Not Installed</span></>
                 ) : status === 'connecting' ? (
                   <><RefreshCw size={16} color="var(--primary)" style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: 600 }}>Connecting...</span></>
                 ) : (
-                  <><WifiOff size={16} color="var(--text-tertiary)" /><span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Not connected</span></>
+                  <><WifiOff size={16} color="var(--text-tertiary)" /><span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Standby</span></>
                 )}
               </div>
               <button
@@ -290,22 +298,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
             </div>
           </div>
 
-          {/* Test Print Result */}
-          {testResult && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              padding: '12px 16px', borderRadius: 'var(--radius-md)',
-              background: testResult === 'success' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-              border: `1px solid ${testResult === 'success' ? '#10b981' : '#ef4444'}`,
-            }}>
-              {testResult === 'success'
-                ? <><CheckCircle size={16} color="#10b981" /><span style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>Test print sent successfully!</span></>
-                : <><XCircle size={16} color="#ef4444" /><span style={{ fontSize: '13px', color: '#ef4444', fontWeight: 600 }}>Test print failed — check printer connection.</span></>
-              }
-            </div>
-          )}
 
-          {/* Actions */}
           <div style={{ display: 'flex', gap: '10px', paddingTop: '4px' }}>
             <button
               onClick={() => setShowPreview(!showPreview)}
@@ -328,7 +321,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
               className="btn btn-primary"
               style={{ flex: 1, fontSize: '13px', padding: '8px' }}
             >
-              {isSaved ? '✓ Saved!' : 'Save'}
+              Save
             </button>
           </div>
 

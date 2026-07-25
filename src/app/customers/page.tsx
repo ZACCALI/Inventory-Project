@@ -170,6 +170,15 @@ export default function CustomersPage() {
     }
   };
 
+  useEffect(() => {
+    const handleAppSync = () => {
+      fetchCustomers();
+    };
+    window.addEventListener('appDataSynced', handleAppSync);
+    return () => window.removeEventListener('appDataSynced', handleAppSync);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
 
 
   const openAdd = () => {

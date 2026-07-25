@@ -245,7 +245,8 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
       if (responseText) {
         try { responseJson = JSON.parse(responseText); } catch { /* non-JSON response */ }
       }
-      const responseJsonData = responseJson as { id?: string; error?: string; message?: string } | null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const responseJsonData = responseJson as { id?: string; orderNumber?: string; createdAt?: string; error?: string; message?: string } | null;
 
       if (res.ok) {
         await db.syncQueue.update(task.id!, { syncStatus: 'synced' });
@@ -304,6 +305,24 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
                 await db.drivers.where('id').equals(tempId).modify({ id: realId }).catch(() => {});
               } else if (task.type === 'category') {
                 await db.categories.where('id').equals(tempId).modify({ id: realId }).catch(() => {});
+              } else if (task.type === 'order') {
+                if (typeof window !== 'undefined') {
+                   window.dispatchEvent(new CustomEvent('orderSynced', {
+                     detail: {
+                       tempId,
+                       realId,
+                       orderNumber: responseJsonData.orderNumber || responseJsonData.id,
+                       createdAt: responseJsonData.createdAt
+                     }
+                   }));
+                }
+                // Try to update orders table if it exists in DB (even if not strongly typed)
+                try {
+                  if (db.tables.some(t => t.name === 'orders')) {
+                     // @ts-ignore
+                     await db.table('orders').where('id').equals(tempId).modify({ id: realId, orderNumber: responseJsonData.orderNumber || responseJsonData.id, createdAt: responseJsonData.createdAt }).catch(() => {});
+                  }
+                } catch(e) {}
               }
             }
           } catch (e) {
@@ -364,6 +383,7 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
       window.dispatchEvent(new CustomEvent('amroding:synced', {
         detail: { synced, types: Array.from(syncedTypes) }
       }));
+      window.dispatchEvent(new CustomEvent('appDataSynced'));
     }
     if (failedDetails.length > 0) {
       window.dispatchEvent(new CustomEvent('amroding:syncfailed', {

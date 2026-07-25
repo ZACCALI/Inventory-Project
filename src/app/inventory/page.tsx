@@ -287,7 +287,16 @@ export default function InventoryPage() {
         setFormData(prev => ({ ...prev, barcode }));
       }, 100);
     }
-  }, [fetchDependencies]);
+
+    const handleAppSync = () => {
+      fetchProducts();
+    };
+    window.addEventListener('appDataSynced', handleAppSync);
+
+    return () => {
+      window.removeEventListener('appDataSynced', handleAppSync);
+    };
+  }, [fetchDependencies, fetchProducts]);
 
 
 

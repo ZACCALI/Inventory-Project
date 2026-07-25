@@ -88,7 +88,16 @@ export default function DashboardPage() {
       } catch { /* ignore */ }
     };
     computeDeltas();
-  }, [isOfflineMode]);
+
+    const handleAppSync = () => {
+      mutateDash();
+      mutateSales();
+      computeDeltas();
+    };
+    window.addEventListener('appDataSynced', handleAppSync);
+
+    return () => window.removeEventListener('appDataSynced', handleAppSync);
+  }, [isOfflineMode, mutateDash, mutateSales]);
 
   const data = dashData;
   const salesData = salesResult?.dailySales || [];

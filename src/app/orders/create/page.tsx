@@ -62,6 +62,27 @@ export default function CreateOrderPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleOrderSynced = (e: CustomEvent) => {
+      const { tempId, realId, orderNumber, createdAt } = e.detail;
+      setLastOrder((prev: any) => {
+        if (prev && (prev.id === tempId || prev.id === realId)) {
+          return {
+            ...prev,
+            id: realId,
+            orderNumber: orderNumber || prev.orderNumber,
+            createdAt: createdAt || prev.createdAt
+          };
+        }
+        return prev;
+      });
+    };
+    // @ts-ignore
+    window.addEventListener('orderSynced', handleOrderSynced);
+    // @ts-ignore
+    return () => window.removeEventListener('orderSynced', handleOrderSynced);
+  }, []);
+
 
   useEffect(() => {
     setIdempotencyKey(`${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);

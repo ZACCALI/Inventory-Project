@@ -38,8 +38,8 @@ export default function ReportsPage() {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { showAlert, showToast } = useAlert();
 
-  const { data: monthlyRes, isLoading: isMonthlyLoading, error: monthlyError } = useSWR('/api/reports?type=monthly', fetcher, { refreshInterval: 60000 });
-  const { data: bestRes, isLoading: isBestLoading, error: bestError } = useSWR('/api/reports?type=bestsellers', fetcher, { refreshInterval: 60000 });
+  const { data: monthlyRes, isLoading: isMonthlyLoading, error: monthlyError, mutate: mutateMonthly } = useSWR('/api/reports?type=monthly', fetcher, { refreshInterval: 60000 });
+  const { data: bestRes, isLoading: isBestLoading, error: bestError, mutate: mutateBest } = useSWR('/api/reports?type=bestsellers', fetcher, { refreshInterval: 60000 });
   const [isOffline, setIsOffline] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
@@ -102,7 +102,14 @@ export default function ReportsPage() {
     if (monthlyError || bestError) {
       setLoading(false);
     }
-  }, [monthlyRes, bestRes, isMonthlyLoading, isBestLoading, monthlyError, bestError, isOffline]);
+
+    const handleAppSync = () => {
+      mutateMonthly();
+      mutateBest();
+    };
+    window.addEventListener('appDataSynced', handleAppSync);
+    return () => window.removeEventListener('appDataSynced', handleAppSync);
+  }, [monthlyRes, bestRes, isMonthlyLoading, isBestLoading, monthlyError, bestError, isOffline, mutateMonthly, mutateBest]);
 
   const handleExportPDF = () => {
     const columns = [
