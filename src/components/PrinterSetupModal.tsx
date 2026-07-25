@@ -28,6 +28,8 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
   const [paperWidth, setPaperWidth] = useState<PaperWidth>('58');
   const [isTestPrinting, setIsTestPrinting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [isTrusting, setIsTrusting] = useState(false);
+  const [trustResult, setTrustResult] = useState<'idle' | 'success' | 'fail'>('idle');
   const { showToast } = useAlert();
   const modalContentRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -204,14 +206,45 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
                 → Download QZ Tray free at qz.io/download
               </a>
             </p>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, marginTop: '4px' }}>
-              <strong>Tip:</strong> To enable instant 1-click silent printing without prompts, configure your QZ Tray certificate in the backend or use localhost for development.
-            </p>
-            <div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '6px', padding: '10px 12px', marginTop: '8px', fontSize: '12px', color: '#1e40af', lineHeight: 1.5 }}>
-              <strong>🔐 One-time Trusted Setup:</strong><br/>
-              If QZ Tray shows <em>"Untrusted website"</em>, run this in terminal:<br/>
-              <code style={{ background: '#dbeafe', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', margin: '4px 0', fontFamily: 'monospace', fontWeight: 'bold' }}>npm run setup:qz</code><br/>
-              Then <strong>restart QZ Tray</strong> (exit & reopen from system tray). The Allow button will unlock permanently!
+            {/* Auto-Trust Certificate Button */}
+            <div style={{ marginTop: '8px' }}>
+              {trustResult === 'success' ? (
+                <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '6px', padding: '10px 12px', fontSize: '12px', color: '#166534', lineHeight: 1.6 }}>
+                  <strong>✅ Certificate Installed!</strong><br/>
+                  Now <strong>restart QZ Tray</strong>:<br/>
+                  1. Right-click QZ Tray icon in the system tray (bottom-right)<br/>
+                  2. Click <strong>Exit</strong><br/>
+                  3. Reopen QZ Tray from Start Menu<br/>
+                  4. Press <strong>Ctrl+R</strong> to refresh this page<br/>
+                  The Allow button will be fully unlocked permanently! 🎉
+                </div>
+              ) : trustResult === 'fail' ? (
+                <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '6px', padding: '10px 12px', fontSize: '12px', color: '#991b1b', lineHeight: 1.5 }}>
+                  <strong>⚠️ Auto-install unavailable</strong> (Vercel deployment)<br/>
+                  <a href="/api/qz/install-cert" download="distritrack.pem" style={{ color: '#dc2626', fontWeight: 700 }}>⬇ Download Certificate</a> → save to <code style={{ background: '#fee2e2', padding: '1px 4px', borderRadius: '3px', fontFamily: 'monospace' }}>C:\Users\YourName\.qz\trusted-certs\</code> → restart QZ Tray
+                </div>
+              ) : (
+                <button
+                  id="auto-trust-cert-btn"
+                  onClick={async () => {
+                    setIsTrusting(true);
+                    setTrustResult('idle');
+                    try {
+                      const res = await fetch('/api/qz/install-cert', { method: 'POST' });
+                      const data = await res.json();
+                      setTrustResult(data.success ? 'success' : 'fail');
+                    } catch {
+                      setTrustResult('fail');
+                    } finally {
+                      setIsTrusting(false);
+                    }
+                  }}
+                  disabled={isTrusting}
+                  style={{ width: '100%', padding: '9px 12px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: isTrusting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                >
+                  {isTrusting ? '⏳ Installing Certificate...' : '🔐 Auto-Trust Certificate (One-Time Setup)'}
+                </button>
+              )}
             </div>
           </div>
 

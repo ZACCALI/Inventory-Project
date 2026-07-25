@@ -263,6 +263,9 @@ model SystemSettings {
   connectionType     String   @default("qz")
   printerIp          String?
   printerPort        String?
+  // QZ Tray keypair — persisted in DB so Vercel restarts always serve the same cert
+  qzCertPem          String?  @db.Text
+  qzPrivateKeyPem    String?  @db.Text
 }
 
 model AuditLog {
