@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Printer, Wifi, WifiOff, CheckCircle, XCircle, RefreshCw, X, Settings } from 'lucide-react';
 import {
   connectQZ,
@@ -29,6 +29,19 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
   const [isTestPrinting, setIsTestPrinting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const { showToast } = useAlert();
+  const modalContentRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showPreview && modalContentRef.current) {
+      setTimeout(() => {
+        modalContentRef.current?.scrollTo({
+          top: modalContentRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      }, 50);
+    }
+  }, [showPreview]);
 
   // Auto-save preference
   useEffect(() => {
@@ -138,6 +151,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
+        ref={modalContentRef}
         style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
@@ -326,7 +340,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
           </div>
 
           {showPreview && (
-            <div style={{
+            <div ref={previewRef} style={{
               background: '#fff', color: '#000', padding: '16px', borderRadius: '4px',
               fontFamily: '"Consolas", "Courier New", monospace', fontSize: '12px',
               lineHeight: 1.2, width: paperWidth === '58' ? '58mm' : '80mm',
