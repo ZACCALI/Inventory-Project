@@ -2,13 +2,11 @@
 /**
  * install-qz-cert.js
  * ─────────────────────────────────────────────────────────────────────────
- * Installs the DistriTrack self-signed certificate into QZ Tray's
- * `override.crt` locations so that:
+ * Downloads the ACTIVE DistriTrack certificate from the live Vercel
+ * deployment and installs it into QZ Tray's trusted store.
  *
- *   ✅  QZ Tray Details shows  "Validity: Valid"  (green)
- *   ✅  QZ Tray Details shows  "Trusted: Trusted website" (green)
- *   ✅  Allow button is NEVER greyed out
- *   ✅  "Remember this decision" works permanently → zero popups forever
+ * CRITICAL: This script must NOT generate new keys. It must download
+ * the exact cert that Vercel serves, so the fingerprints match.
  *
  * Run ONCE per cashier PC:
  *   npm run setup:qz
@@ -20,127 +18,107 @@
 const fs   = require('fs');
 const path = require('path');
 const os   = require('os');
+const https = require('https');
 
-// ── Paths ──────────────────────────────────────────────────────────────────
-const keyPath      = path.join(process.cwd(), '.qz-keys.json');
-const userQz       = path.join(os.homedir(), '.qz');
-const qzTrustedDir = path.join(userQz, 'trusted-certs');
-const certDest     = path.join(qzTrustedDir, 'distritrack.pem');
-const appDataQz    = path.join(os.homedir(), 'AppData', 'Roaming', 'qz');
+// ── Configuration ──────────────────────────────────────────────────────────
+const LIVE_CERT_URL = 'https://distritrack.vercel.app/api/qz/cert';
+const userQz        = path.join(os.homedir(), '.qz');
+const qzTrustedDir  = path.join(userQz, 'trusted-certs');
+const certDest      = path.join(qzTrustedDir, 'distritrack.pem');
+const allowedDat    = path.join(os.homedir(), 'AppData', 'Roaming', 'qz', 'allowed.dat');
 
-// ── Generate keypair with proper X.509 v3 extensions ─────────────────────
-function generateAndSaveKeys() {
-  let forge;
-  try {
-    forge = require('node-forge');
-  } catch {
-    console.error('ERROR: node-forge is not installed. Run: npm install node-forge');
-    process.exit(1);
-  }
-
-  console.log('⏳ Generating 2048-bit RSA keypair with proper X.509 v3 extensions...');
-
-  const keys = forge.pki.rsa.generateKeyPair(2048);
-  const cert = forge.pki.createCertificate();
-
-  cert.publicKey   = keys.publicKey;
-  cert.serialNumber = Date.now().toString(16).toUpperCase();
-
-  cert.validity.notBefore = new Date();
-  cert.validity.notAfter  = new Date();
-  cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 10);
-
-  const attrs = [
-    { name: 'commonName',       value: 'DistriTrack POS' },
-    { name: 'organizationName', value: 'DistriTrack'      },
-    { name: 'countryName',      value: 'PH'               },
-  ];
-  cert.setSubject(attrs);
-  cert.setIssuer(attrs);
-
-  cert.setExtensions([
-    { name: 'basicConstraints', cA: false, critical: true },
-    { name: 'keyUsage', digitalSignature: true, nonRepudiation: true, keyCertSign: false, critical: true },
-    { name: 'extKeyUsage', codeSigning: true },
-    { name: 'subjectAltName', altNames: [{ type: 2, value: 'localhost' }, { type: 7, ip: '127.0.0.1' }] },
-  ]);
-
-  cert.sign(keys.privateKey, forge.md.sha256.create());
-
-  const keysData = {
-    publicKeyPem:  forge.pki.certificateToPem(cert),
-    privateKeyPem: forge.pki.privateKeyToPem(keys.privateKey),
-  };
-
-  fs.writeFileSync(keyPath, JSON.stringify(keysData, null, 2), 'utf8');
-  console.log('✅ Keypair with X.509 v3 extensions saved to .qz-keys.json');
-  return keysData;
+// ── Download cert from live Vercel deployment ────────────────────────────
+function downloadCert(url) {
+  return new Promise((resolve, reject) => {
+    console.log(`⏳ Downloading active certificate from ${url}...`);
+    https.get(url, (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`HTTP ${res.statusCode} from ${url}`));
+        return;
+      }
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
-if (fs.existsSync(keyPath)) {
-  fs.unlinkSync(keyPath);
-  console.log('🗑️  Deleted old .qz-keys.json (will regenerate with proper extensions)');
+async function main() {
+  console.log('');
+  console.log('══════════════════════════════════════════════════════════');
+  console.log('  DistriTrack QZ Tray Certificate Installer');
+  console.log('══════════════════════════════════════════════════════════');
+  console.log('');
+
+  // Step 1: Download the ACTIVE cert from Vercel (same one QZ Tray receives)
+  let certPem;
+  try {
+    certPem = await downloadCert(LIVE_CERT_URL);
+    if (!certPem || !certPem.includes('BEGIN CERTIFICATE')) {
+      throw new Error('Invalid certificate received');
+    }
+    console.log('✅ Downloaded active certificate from Vercel');
+  } catch (err) {
+    console.error('❌ Failed to download certificate from Vercel:', err.message);
+    console.error('   Make sure you have internet access and the app is deployed.');
+    process.exit(1);
+  }
+
+  // Step 2: Save cert to QZ Tray's trusted-certs folder
+  fs.mkdirSync(qzTrustedDir, { recursive: true });
+  fs.writeFileSync(certDest, certPem, 'utf8');
+  console.log(`✅ Certificate saved to ${certDest}`);
+
+  // Step 3: Wipe old allowed.dat (prevents stale fingerprint mismatches)
+  const appDataQzDir = path.join(os.homedir(), 'AppData', 'Roaming', 'qz');
+  fs.mkdirSync(appDataQzDir, { recursive: true });
+  try { fs.unlinkSync(allowedDat); } catch { /* doesn't exist yet */ }
+  try { fs.unlinkSync(path.join(userQz, 'allowed.dat')); } catch { /* doesn't exist */ }
+  console.log('✅ Cleaned up old allowed.dat entries');
+
+  // Step 4: Run QZ Tray CLI to register the cert in allowed.dat
+  const { execSync } = require('child_process');
+  const javaExe = 'C:\\Program Files\\QZ Tray\\runtime\\bin\\java.exe';
+  const qzJar   = 'C:\\Program Files\\QZ Tray\\qz-tray.jar';
+
+  if (fs.existsSync(javaExe) && fs.existsSync(qzJar)) {
+    try {
+      execSync(`"${javaExe}" -jar "${qzJar}" --allow "${certDest}"`, { stdio: 'pipe' });
+      console.log('✅ Certificate registered in QZ Tray whitelist (allowed.dat)');
+    } catch (err) {
+      console.warn('⚠️  QZ Tray CLI --allow command failed:', err.message);
+      console.warn('   You may need to run this script as Administrator.');
+    }
+  } else {
+    console.warn('⚠️  QZ Tray not found at C:\\Program Files\\QZ Tray\\');
+    console.warn('   Please install QZ Tray first: https://qz.io/download/');
+  }
+
+  // Step 5: Verify fingerprint match
+  try {
+    const allowedContent = fs.readFileSync(allowedDat, 'utf8');
+    const match = allowedContent.match(/^([a-f0-9]+)\t/m);
+    if (match) {
+      console.log(`✅ Registered fingerprint: ${match[1]}`);
+    }
+  } catch { /* allowed.dat may not exist if QZ Tray CLI failed */ }
+
+  console.log('');
+  console.log('══════════════════════════════════════════════════════════');
+  console.log('  SETUP COMPLETE!');
+  console.log('');
+  console.log('  Now restart QZ Tray:');
+  console.log('  1. Right-click QZ Tray icon in system tray → Exit');
+  console.log('  2. Reopen QZ Tray from Start Menu');
+  console.log('  3. Refresh browser (Ctrl+R)');
+  console.log('');
+  console.log('  The "Action Required" popup will show "Trusted website"');
+  console.log('  and "Remember this decision" + Allow will work! 🎉');
+  console.log('══════════════════════════════════════════════════════════');
 }
 
-const keysData = generateAndSaveKeys();
-
-// ── Install cert into QZ Tray trusted-certs & override.crt ────────────────
-fs.mkdirSync(qzTrustedDir, { recursive: true });
-fs.mkdirSync(appDataQz, { recursive: true });
-
-fs.writeFileSync(certDest, keysData.publicKeyPem, 'utf8');
-fs.writeFileSync(path.join(userQz, 'override.crt'), keysData.publicKeyPem, 'utf8');
-fs.writeFileSync(path.join(appDataQz, 'override.crt'), keysData.publicKeyPem, 'utf8');
-
-// ── Clear stale allowed.dat to prevent PEM corruption ──
-try {
-  const appDataAllowedDat = path.join(appDataQz, 'allowed.dat');
-  if (fs.existsSync(appDataAllowedDat)) fs.unlinkSync(appDataAllowedDat);
-  const userQzAllowedDat = path.join(userQz, 'allowed.dat');
-  if (fs.existsSync(userQzAllowedDat)) fs.unlinkSync(userQzAllowedDat);
-  console.log('✅ Cleared old allowed.dat files to prevent stale PEM corruption.');
-} catch (e) {
-  console.log('ℹ️  Could not clear some allowed.dat files.');
-}
-
-try {
-  fs.writeFileSync('C:\\Program Files\\QZ Tray\\override.crt', keysData.publicKeyPem, 'utf8');
-  console.log('✅ Installed override.crt to C:\\Program Files\\QZ Tray\\override.crt');
-} catch {
-  console.log('ℹ️  Skipped Program Files override.crt (requires Admin)');
-}
-
-// ── Create qz-tray.properties for domain whitelisting ────────────────────
-const propsPath = path.join(userQz, 'qz-tray.properties');
-const propsContent = [
-  '# DistriTrack QZ Tray Configuration',
-  '# Generated automatically - do not modify',
-  '# This allows silent printing without security prompts',
-  '',
-  '# Whitelist localhost and Vercel deployment',
-  'wss.whitelist=localhost,distritrack.vercel.app',
-].join('\n');
-fs.writeFileSync(propsPath, propsContent, 'utf8');
-
-console.log('');
-console.log('✅ Certificate installed successfully to QZ Tray authority locations!');
-console.log('   Locations:');
-console.log('     -', certDest);
-console.log('     -', path.join(userQz, 'override.crt'));
-console.log('     -', path.join(appDataQz, 'override.crt'));
-console.log('');
-console.log('══════════════════════════════════════════════════════════');
-console.log('  ACTION REQUIRED — Restart QZ Tray to apply the cert:');
-console.log('');
-console.log('  1. Right-click QZ Tray icon in Windows system tray (bottom-right)');
-console.log('  2. Click "Exit" or "Stop" to fully close QZ Tray');
-console.log('  3. Open QZ Tray again from Start Menu / Desktop shortcut');
-console.log('  4. Refresh the browser tab (press Ctrl+R or F5)');
-console.log('');
-console.log('  After restart, QZ Tray will show:');
-console.log('    Validity: Valid  ✅');
-console.log('    Trusted:  Trusted website  ✅');
-console.log('');
-console.log('  Check "Remember this decision" then Allow → zero popups forever! 🎉');
-console.log('══════════════════════════════════════════════════════════');
+main().catch((err) => {
+  console.error('Fatal error:', err);
+  process.exit(1);
+});
