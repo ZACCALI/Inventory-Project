@@ -6,7 +6,8 @@
     "dev": "next dev --webpack",
     "build": "prisma generate && next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup:qz": "node scripts/install-qz-cert.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

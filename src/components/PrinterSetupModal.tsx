@@ -207,12 +207,11 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, marginTop: '4px' }}>
               <strong>Tip:</strong> To enable instant 1-click silent printing without prompts, configure your QZ Tray certificate in the backend or use localhost for development.
             </p>
-            <div style={{ background: '#fffbeb', border: '1px solid #fbbf24', borderRadius: '6px', padding: '10px 12px', marginTop: '8px', fontSize: '12px', color: '#92400e' }}>
-              <strong>🔐 One-time setup:</strong> When the QZ Tray prompt appears:<br/>
-              1. Click <strong>"View request details"</strong><br/>
-              2. Check <strong>"Remember this decision"</strong><br/>
-              3. Click <strong>Allow</strong><br/>
-              This only needs to be done ONCE — future connections will be silent and automatic.
+            <div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '6px', padding: '10px 12px', marginTop: '8px', fontSize: '12px', color: '#1e40af', lineHeight: 1.5 }}>
+              <strong>🔐 One-time Trusted Setup:</strong><br/>
+              If QZ Tray shows <em>"Untrusted website"</em>, run this in terminal:<br/>
+              <code style={{ background: '#dbeafe', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', margin: '4px 0', fontFamily: 'monospace', fontWeight: 'bold' }}>npm run setup:qz</code><br/>
+              Then <strong>restart QZ Tray</strong> (exit & reopen from system tray). The Allow button will unlock permanently!
             </div>
           </div>
 
