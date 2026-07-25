@@ -4,6 +4,7 @@ import {  requirePermission} from '@/lib/apiAuth';
 import { createOrderSchema } from '@/lib/validations';
 import { rateLimit } from '@/lib/rateLimit';
 import { checkAndSetIdempotency } from '@/lib/idempotency';
+import { generateOrderNumber } from '@/lib/orderUtils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -130,25 +131,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'customerId or customerName, and items are required' }, { status: 400 });
     }
 
-    // Generate order number
-    const now = new Date();
-    const year = now.getFullYear().toString().slice(-2);
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    const seconds = now.getSeconds().toString().padStart(2, '0');
-    
-    let prefix = 'HOME';
-    if (orderType === 'pos') {
-      prefix = 'STORE';
-    } else if (isDelivery) {
-      prefix = 'DELIVERY';
-    } else {
-      prefix = 'WALKIN';
+    // Generate or use provided order number
+    let orderNumber = body.orderNumber;
+    if (!orderNumber || String(orderNumber).startsWith('OFF-')) {
+      orderNumber = generateOrderNumber(orderType, isDelivery);
     }
-    
-    const orderNumber = `${prefix}-${year}${month}${day}-${hours}${minutes}${seconds}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
 
     // Calculate totals
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

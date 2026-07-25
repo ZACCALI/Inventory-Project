@@ -11,6 +11,7 @@ import { useBarcodeScanner } from '@/lib/useBarcodeScanner';
 import { addSyncTask } from '@/lib/offlineSync';
 import { printThermal } from '@/lib/printService';
 import { loadPrinterConfig } from '@/lib/qzService';
+import { generateOrderNumber } from '@/lib/orderUtils';
 
 import Image from "next/image";
 interface Product {
@@ -645,7 +646,7 @@ export default function CreateOrderPage() {
       
  
       // eslint-disable-next-line react-hooks/purity
-      const offlineOrderNumber = `OFF-${Math.floor(Math.random() * 100000)}`;
+      const offlineOrderNumber = generateOrderNumber('pos', fulfillmentMode === 'delivery');
       // eslint-disable-next-line react-hooks/purity
       const offlineId = `OFFLINE-${Date.now()}`;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -772,7 +773,7 @@ export default function CreateOrderPage() {
           ...payload,
           id: `OFFLINE-${localId}`,
           // eslint-disable-next-line react-hooks/purity
-          orderNumber: `OFF-${Math.floor(Math.random() * 100000)}`,
+          orderNumber: offlineOrderNumber,
           createdAt: new Date().toISOString(),
         };
 
