@@ -240,15 +240,28 @@ export default function SettingsPage() {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       if (res.ok) {
         const data = await res.json();
-        setProfileData({ ...profileData, avatar: data.url });
+        setProfileData(prev => ({ ...prev, avatar: data.url }));
         showToast('success', 'Photo uploaded. Click Update Profile to save.');
       } else {
-        showAlert('error', 'Upload Failed', 'Could not upload avatar.');
+        // Automatic base64 fallback so user is never blocked
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          setProfileData(prev => ({ ...prev, avatar: base64 }));
+          showToast('success', 'Photo selected. Click Update Profile to save.');
+        };
+        reader.readAsDataURL(file);
       }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch(err) {
-      const offline = typeof navigator !== 'undefined' && !navigator.onLine;
-      showAlert('error', 'Upload Error', offline ? 'You are offline. Cannot upload photos without an internet connection.' : 'An unexpected error occurred.');
+      // Automatic base64 fallback so user is never blocked
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setProfileData(prev => ({ ...prev, avatar: base64 }));
+        showToast('success', 'Photo selected. Click Update Profile to save.');
+      };
+      reader.readAsDataURL(file);
     } finally {
       setIsUploadingAvatar(false);
     }
