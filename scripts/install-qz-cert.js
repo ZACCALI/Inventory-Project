@@ -111,6 +111,18 @@ const keysData = generateAndSaveKeys();
 fs.mkdirSync(qzTrustedDir, { recursive: true });
 fs.writeFileSync(certDest, keysData.publicKeyPem, 'utf8');
 
+// ── Create qz-tray.properties for domain whitelisting ────────────────────
+const propsPath = path.join(os.homedir(), '.qz', 'qz-tray.properties');
+const propsContent = [
+  '# DistriTrack QZ Tray Configuration',
+  '# Generated automatically - do not modify',
+  '# This allows silent printing without security prompts',
+  '',
+  '# Whitelist localhost and Vercel deployment',
+  'wss.whitelist=localhost,distritrack.vercel.app',
+].join('\n');
+fs.writeFileSync(propsPath, propsContent, 'utf8');
+
 console.log('');
 console.log('✅ Certificate installed successfully!');
 console.log('   Location:', certDest);
