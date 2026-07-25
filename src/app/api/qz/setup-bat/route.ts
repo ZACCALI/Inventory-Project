@@ -2,12 +2,10 @@
  * GET /api/qz/setup-bat
  * ─────────────────────────────────────────────────────────────────────────
  * Generates a downloadable Windows batch script (.bat) that:
- * 1. Installs the DistriTrack certificate into QZ Tray's trusted certs
- * 2. Runs QZ Tray's official CLI (`qz-tray.jar --allow`) to add DistriTrack
- *    directly to QZ Tray's whitelist (`allowed.dat`)
- * 3. Restarts QZ Tray automatically
- *
- * Result: QZ Tray permanently whitelists DistriTrack with ZERO security prompts!
+ * 1. Cleans up any old/corrupt `allowed.dat` files
+ * 2. Writes the active DistriTrack certificate
+ * 3. Runs QZ Tray's official CLI (`qz-tray.jar --allow`) to register the active cert
+ * 4. Restarts QZ Tray automatically
  * ─────────────────────────────────────────────────────────────────────────
  */
 
@@ -31,12 +29,20 @@ echo.
 set "USER_QZ=%USERPROFILE%\\.qz"
 set "CERT_DIR=%USER_QZ%\\trusted-certs"
 set "CERT_FILE=%CERT_DIR%\\distritrack.pem"
+set "ALLOWED_DAT=%APPDATA%\\qz\\allowed.dat"
+set "ALLOWED_DAT2=%USER_QZ%\\allowed.dat"
 
 if not exist "%USER_QZ%" mkdir "%USER_QZ%"
 if not exist "%CERT_DIR%" mkdir "%CERT_DIR%"
+if not exist "%APPDATA%\\qz" mkdir "%APPDATA%\\qz"
 
-:: ── Write Certificate File ──
-echo Writing certificate to %CERT_FILE%...
+:: ── Delete old stale allowed.dat to prevent PEM accumulation ──
+echo Cleaning up old QZ Tray whitelist entries...
+if exist "%ALLOWED_DAT%" del /F /Q "%ALLOWED_DAT%" >nul 2>&1
+if exist "%ALLOWED_DAT2%" del /F /Q "%ALLOWED_DAT2%" >nul 2>&1
+
+:: ── Write Active Certificate File ──
+echo Writing active certificate to %CERT_FILE%...
 (
 ${pemLines.map(line => `echo ${line}`).join('\n')}
 ) > "%CERT_FILE%"
@@ -44,13 +50,8 @@ ${pemLines.map(line => `echo ${line}`).join('\n')}
 echo [OK] Certificate written.
 echo.
 
-:: ── Clear stale allowed.dat to prevent PEM corruption ──
-echo Clearing old allowed.dat...
-if exist "%APPDATA%\qz\allowed.dat" del /F /Q "%APPDATA%\qz\allowed.dat"
-if exist "%USER_QZ%\allowed.dat" del /F /Q "%USER_QZ%\allowed.dat"
-
-:: ── Whitelist Certificate using QZ Tray CLI ──
-echo Adding DistriTrack certificate to QZ Tray whitelist (allowed.dat)...
+:: ── Whitelist Active Certificate using QZ Tray CLI ──
+echo Registering active certificate in QZ Tray whitelist (allowed.dat)...
 
 set "JAVA_EXE="
 set "QZ_JAR="
@@ -61,12 +62,11 @@ if exist "C:\\Program Files\\QZ Tray\\qz-tray.jar" set "QZ_JAR=C:\\Program Files
 if defined JAVA_EXE (
     if defined QZ_JAR (
         "%JAVA_EXE%" -jar "%QZ_JAR%" --allow "%CERT_FILE%" >nul 2>&1
-        echo [OK] Certificate whitelisted successfully!
+        echo [OK] Active certificate whitelisted successfully!
     )
 )
 
 :: ── Copy to override locations as fallback ──
-if not exist "%APPDATA%\\qz" mkdir "%APPDATA%\\qz"
 copy /Y "%CERT_FILE%" "%USER_QZ%\\override.crt" >nul 2>&1
 copy /Y "%CERT_FILE%" "%APPDATA%\\qz\\override.crt" >nul 2>&1
 
