@@ -18,54 +18,68 @@ export function getQzKeys() {
         return keysCache;
       }
     } catch (err) {
-      console.warn('Failed to parse .qz-keys.json, generating new keys...', err);
-      try {
-        fs.unlinkSync(keyPath);
-      } catch (e) {
-        // ignore
-      }
+      console.warn('Failed to parse .qz-keys.json, regenerating...', err);
+      try { fs.unlinkSync(keyPath); } catch { /* ignore */ }
     }
   }
 
-  // Generate 2048-bit RSA key pair for QZ Tray security handshake using node-forge
+  // ── Generate 2048-bit RSA keypair ──────────────────────────────────────────
   const keys = forge.pki.rsa.generateKeyPair(2048);
   const cert = forge.pki.createCertificate();
-  cert.publicKey = keys.publicKey;
-  cert.serialNumber = '01';
+  cert.publicKey   = keys.publicKey;
+  // Use a unique serial so QZ Tray doesn't cache old fingerprints
+  cert.serialNumber = Date.now().toString(16).toUpperCase();
+
   cert.validity.notBefore = new Date();
-  cert.validity.notAfter = new Date();
+  cert.validity.notAfter  = new Date();
   cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 10);
-  
-  const attrs = [{
-    name: 'commonName',
-    value: 'localhost'
-  }, {
-    name: 'countryName',
-    value: 'US'
-  }, {
-    shortName: 'ST',
-    value: 'State'
-  }, {
-    name: 'localityName',
-    value: 'City'
-  }, {
-    name: 'organizationName',
-    value: 'Organization'
-  }, {
-    shortName: 'OU',
-    value: 'Unit'
-  }];
+
+  // ── Subject / Issuer ──────────────────────────────────────────────────────
+  const attrs = [
+    { name: 'commonName',       value: 'DistriTrack POS' },
+    { name: 'organizationName', value: 'DistriTrack'      },
+    { name: 'countryName',      value: 'PH'               },
+  ];
   cert.setSubject(attrs);
-  cert.setIssuer(attrs);
+  cert.setIssuer(attrs); // self-signed
+
+  // ── Required X.509 v3 extensions for QZ Tray ─────────────────────────────
+  // QZ Tray Java validation REQUIRES these extensions or it shows
+  // "Invalid Certificate" and disables the Allow button.
+  cert.setExtensions([
+    {
+      name: 'basicConstraints',
+      cA: false,
+      critical: true,
+    },
+    {
+      name: 'keyUsage',
+      digitalSignature: true,
+      nonRepudiation:   true,
+      keyCertSign:      false,
+      critical: true,
+    },
+    {
+      name: 'extKeyUsage',
+      codeSigning:      true,
+      emailProtection:  false,
+    },
+    {
+      name: 'subjectAltName',
+      altNames: [
+        { type: 2, value: 'localhost' },     // DNS
+        { type: 7, ip:   '127.0.0.1' },     // IP
+      ],
+    },
+  ]);
+
+  // Sign the certificate — SHA-256 for the X.509 cert itself (standard)
   cert.sign(keys.privateKey, forge.md.sha256.create());
 
-  const certPem = forge.pki.certificateToPem(cert);
+  const certPem       = forge.pki.certificateToPem(cert);
   const privateKeyPem = forge.pki.privateKeyToPem(keys.privateKey);
 
-  keysCache = {
-    publicKeyPem: certPem,
-    privateKeyPem: privateKeyPem,
-  };
+  keysCache = { publicKeyPem: certPem, privateKeyPem };
 
   // Persist to disk
   try {
@@ -77,6 +91,10 @@ export function getQzKeys() {
   return keysCache;
 }
 
+/**
+ * Sign a QZ Tray request string with SHA-512 RSA.
+ * Must match qzService.ts → qz.security.setSignatureAlgorithm('SHA512')
+ */
 export function signQzRequest(toSign: string): string {
   const { privateKeyPem } = getQzKeys();
   const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
