@@ -689,57 +689,56 @@ export default function CreateOrderPage() {
       let networkFailed = false;
 
       if (!isOffline) {
-        try {
-          const res = await fetch('/api/orders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Idempotency-Key': idempotencyKey },
-            body: JSON.stringify(payload)
-          });
+        const orderResult = {
+          id: `OPT-${Date.now()}`,
+          orderNumber: offlineOrderNumber,
+          createdAt: new Date().toISOString()
+        };
 
-          if (res.ok) {
-            const orderResult = await res.json();
-            
-            // Save order details for receipt printing
-            setLastOrder({
-              ...orderResult,
-              totalAmount: finalTotal,
-              subtotal: totalAmount,
-              tendered: paidAmount,
-              change: Math.max(0, paidAmount - finalTotal),
-              discount: discountAmount,
-              discountPercent: discountType === 'percent' ? parsedDiscount : 0,
-              items: validItems.map(i => ({ product: i.product, quantity: Number(i.qty), price: i.cartPrice, uomName: i.uomName, multiplier: i.multiplier })),
-              createdAt: orderResult.createdAt || new Date().toISOString(),
-              createdBy: { name: session?.user?.name || 'ADMIN' },
-              isDelivery: fulfillmentMode === 'delivery',
-              delivery: fulfillmentMode === 'delivery' ? {
-                driverName: deliveryDriverName,
-                scheduledDate: deliveryDate
-              } : undefined
-            });
+        // Fire request in background
+        fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Idempotency-Key': idempotencyKey },
+          body: JSON.stringify(payload)
+        }).catch(err => {
+          console.warn('Network error, order background save failed', err);
+        });
 
-            // Clear cart and open success modal
-            setCart([]);
-            setDiscountValue('');
-            setAmountPaid('');
-            setPaymentStatus('unpaid');
-            setIsSubmitting(false);
-            resetIdempotencyKey();
-            setIsSuccessOpen(true);
-            return;
-          } else {
-            const errorData = await res.json();
-            throw new Error(errorData.error || 'Failed to create order');
-          }
-        } catch (fetchErr: unknown) {
-          const err = fetchErr as Error;
-          if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-            console.warn('Network error detected, falling back to offline mode', err);
-            networkFailed = true;
-          } else {
-            throw fetchErr;
-          }
-        }
+        // Save order details for receipt printing immediately
+        setLastOrder({
+          ...orderResult,
+          customer: customers.find(c => c.id === customerIdToUse) || { name: fallbackCustomerName || 'Walk-in' },
+          totalAmount: finalTotal,
+          subtotal: totalAmount,
+          tendered: paidAmount,
+          change: Math.max(0, paidAmount - finalTotal),
+          discount: discountAmount,
+          discountPercent: discountType === 'percent' ? parsedDiscount : 0,
+          items: validItems.map(i => ({ product: i.product, quantity: Number(i.qty), price: i.cartPrice, uomName: i.uomName, multiplier: i.multiplier })),
+          createdAt: orderResult.createdAt,
+          createdBy: { name: session?.user?.name || 'ADMIN' },
+          isDelivery: fulfillmentMode === 'delivery',
+          delivery: fulfillmentMode === 'delivery' ? {
+            driverName: deliveryDriverName,
+            scheduledDate: deliveryDate
+          } : undefined
+        });
+
+        // Optimistically update stock locally
+        Promise.all(validItems.map(async i => {
+          const qtyToDeduct = (typeof i.qty === 'number' ? i.qty : 0) * (i.multiplier || 1);
+          await db.products.where('id').equals(i.product.id).modify(p => { p.stock = Math.max(0, (p.stock || 0) - qtyToDeduct); });
+        })).catch(() => {});
+
+        // Clear cart and open success modal
+        setCart([]);
+        setDiscountValue('');
+        setAmountPaid('');
+        setPaymentStatus('unpaid');
+        setIsSubmitting(false);
+        resetIdempotencyKey();
+        setIsSuccessOpen(true);
+        return;
       }
 
       if (isOffline || networkFailed) {
@@ -761,11 +760,11 @@ export default function CreateOrderPage() {
           return;
         }
 
-        // Decrement stock
-        for (const i of validItems) {
+        // Decrement local stock in parallel for instant checkout response
+        await Promise.all(validItems.map(async i => {
           const qtyToDeduct = (typeof i.qty === 'number' ? i.qty : 0) * (i.multiplier || 1);
           await db.products.where('id').equals(i.product.id).modify(p => { p.stock = Math.max(0, (p.stock || 0) - qtyToDeduct); });
-        }
+        }));
 
         showToast('Action queued offline — will sync when connected', 'warning');
         

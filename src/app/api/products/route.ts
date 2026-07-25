@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
             }))
           } : undefined
         },
-        include: { category: true, uoms: true },
+        select: { id: true, name: true, sku: true, barcode: true, stock: true },
       });
 
       if (initialStock > 0) {

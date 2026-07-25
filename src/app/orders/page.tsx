@@ -772,53 +772,53 @@ export default function OrdersPage() {
       }
 
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      let networkFailed = false;
 
       if (!isOffline) {
-        try {
-          const res = await fetch(`/api/orders/${editingOrder.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
+        // Optimistic UI Update
+        const updatedOrder = {
+          ...editingOrder,
+          ...payload,
+          items: editingOrder.items
+        };
+        if (payload.items) {
+           updatedOrder.items = payload.items.map((i: any) => ({
+             ...i,
+             subtotal: i.qty * i.price
+           }));
+        }
+        setOrders(prev => prev.map(o => o.id === editingOrder.id ? updatedOrder : o));
+        setIsEditOpen(false);
+        setIsSaving(false);
+
+        // Background fetch
+        fetch(`/api/orders/${editingOrder.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }).then(res => {
           if (res.ok) {
-            // Sync payment records: fetch existing payments and create a record for the difference
             if (['paid', 'partial'].includes(editForm.paymentStatus) && parsedAmount > 0) {
-              try {
-                const payRes = await fetch(`/api/orders/${editingOrder.id}/payments`);
-                const existingPayments = payRes.ok ? await payRes.json() : [];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+              fetch(`/api/orders/${editingOrder.id}/payments`).then(payRes => payRes.json()).then(existingPayments => {
                 const existingTotal = Array.isArray(existingPayments) ? existingPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0) : 0;
                 const difference = parsedAmount - existingTotal;
-
                 if (difference > 0.01) {
-                  await fetch(`/api/orders/${editingOrder.id}/payments`, {
+                  fetch(`/api/orders/${editingOrder.id}/payments`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amount: difference, method: paymentMethod.toLowerCase(), notes: 'Payment recorded via order edit' }),
                   });
                 }
-              } catch {
-                // Payment sync failed silently — the order itself is already saved
-              }
+              }).catch(() => {});
             }
-
-            await fetchOrders();
-            setIsEditOpen(false);
-            setEditingOrder(null);
-            return;
-          } else {
-            const err = await res.json();
-            showAlert('error', 'Action Failed', err.error || 'Failed to update order');
-            return;
           }
-        } catch (fetchErr) {
-          console.warn('Network error detected, falling back to offline mode', fetchErr);
-          networkFailed = true;
-        }
+        }).catch(err => {
+          console.warn('Network error, background update failed', err);
+        });
+
+        return;
       }
 
-      if (isOffline || networkFailed) {
+      if (isOffline) {
         await addSyncTask('order', 'UPDATE', { ...payload, id: editingOrder.id });
 
         if (['paid', 'partial'].includes(editForm.paymentStatus) && parsedAmount > 0) {

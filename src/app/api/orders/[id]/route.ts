@@ -225,7 +225,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       const updatedOrder = await tx.order.update({
         where: { id },
         data: updateData,
-        include: { customer: true, items: { include: { product: true } }, delivery: true },
+        select: { id: true, orderNumber: true, items: true },
       });
 
       // Update Delivery if provided

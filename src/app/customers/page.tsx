@@ -277,29 +277,27 @@ export default function CustomersPage() {
       let networkFailed = false;
 
       if (!isOffline) {
-        try {
-          const url = modalMode === 'ADD' ? '/api/customers' : `/api/customers/${currentCustomer.id}`;
-          const method = modalMode === 'ADD' ? 'POST' : 'PUT';
-
-          const res = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(currentCustomer)
-          });
-
-          if (res.ok) {
-            setIsModalOpen(false);
-            fetchCustomers();
-            return;
-          } else {
-            const err = await res.json();
-            showAlert('error', 'Action Failed', err.error || 'Failed to save customer');
-            return;
-          }
-        } catch (fetchErr) {
-          console.warn('Network error detected, falling back to offline mode', fetchErr);
-          networkFailed = true;
+        const payload = { ...currentCustomer, id: currentCustomer.id || `OPT-${Date.now()}` };
+        
+        if (modalMode === 'ADD') {
+          setCustomers(prev => [{...payload, _count: {orders: 0}} as unknown as Customer, ...prev]);
+        } else {
+          setCustomers(prev => prev.map(c => c.id === payload.id ? {...c, ...payload} as unknown as Customer : c));
         }
+        setIsModalOpen(false);
+        setActionLoading(false);
+
+        const url = modalMode === 'ADD' ? '/api/customers' : `/api/customers/${currentCustomer.id}`;
+        const method = modalMode === 'ADD' ? 'POST' : 'PUT';
+        fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentCustomer)
+        }).catch(err => {
+          console.warn('Network error detected, background save failed', err);
+        });
+
+        return;
       }
 
       if (isOffline || networkFailed) {

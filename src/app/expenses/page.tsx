@@ -267,26 +267,29 @@ export default function ExpensesPage() {
       const method = editId ? 'PUT' : 'POST';
 
       if (!isOffline) {
-        try {
-          const res = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-          });
-    
-          if (res.ok) {
-            setIsModalOpen(false);
-            fetchExpenses();
-            return;
-          } else {
-            const err = await res.json();
-            showAlert('error', 'Action Failed', err.error || 'Failed to log expense');
-            return;
-          }
-        } catch (fetchErr) {
-          console.warn('Network error detected, falling back to offline mode', fetchErr);
-          networkFailed = true;
+        const payload = { 
+          ...formData, 
+          amount: Number(formData.amount),
+          id: editId || `OPT-${Date.now()}` 
+        };
+        
+        setIsModalOpen(false);
+        if (editId) {
+          setExpenses(prev => prev.map(e => e.id === payload.id ? {...e, ...payload, date: payload.date || new Date().toISOString()} as unknown as Expense : e));
+        } else {
+          setExpenses(prev => [{...payload, date: payload.date || new Date().toISOString(), createdAt: new Date().toISOString()} as unknown as Expense, ...prev]);
         }
+        setActionLoading(false);
+
+        fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        }).catch(err => {
+          console.warn('Network error detected, background save failed', err);
+        });
+
+        return;
       }
 
       if (isOffline || networkFailed) {

@@ -442,26 +442,31 @@ export default function InventoryPage() {
       };
 
       if (!isOffline) {
-        try {
-          const res = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(productPayload),
-          });
-          
-          if (res.ok) {
-            await fetchProducts();
-            closeModal();
-            return;
-          } else {
-            const errorData = await res.json();
-            showAlert('error', 'Action Failed', errorData.error || 'Failed to save product');
-            return;
-          }
-        } catch (fetchErr) {
-          console.warn('Network error detected, falling back to offline mode', fetchErr);
-          networkFailed = true;
+        // Optimistic UI Update
+        const payload = { 
+          ...productPayload, 
+          id: editingProduct ? editingProduct.id : `OPT-${Date.now()}`,
+          category: formData.categoryId ? categories.find(c => c.id === formData.categoryId) : null
+        };
+        
+        if (editingProduct) {
+          setProducts(prev => prev.map(p => p.id === payload.id ? { ...p, ...payload } as unknown as Product : p));
+        } else {
+          setProducts(prev => [{ ...payload, _count: { orderItems: 0, stockLogs: 0 } } as unknown as Product, ...prev]);
         }
+        closeModal();
+        setIsSaving(false);
+
+        // Background sync
+        fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(productPayload),
+        }).catch(err => {
+          console.warn('Network error detected, background save failed', err);
+        });
+        
+        return;
       }
 
       if (isOffline || networkFailed) {

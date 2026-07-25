@@ -179,17 +179,22 @@ export async function POST(request: NextRequest) {
 
       let totalCost = 0;
 
+      const productIds = Array.from(new Set(orderItems.map((i: any) => i.productId)));
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } }
+      });
+      const productMap = new Map(products.map(p => [p.id, p]));
+
       // Verify stock first
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await Promise.all(orderItems.map(async (item: any) => {
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
+      for (const item of orderItems) {
+        const product = productMap.get(item.productId);
         if (!product || (product.stock < item._totalStockNeeded && !isOfflineSync)) {
           throw new Error(`Insufficient stock for product ID ${item.productId}`);
         }
         if (product) {
           totalCost += (product.costPrice * item._totalStockNeeded);
         }
-      }));
+      }
 
       // Profit margin safety check - Enforced for ALL orders including Walk-in Store
       if (totalAmount < totalCost) {
@@ -214,12 +219,12 @@ export async function POST(request: NextRequest) {
             create: orderItems.map(({ _totalStockNeeded, ...rest }: any) => rest)
           },
         },
-        include: { customer: true, items: { include: { product: true } }, createdBy: { select: { id: true, name: true } } },
+        select: { id: true, orderNumber: true, createdAt: true },
       });
 
       // Reduce stock for each item and log it
       for (const item of orderItems) {
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        const product = productMap.get(item.productId);
         
         // If offline sync forces the order despite low stock, just deduct what's there and let it go negative in DB if allowed
         if (isOfflineSync && product && product.stock < item._totalStockNeeded) {
@@ -322,7 +327,7 @@ export async function POST(request: NextRequest) {
               method: 'cash',
               notes: 'Initial checkout payment',
               orderId: newOrder.id,
-              createdAt: newOrder.orderDate
+              createdAt: newOrder.createdAt
             }
           });
         }
