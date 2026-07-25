@@ -2,11 +2,11 @@
 /**
  * install-qz-cert.js
  * ─────────────────────────────────────────────────────────────────────────
- * Generates a proper X.509 certificate (with required KeyUsage extensions)
- * and installs it into QZ Tray's trusted-cert store so that:
+ * Installs the DistriTrack self-signed certificate into QZ Tray's
+ * `override.crt` locations so that:
  *
  *   ✅  QZ Tray Details shows  "Validity: Valid"  (green)
- *   ✅  QZ Tray Details shows  "Trusted: Trusted website"
+ *   ✅  QZ Tray Details shows  "Trusted: Trusted website" (green)
  *   ✅  Allow button is NEVER greyed out
  *   ✅  "Remember this decision" works permanently → zero popups forever
  *
@@ -23,8 +23,10 @@ const os   = require('os');
 
 // ── Paths ──────────────────────────────────────────────────────────────────
 const keyPath      = path.join(process.cwd(), '.qz-keys.json');
-const qzTrustedDir = path.join(os.homedir(), '.qz', 'trusted-certs');
+const userQz       = path.join(os.homedir(), '.qz');
+const qzTrustedDir = path.join(userQz, 'trusted-certs');
 const certDest     = path.join(qzTrustedDir, 'distritrack.pem');
+const appDataQz    = path.join(os.homedir(), 'AppData', 'Roaming', 'qz');
 
 // ── Generate keypair with proper X.509 v3 extensions ─────────────────────
 function generateAndSaveKeys() {
@@ -56,34 +58,11 @@ function generateAndSaveKeys() {
   cert.setSubject(attrs);
   cert.setIssuer(attrs);
 
-  // ── CRITICAL: Required X.509 v3 extensions for QZ Tray ─────────────────
-  // Without these, QZ Tray shows "Invalid Certificate" (red)
-  // and the Allow button is permanently disabled.
   cert.setExtensions([
-    {
-      name: 'basicConstraints',
-      cA: false,
-      critical: true,
-    },
-    {
-      name: 'keyUsage',
-      digitalSignature: true,
-      nonRepudiation:   true,
-      keyCertSign:      false,
-      critical: true,
-    },
-    {
-      name: 'extKeyUsage',
-      codeSigning:     true,
-      emailProtection: false,
-    },
-    {
-      name: 'subjectAltName',
-      altNames: [
-        { type: 2, value: 'localhost' },
-        { type: 7, ip:   '127.0.0.1' },
-      ],
-    },
+    { name: 'basicConstraints', cA: false, critical: true },
+    { name: 'keyUsage', digitalSignature: true, nonRepudiation: true, keyCertSign: false, critical: true },
+    { name: 'extKeyUsage', codeSigning: true },
+    { name: 'subjectAltName', altNames: [{ type: 2, value: 'localhost' }, { type: 7, ip: '127.0.0.1' }] },
   ]);
 
   cert.sign(keys.privateKey, forge.md.sha256.create());
@@ -99,7 +78,6 @@ function generateAndSaveKeys() {
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
-// Always delete old keys and regenerate fresh — old keys had no extensions
 if (fs.existsSync(keyPath)) {
   fs.unlinkSync(keyPath);
   console.log('🗑️  Deleted old .qz-keys.json (will regenerate with proper extensions)');
@@ -107,12 +85,23 @@ if (fs.existsSync(keyPath)) {
 
 const keysData = generateAndSaveKeys();
 
-// ── Install cert into QZ Tray trusted-certs ──────────────────────────────
+// ── Install cert into QZ Tray trusted-certs & override.crt ────────────────
 fs.mkdirSync(qzTrustedDir, { recursive: true });
+fs.mkdirSync(appDataQz, { recursive: true });
+
 fs.writeFileSync(certDest, keysData.publicKeyPem, 'utf8');
+fs.writeFileSync(path.join(userQz, 'override.crt'), keysData.publicKeyPem, 'utf8');
+fs.writeFileSync(path.join(appDataQz, 'override.crt'), keysData.publicKeyPem, 'utf8');
+
+try {
+  fs.writeFileSync('C:\\Program Files\\QZ Tray\\override.crt', keysData.publicKeyPem, 'utf8');
+  console.log('✅ Installed override.crt to C:\\Program Files\\QZ Tray\\override.crt');
+} catch {
+  console.log('ℹ️  Skipped Program Files override.crt (requires Admin)');
+}
 
 // ── Create qz-tray.properties for domain whitelisting ────────────────────
-const propsPath = path.join(os.homedir(), '.qz', 'qz-tray.properties');
+const propsPath = path.join(userQz, 'qz-tray.properties');
 const propsContent = [
   '# DistriTrack QZ Tray Configuration',
   '# Generated automatically - do not modify',
@@ -124,8 +113,11 @@ const propsContent = [
 fs.writeFileSync(propsPath, propsContent, 'utf8');
 
 console.log('');
-console.log('✅ Certificate installed successfully!');
-console.log('   Location:', certDest);
+console.log('✅ Certificate installed successfully to QZ Tray authority locations!');
+console.log('   Locations:');
+console.log('     -', certDest);
+console.log('     -', path.join(userQz, 'override.crt'));
+console.log('     -', path.join(appDataQz, 'override.crt'));
 console.log('');
 console.log('══════════════════════════════════════════════════════════');
 console.log('  ACTION REQUIRED — Restart QZ Tray to apply the cert:');

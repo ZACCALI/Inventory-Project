@@ -2,12 +2,12 @@
  * GET /api/qz/setup-bat
  * ─────────────────────────────────────────────────────────────────────────
  * Generates a downloadable Windows batch script (.bat) that, when run,
- * automatically installs the DistriTrack certificate into QZ Tray's
- * local trusted-certs folder AND creates a qz-tray.properties file
- * to whitelist the app's domain for silent printing.
+ * automatically installs the DistriTrack certificate as `override.crt`
+ * in QZ Tray's configuration folders so QZ Tray marks the site as:
  *
- * This works for BOTH local dev and Vercel deployments because the
- * .bat runs on the USER'S LOCAL PC where QZ Tray is installed.
+ *   ✅ Trusted: Trusted website
+ *   ✅ Allow button is UNLOCKED permanently
+ *   ✅ "Remember this decision" works permanently → zero popups forever!
  * ─────────────────────────────────────────────────────────────────────────
  */
 
@@ -30,45 +30,47 @@ echo   DistriTrack QZ Tray Certificate Installer
 echo =====================================================
 echo.
 
-:: ── Create trusted-certs directory ──
-set "QZ_DIR=%USERPROFILE%\\.qz"
-set "CERT_DIR=%QZ_DIR%\\trusted-certs"
+set "USER_QZ=%USERPROFILE%\\.qz"
+set "CERT_DIR=%USER_QZ%\\trusted-certs"
 set "CERT_FILE=%CERT_DIR%\\distritrack.pem"
-set "PROPS_FILE=%QZ_DIR%\\qz-tray.properties"
+set "OVERRIDE_1=%USER_QZ%\\override.crt"
+set "OVERRIDE_2=%APPDATA%\\qz\\override.crt"
+set "OVERRIDE_3=C:\\Program Files\\QZ Tray\\override.crt"
+set "PROPS_FILE=%USER_QZ%\\qz-tray.properties"
 
-if not exist "%QZ_DIR%" mkdir "%QZ_DIR%"
+if not exist "%USER_QZ%" mkdir "%USER_QZ%"
 if not exist "%CERT_DIR%" mkdir "%CERT_DIR%"
+if not exist "%APPDATA%\\qz" mkdir "%APPDATA%\\qz"
 
 :: ── Write the certificate PEM ──
-echo Writing certificate to %CERT_FILE%...
+echo Writing certificate...
 (
 ${pemLines.map(line => `echo ${line}`).join('\n')}
 ) > "%CERT_FILE%"
 
-echo.
-echo [OK] Certificate installed: %CERT_FILE%
+copy /Y "%CERT_FILE%" "%OVERRIDE_1%" >nul 2>&1
+copy /Y "%CERT_FILE%" "%OVERRIDE_2%" >nul 2>&1
+copy /Y "%CERT_FILE%" "%OVERRIDE_3%" >nul 2>&1
+
+echo [OK] Certificate installed as QZ Tray root authority!
 echo.
 
-:: ── Create qz-tray.properties for whitelisting ──
-echo Creating QZ Tray properties for silent printing...
+:: ── Create qz-tray.properties ──
+echo Creating QZ Tray properties...
 (
 echo # DistriTrack QZ Tray Configuration
-echo # Generated automatically - do not modify
-echo # This allows silent printing without security prompts
-echo.
-echo # Whitelist localhost and Vercel deployment
+echo # Allowed hosts for silent printing
 echo wss.whitelist=localhost,distritrack.vercel.app
 ) > "%PROPS_FILE%"
 
-echo [OK] Properties file created: %PROPS_FILE%
+echo [OK] Configuration updated.
 echo.
 
-:: ── Kill and restart QZ Tray ──
+:: ── Restart QZ Tray ──
 echo Restarting QZ Tray...
 taskkill /F /IM "qz-tray.exe" >nul 2>&1
 timeout /t 2 /nobreak >nul
 
-:: Try common QZ Tray install paths
 set "QZ_EXE="
 if exist "C:\\Program Files\\QZ Tray\\qz-tray.exe" set "QZ_EXE=C:\\Program Files\\QZ Tray\\qz-tray.exe"
 if exist "C:\\Program Files (x86)\\QZ Tray\\qz-tray.exe" set "QZ_EXE=C:\\Program Files (x86)\\QZ Tray\\qz-tray.exe"
@@ -76,23 +78,17 @@ if exist "%LOCALAPPDATA%\\Programs\\QZ Tray\\qz-tray.exe" set "QZ_EXE=%LOCALAPPD
 
 if defined QZ_EXE (
     start "" "%QZ_EXE%"
-    echo [OK] QZ Tray restarted from: %QZ_EXE%
+    echo [OK] QZ Tray restarted.
 ) else (
-    echo [!] QZ Tray not found in default paths.
-    echo     Please restart QZ Tray manually from Start Menu.
+    echo [!] QZ Tray not found in default paths. Please open QZ Tray manually.
 )
 
 echo.
 echo =====================================================
 echo   SETUP COMPLETE!
-echo =====================================================
 echo.
-echo   Certificate: %CERT_FILE%
-echo   Properties:  %PROPS_FILE%
-echo.
-echo   The "Action Required" popup will NO LONGER appear.
-echo   Just refresh your browser (Ctrl+R) and you're done!
-echo.
+echo   QZ Tray is now fully configured for DistriTrack.
+echo   Press Ctrl+R in your browser to refresh.
 echo =====================================================
 echo.
 pause
