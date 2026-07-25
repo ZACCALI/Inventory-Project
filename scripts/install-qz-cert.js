@@ -93,6 +93,17 @@ fs.writeFileSync(certDest, keysData.publicKeyPem, 'utf8');
 fs.writeFileSync(path.join(userQz, 'override.crt'), keysData.publicKeyPem, 'utf8');
 fs.writeFileSync(path.join(appDataQz, 'override.crt'), keysData.publicKeyPem, 'utf8');
 
+// ── Clear stale allowed.dat to prevent PEM corruption ──
+try {
+  const appDataAllowedDat = path.join(appDataQz, 'allowed.dat');
+  if (fs.existsSync(appDataAllowedDat)) fs.unlinkSync(appDataAllowedDat);
+  const userQzAllowedDat = path.join(userQz, 'allowed.dat');
+  if (fs.existsSync(userQzAllowedDat)) fs.unlinkSync(userQzAllowedDat);
+  console.log('✅ Cleared old allowed.dat files to prevent stale PEM corruption.');
+} catch (e) {
+  console.log('ℹ️  Could not clear some allowed.dat files.');
+}
+
 try {
   fs.writeFileSync('C:\\Program Files\\QZ Tray\\override.crt', keysData.publicKeyPem, 'utf8');
   console.log('✅ Installed override.crt to C:\\Program Files\\QZ Tray\\override.crt');

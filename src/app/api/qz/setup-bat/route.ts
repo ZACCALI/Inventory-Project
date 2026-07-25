@@ -44,6 +44,11 @@ ${pemLines.map(line => `echo ${line}`).join('\n')}
 echo [OK] Certificate written.
 echo.
 
+:: ── Clear stale allowed.dat to prevent PEM corruption ──
+echo Clearing old allowed.dat...
+if exist "%APPDATA%\qz\allowed.dat" del /F /Q "%APPDATA%\qz\allowed.dat"
+if exist "%USER_QZ%\allowed.dat" del /F /Q "%USER_QZ%\allowed.dat"
+
 :: ── Whitelist Certificate using QZ Tray CLI ──
 echo Adding DistriTrack certificate to QZ Tray whitelist (allowed.dat)...
 
