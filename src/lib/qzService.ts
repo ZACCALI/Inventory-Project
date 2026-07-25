@@ -87,8 +87,8 @@ export async function connectQZ(): Promise<boolean> {
           if (!res.ok) throw new Error('Failed to fetch certificate');
           return res.text();
         })
-        .then(resolve)
-        .catch(() => resolve(null));
+        .then(cert => resolve(cert || null))
+        .catch(() => resolve()); // Resolve with undefined for graceful fallback (allows Untrusted prompt)
     });
     qz.security.setSignatureAlgorithm('SHA512');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -100,8 +100,8 @@ export async function connectQZ(): Promise<boolean> {
             if (!res.ok) throw new Error('Failed to fetch signature');
             return res.text();
           })
-          .then(resolve)
-          .catch(() => resolve(null));
+          .then(sign => resolve(sign || null))
+          .catch(() => resolve()); // Resolve with undefined for graceful fallback (allows Untrusted prompt)
       };
     });
 

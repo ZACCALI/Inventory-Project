@@ -9,7 +9,7 @@ import { useAlert } from '@/components/AlertModal';
 import { db } from '@/lib/db';
 import { addSyncTask } from '@/lib/offlineSync';
 import PrinterSetupModal from '@/components/PrinterSetupModal';
-import { loadPrinterConfig, isQZConnected } from '@/lib/qzService';
+import { loadPrinterConfig, isQZConnected, connectQZ } from '@/lib/qzService';
 
 import Image from "next/image";
 
@@ -36,8 +36,9 @@ interface SettingsData {
 export default function SettingsPage() {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { showAlert, showConfirm, showToast } = useAlert();
-  const { data: session, update: updateSession } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const isAdmin = session?.user?.role === 'admin';
+  const isLoading = status === 'loading';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const currentUserEmail = session?.user?.email;
 
@@ -60,6 +61,17 @@ export default function SettingsPage() {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const { data: swrRes, error: swrError } = useSWR('/api/settings', fetcher, { revalidateOnFocus: true });
+
+  useEffect(() => {
+    const savedTab = localStorage.getItem('settingsActiveTab');
+    if (savedTab) {
+      setActiveTab(savedTab);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('settingsActiveTab', activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     // Load from Dexie cache immediately on mount so form is populated instantly
@@ -370,9 +382,16 @@ export default function SettingsPage() {
     const loadConfig = async () => {
       const cfg = await loadPrinterConfig();
       setSavedPrinterName(cfg?.printerName || '');
-      isQZConnected().then(connected => {
-        setPrinterStatus(connected ? 'connected' : 'disconnected');
-      });
+      if (cfg?.printerName) {
+        setPrinterStatus('checking');
+        connectQZ().then(connected => {
+          setPrinterStatus(connected ? 'connected' : 'disconnected');
+        });
+      } else {
+        isQZConnected().then(connected => {
+          setPrinterStatus(connected ? 'connected' : 'disconnected');
+        });
+      }
     };
     loadConfig();
     window.addEventListener('printerConfigUpdated', loadConfig);
@@ -382,8 +401,17 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (activeTab === 'printer') {
-      isQZConnected().then(connected => {
-        setPrinterStatus(connected ? 'connected' : 'disconnected');
+      loadPrinterConfig().then(cfg => {
+        if (cfg?.printerName) {
+          setPrinterStatus('checking');
+          connectQZ().then(connected => {
+            setPrinterStatus(connected ? 'connected' : 'disconnected');
+          });
+        } else {
+          isQZConnected().then(connected => {
+            setPrinterStatus(connected ? 'connected' : 'disconnected');
+          });
+        }
       });
     }
   }, [activeTab]);
@@ -415,58 +443,66 @@ export default function SettingsPage() {
         {/* Settings Sidebar Menu */}
         <div className="card" style={{ padding: '0', overflow: 'hidden', height: 'max-content' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <button 
-              onClick={() => setActiveTab('profile')}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: 'none', background: activeTab === 'profile' ? 'var(--primary-light)' : 'transparent',
-                color: activeTab === 'profile' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'profile' ? 600 : 500, borderLeft: activeTab === 'profile' ? '3px solid var(--primary)' : '3px solid transparent'
-              }}
-            >
-              <User size={18} /> My Profile
-            </button>
+            {isLoading ? (
+              <div style={{ padding: '24px 16px', color: 'var(--text-secondary)', textAlign: 'center', fontSize: '14px' }}>
+                Loading menu...
+              </div>
+            ) : (
+              <>
+                <button 
+                  onClick={() => setActiveTab('profile')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: 'none', background: activeTab === 'profile' ? 'var(--primary-light)' : 'transparent',
+                    color: activeTab === 'profile' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'profile' ? 600 : 500, borderLeft: activeTab === 'profile' ? '3px solid var(--primary)' : '3px solid transparent'
+                  }}
+                >
+                  <User size={18} /> My Profile
+                </button>
 
-            {isAdmin && (
-              <button 
-                onClick={() => setActiveTab('company')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: 'none', background: activeTab === 'company' ? 'var(--primary-light)' : 'transparent',
-                  color: activeTab === 'company' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'company' ? 600 : 500, borderLeft: activeTab === 'company' ? '3px solid var(--primary)' : '3px solid transparent'
-                }}
-              >
-                <Building size={18} /> Company Profile
-              </button>
+                {isAdmin && (
+                  <button 
+                    onClick={() => setActiveTab('company')}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: 'none', background: activeTab === 'company' ? 'var(--primary-light)' : 'transparent',
+                      color: activeTab === 'company' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'company' ? 600 : 500, borderLeft: activeTab === 'company' ? '3px solid var(--primary)' : '3px solid transparent'
+                    }}
+                  >
+                    <Building size={18} /> Company Profile
+                  </button>
+                )}
+
+                {isAdmin && (
+                  <button 
+                    onClick={() => setActiveTab('permissions')}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: 'none', background: activeTab === 'permissions' ? 'var(--primary-light)' : 'transparent',
+                      color: activeTab === 'permissions' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'permissions' ? 600 : 500, borderLeft: activeTab === 'permissions' ? '3px solid var(--primary)' : '3px solid transparent'
+                    }}
+                  >
+                    <Lock size={18} /> Permissions
+                  </button>
+                )}
+                <button 
+                  onClick={() => setActiveTab('security')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: 'none', background: activeTab === 'security' ? 'var(--primary-light)' : 'transparent',
+                    color: activeTab === 'security' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'security' ? 600 : 500, borderLeft: activeTab === 'security' ? '3px solid var(--primary)' : '3px solid transparent'
+                  }}
+                >
+                  <Shield size={18} /> My Security
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('printer')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: 'none', background: activeTab === 'printer' ? 'var(--primary-light)' : 'transparent',
+                    color: activeTab === 'printer' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'printer' ? 600 : 500, borderLeft: activeTab === 'printer' ? '3px solid var(--primary)' : '3px solid transparent'
+                  }}
+                >
+                  <Printer size={18} /> Thermal Printer
+                </button>
+              </>
             )}
-
-            {isAdmin && (
-              <button 
-                onClick={() => setActiveTab('permissions')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: 'none', background: activeTab === 'permissions' ? 'var(--primary-light)' : 'transparent',
-                  color: activeTab === 'permissions' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'permissions' ? 600 : 500, borderLeft: activeTab === 'permissions' ? '3px solid var(--primary)' : '3px solid transparent'
-                }}
-              >
-                <Lock size={18} /> Permissions
-              </button>
-            )}
-            <button 
-              onClick={() => setActiveTab('security')}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: 'none', background: activeTab === 'security' ? 'var(--primary-light)' : 'transparent',
-                color: activeTab === 'security' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'security' ? 600 : 500, borderLeft: activeTab === 'security' ? '3px solid var(--primary)' : '3px solid transparent'
-              }}
-            >
-              <Shield size={18} /> My Security
-            </button>
-
-            <button
-              onClick={() => setActiveTab('printer')}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: 'none', background: activeTab === 'printer' ? 'var(--primary-light)' : 'transparent',
-                color: activeTab === 'printer' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'printer' ? 600 : 500, borderLeft: activeTab === 'printer' ? '3px solid var(--primary)' : '3px solid transparent'
-              }}
-            >
-              <Printer size={18} /> Thermal Printer
-            </button>
           </div>
         </div>
 

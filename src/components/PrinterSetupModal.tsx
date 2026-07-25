@@ -55,21 +55,32 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
     if (!isOpen) return;
     
     const loadConfig = async () => {
+      setStatus('connecting');
       const config = await loadPrinterConfig();
       if (config) {
         setSelectedPrinter(config.printerName);
         setPaperWidth(config.paperWidth);
+        const connected = await connectQZ();
+        if (connected) {
+          setStatus('connected');
+          const list = await getAvailablePrinters();
+          setPrinters(list);
+        } else {
+          setStatus('failed');
+        }
+      } else {
+        // Check if already connected
+        isQZConnected().then(connected => {
+          if (connected) {
+            setStatus('connected');
+            getAvailablePrinters().then(list => setPrinters(list));
+          } else {
+            setStatus('idle');
+          }
+        });
       }
     };
     loadConfig();
-
-    // Check if already connected
-    isQZConnected().then(connected => {
-      if (connected) {
-        setStatus('connected');
-        getAvailablePrinters().then(list => setPrinters(list));
-      }
-    });
   }, [isOpen]);
 
   const handleConnect = useCallback(async () => {
@@ -184,7 +195,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
           <div style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
               <Settings size={15} />
-              Requirements
+              Requirements & Setup
             </div>
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
               QZ Tray must be installed and running on this PC.
@@ -192,6 +203,9 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
               <a href="https://qz.io/download/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: 600 }}>
                 → Download QZ Tray free at qz.io/download
               </a>
+            </p>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, marginTop: '4px' }}>
+              <strong>Tip:</strong> To enable instant 1-click silent printing without prompts, configure your QZ Tray certificate in the backend or use localhost for development.
             </p>
           </div>
 
