@@ -145,8 +145,7 @@ function printHtmlFallback(data: ThermalReceiptData, paper: PaperWidth = '58'): 
   <div class="center title">2ND BRANCH</div>
   <div class="center title">ALHAMDULILLAH</div>
   <div class="divider"></div>
-  <div>Order No:</div>
-  <div style="word-break:break-all; font-weight:700;">${data.orderNo}</div>
+  ${paper === '58' && data.orderNo.length > 22 ? `<div>Order No:</div><div>${data.orderNo}</div>` : `<div>Order No: ${data.orderNo}</div>`}
   <div>By: ${data.createdBy}</div>
   <div>${data.dateStr}</div>
   ${driverHtml}${dateHtml}${notesHtml}

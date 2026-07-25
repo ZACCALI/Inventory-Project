@@ -2163,10 +2163,10 @@ export default function OrdersPage() {
                       <div style={{ textAlign: 'center', fontSize: '11px' }}>ALHAMDULILLAH</div>
                       <div style={{ borderBottom: '1px dashed #000', margin: '6px 0' }}></div>
                       
-                      {paperWidth === '58' ? (
+                      {previewPaperWidth === '58' && receiptOrder.orderNumber && receiptOrder.orderNumber.length > 22 ? (
                         <>
                           <div>Order No:</div>
-                          <div style={{ wordBreak: 'break-all', fontWeight: 'bold' }}>{receiptOrder.orderNumber || ''}</div>
+                          <div>{receiptOrder.orderNumber}</div>
                         </>
                       ) : (
                         <div>Order No: {receiptOrder.orderNumber || ''}</div>

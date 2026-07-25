@@ -1,6 +1,6 @@
-import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import forge from 'node-forge';
 
 let keysCache: { publicKeyPem: string; privateKeyPem: string } | null = null;
 
@@ -22,16 +22,44 @@ export function getQzKeys() {
     }
   }
 
-  // Generate 2048-bit RSA key pair for QZ Tray security handshake
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-    modulusLength: 2048,
-    publicKeyEncoding: { type: 'spki', format: 'pem' },
-    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-  });
+  // Generate 2048-bit RSA key pair for QZ Tray security handshake using node-forge
+  const keys = forge.pki.rsa.generateKeyPair(2048);
+  const cert = forge.pki.createCertificate();
+  cert.publicKey = keys.publicKey;
+  cert.serialNumber = '01';
+  cert.validity.notBefore = new Date();
+  cert.validity.notAfter = new Date();
+  cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 10);
+  
+  const attrs = [{
+    name: 'commonName',
+    value: 'localhost'
+  }, {
+    name: 'countryName',
+    value: 'US'
+  }, {
+    shortName: 'ST',
+    value: 'State'
+  }, {
+    name: 'localityName',
+    value: 'City'
+  }, {
+    name: 'organizationName',
+    value: 'Organization'
+  }, {
+    shortName: 'OU',
+    value: 'Unit'
+  }];
+  cert.setSubject(attrs);
+  cert.setIssuer(attrs);
+  cert.sign(keys.privateKey, forge.md.sha256.create());
+
+  const certPem = forge.pki.certificateToPem(cert);
+  const privateKeyPem = forge.pki.privateKeyToPem(keys.privateKey);
 
   keysCache = {
-    publicKeyPem: publicKey,
-    privateKeyPem: privateKey,
+    publicKeyPem: certPem,
+    privateKeyPem: privateKeyPem,
   };
 
   // Persist to disk
@@ -46,8 +74,8 @@ export function getQzKeys() {
 
 export function signQzRequest(toSign: string): string {
   const { privateKeyPem } = getQzKeys();
-  const sign = crypto.createSign('SHA512');
-  sign.update(toSign);
-  sign.end();
-  return sign.sign(privateKeyPem, 'base64');
+  const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
+  const md = forge.md.sha512.create();
+  md.update(toSign, 'utf8');
+  return forge.util.encode64(privateKey.sign(md));
 }

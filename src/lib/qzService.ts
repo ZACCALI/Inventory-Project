@@ -83,9 +83,12 @@ export async function connectQZ(): Promise<boolean> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     qz.security.setCertificatePromise(function(resolve: any, reject: any) {
       fetch('/api/qz/cert')
-        .then(res => res.text())
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to fetch certificate');
+          return res.text();
+        })
         .then(resolve)
-        .catch(reject);
+        .catch(() => resolve(null));
     });
     qz.security.setSignatureAlgorithm('SHA512');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,9 +96,12 @@ export async function connectQZ(): Promise<boolean> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return function(resolve: any, reject: any) {
         fetch('/api/qz/sign?request=' + encodeURIComponent(toSign))
-          .then(res => res.text())
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to fetch signature');
+            return res.text();
+          })
           .then(resolve)
-          .catch(reject);
+          .catch(() => resolve(null));
       };
     });
 
