@@ -278,10 +278,18 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
   }
 
   // ── Order Info ──────────────────────────────────────────────────────────────
-  p.left()
-   .line(`Order No: ${data.orderNo}`)
-   .line(`By: ${data.createdBy}`)
-   .line(data.dateStr);
+  if (paper === '58') {
+    p.left()
+     .line('Order No:')
+     .line(data.orderNo)
+     .line(`By: ${data.createdBy}`)
+     .line(data.dateStr);
+  } else {
+    p.left()
+     .line(`Order No: ${data.orderNo}`)
+     .line(`By: ${data.createdBy}`)
+     .line(data.dateStr);
+  }
 
   if (data.driverName)   p.line(`Driver: ${data.driverName}`);
   if (data.notes) {

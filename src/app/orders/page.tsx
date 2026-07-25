@@ -2163,7 +2163,14 @@ export default function OrdersPage() {
                       <div style={{ textAlign: 'center', fontSize: '11px' }}>ALHAMDULILLAH</div>
                       <div style={{ borderBottom: '1px dashed #000', margin: '6px 0' }}></div>
                       
-                      <div>Order No: {receiptOrder.orderNumber || ''}</div>
+                      {paperWidth === '58' ? (
+                        <>
+                          <div>Order No:</div>
+                          <div style={{ wordBreak: 'break-all', fontWeight: 'bold' }}>{receiptOrder.orderNumber || ''}</div>
+                        </>
+                      ) : (
+                        <div>Order No: {receiptOrder.orderNumber || ''}</div>
+                      )}
                       <div>By: {receiptOrder.createdBy?.name || 'ADMIN'}</div>
                       <div>{new Date(receiptOrder.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',','')}</div>
                       {driverName && <div>Driver: {driverName}</div>}
