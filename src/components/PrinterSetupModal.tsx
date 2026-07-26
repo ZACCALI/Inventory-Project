@@ -44,10 +44,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
     }
   }, [showPreview]);
 
-  // Auto-save preference
-  useEffect(() => {
-    savePrinterConfig({ printerName: selectedPrinter, paperWidth });
-  }, [selectedPrinter, paperWidth]);
+
 
   // Load saved config on open
   useEffect(() => {

@@ -568,7 +568,7 @@ export default function OrdersPage() {
       paymentStatus: order.paymentStatus || undefined,
       amountPaid:   orderAmountPaid,
       orderStatus:  order.status,
-      paperWidthOverride: overridePaperWidth,
+      paperWidthOverride: overridePaperWidth || (paperWidth as '58' | '80'),
     }, () => showToast('offline', 'QZ Tray not configured — using browser print. Set up Printer in Settings → Thermal Printer.'));
 
     if (result === 'error') {

@@ -46,6 +46,8 @@ export async function PUT(request: NextRequest) {
 
     const body = parsed.data;
     const settings = await prisma.$transaction(async (tx) => {
+      const existing = await tx.systemSettings.findUnique({ where: { id: "1" } });
+
       const updated = await tx.systemSettings.upsert({
         where: { id: "1" },
         update: {
@@ -106,10 +108,35 @@ export async function PUT(request: NextRequest) {
           ...(body.printerPort !== undefined && { printerPort: body.printerPort })
         }
       });
+      let hasChanges = false;
+      if (!existing) {
+        hasChanges = true;
+      } else {
+        for (const key of Object.keys(body)) {
+          if (key === 'idempotencyKey') continue;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const oldVal = (existing as any)[key];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const newVal = (body as any)[key];
+          if (newVal !== undefined) {
+            if (typeof oldVal === 'object' && oldVal !== null) {
+              if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+                hasChanges = true;
+                break;
+              }
+            } else if (oldVal !== newVal) {
+              hasChanges = true;
+              break;
+            }
+          }
+        }
+      }
 
-      await tx.auditLog.create({
-        data: { userId: user.id, action: 'UPDATE', entity: 'Settings', details: `Updated system settings` }
-      });
+      if (hasChanges) {
+        await tx.auditLog.create({
+          data: { userId: user.id, action: 'UPDATE', entity: 'Settings', details: `Updated system settings` }
+        });
+      }
 
       return updated;
     });
