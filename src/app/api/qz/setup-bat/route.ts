@@ -2,10 +2,11 @@
  * GET /api/qz/setup-bat
  * ─────────────────────────────────────────────────────────────────────────
  * Generates a downloadable Windows batch script (.bat) that:
- * 1. Cleans up any old/corrupt `allowed.dat` files
- * 2. Writes the active DistriTrack certificate
- * 3. Runs QZ Tray's official CLI (`qz-tray.jar --allow`) to register the active cert
- * 4. Restarts QZ Tray automatically
+ * 1. Requests Administrator privileges automatically.
+ * 2. Writes the active certificate to `C:\Program Files\QZ Tray\override.crt`
+ *    (This is the ONLY location QZ Tray checks to convert "Untrusted" to "Trusted").
+ * 3. Registers the certificate in QZ Tray's `allowed.dat`.
+ * 4. Restarts QZ Tray automatically.
  * ─────────────────────────────────────────────────────────────────────────
  */
 
@@ -18,17 +19,25 @@ export async function GET() {
   const pemLines = publicKeyPem.trim().split('\n').map(l => l.trim());
 
   const batScript = `@echo off
-setlocal enabledelayedexpansion
+:: ── Request Admin Elevation ──
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Requesting Administrator privileges...
+    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b
+)
+
 title DistriTrack QZ Tray Auto-Trust Installer
 echo.
 echo =====================================================
-echo   DistriTrack QZ Tray Auto-Trust Installer
+echo   DistriTrack QZ Tray Auto-Trust Installer (Admin)
 echo =====================================================
 echo.
 
 set "USER_QZ=%USERPROFILE%\\.qz"
 set "CERT_DIR=%USER_QZ%\\trusted-certs"
 set "CERT_FILE=%CERT_DIR%\\distritrack.pem"
+set "PROGRAM_FILES_OVERRIDE=C:\\Program Files\\QZ Tray\\override.crt"
 set "ALLOWED_DAT=%APPDATA%\\qz\\allowed.dat"
 set "ALLOWED_DAT2=%USER_QZ%\\allowed.dat"
 
@@ -36,7 +45,7 @@ if not exist "%USER_QZ%" mkdir "%USER_QZ%"
 if not exist "%CERT_DIR%" mkdir "%CERT_DIR%"
 if not exist "%APPDATA%\\qz" mkdir "%APPDATA%\\qz"
 
-:: ── Delete old stale allowed.dat to prevent PEM accumulation ──
+:: ── Delete old stale allowed.dat ──
 echo Cleaning up old QZ Tray whitelist entries...
 if exist "%ALLOWED_DAT%" del /F /Q "%ALLOWED_DAT%" >nul 2>&1
 if exist "%ALLOWED_DAT2%" del /F /Q "%ALLOWED_DAT2%" >nul 2>&1
@@ -47,8 +56,13 @@ echo Writing active certificate to %CERT_FILE%...
 ${pemLines.map(line => `echo ${line}`).join('\n')}
 ) > "%CERT_FILE%"
 
-echo [OK] Certificate written.
-echo.
+echo [OK] Certificate written to user profile.
+
+:: ── Install as Root CA Override in Program Files (Requires Admin) ──
+if exist "C:\\Program Files\\QZ Tray" (
+    copy /Y "%CERT_FILE%" "%PROGRAM_FILES_OVERRIDE%" >nul 2>&1
+    echo [OK] Certificate installed to Program Files QZ Tray override.crt!
+)
 
 :: ── Whitelist Active Certificate using QZ Tray CLI ──
 echo Registering active certificate in QZ Tray whitelist (allowed.dat)...
@@ -65,10 +79,6 @@ if defined JAVA_EXE (
         echo [OK] Active certificate whitelisted successfully!
     )
 )
-
-:: ── Copy to override locations as fallback ──
-copy /Y "%CERT_FILE%" "%USER_QZ%\\override.crt" >nul 2>&1
-copy /Y "%CERT_FILE%" "%APPDATA%\\qz\\override.crt" >nul 2>&1
 
 echo.
 echo ── Restarting QZ Tray ──
