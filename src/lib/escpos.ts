@@ -31,8 +31,8 @@ export const CMD = {
 // ─── Paper Width Config ────────────────────────────────────────────────────────
 export type PaperWidth = '58' | '80';
 
-export function getLineWidth(paper: PaperWidth): number {
-  return paper === '80' ? 48 : 32;
+export function getLineWidth(paper: PaperWidth | string | number): number {
+  return String(paper) === '80' ? 48 : 32;
 }
 
 // ─── Text Encoding ─────────────────────────────────────────────────────────────
@@ -279,7 +279,7 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
 
   // ── Order Info ──────────────────────────────────────────────────────────────
   p.left();
-  if (paper === '58' && data.orderNo.length > 22) {
+  if (String(paper) === '58' && data.orderNo.length > 22) {
     p.line('Order No:').line(data.orderNo);
   } else {
     p.line(`Order No: ${data.orderNo}`);

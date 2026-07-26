@@ -840,6 +840,7 @@ export default function CreateOrderPage() {
       change:       lastOrder.change   || undefined,
       paymentStatus: lastOrder.paymentStatus || undefined,
       amountPaid:   lastOrder.paymentStatus === 'paid' ? lastOrder.totalAmount : undefined,
+      paperWidthOverride: paperWidth as '58' | '80',
     }, () => showToast('QZ Tray not configured — using browser print. Set up printer in Settings.', 'warning'));
 
     if (result === 'error') {

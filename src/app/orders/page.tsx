@@ -77,7 +77,10 @@ export default function OrdersPage() {
   useEffect(() => {
     const loadConfig = async () => {
       const cfg = await loadPrinterConfig();
-      if (cfg?.paperWidth) setPaperWidth(cfg.paperWidth);
+      if (cfg?.paperWidth) {
+        setPaperWidth(cfg.paperWidth);
+        setPreviewPaperWidth(cfg.paperWidth as '58' | '80');
+      }
     };
     loadConfig();
     const listener = () => { loadConfig(); };
@@ -526,7 +529,7 @@ export default function OrdersPage() {
   };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const printThermalReceipt = async (order: any) => {
+  const printThermalReceipt = async (order: any, overridePaperWidth?: '58' | '80') => {
     if (!order) return;
 
     const orderNo    = order.orderNumber || '';
@@ -565,6 +568,7 @@ export default function OrdersPage() {
       paymentStatus: order.paymentStatus || undefined,
       amountPaid:   orderAmountPaid,
       orderStatus:  order.status,
+      paperWidthOverride: overridePaperWidth,
     }, () => showToast('offline', 'QZ Tray not configured — using browser print. Set up Printer in Settings → Thermal Printer.'));
 
     if (result === 'error') {
@@ -2127,7 +2131,7 @@ export default function OrdersPage() {
                             const confirmed = await showConfirm('Cancelled Order', 'Order is Cancelled. Printed receipt will be watermarked as CANCELLED. Proceed?');
                             if (!confirmed) return;
                           }
-                          printThermalReceipt(receiptOrder);
+                          printThermalReceipt(receiptOrder, previewPaperWidth);
                         }}
                         className="btn btn-primary"
                         style={{ fontSize: '13px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}

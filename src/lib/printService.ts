@@ -28,6 +28,7 @@ export interface ThermalReceiptData {
   paymentStatus?: string;
   amountPaid?: number;
   orderStatus?: string;
+  paperWidthOverride?: PaperWidth;
 }
 
 // ─── Main Print Function ───────────────────────────────────────────────────────
@@ -45,7 +46,7 @@ export async function printThermal(
 ): Promise<'qz' | 'html' | 'error'> {
   // ── Try QZ Tray ─────────────────────────────────────────────────────────────
   const config = await loadPrinterConfig();
-  const paper: PaperWidth = config?.paperWidth || '58';
+  const paper: PaperWidth = data.paperWidthOverride || config?.paperWidth || '58';
 
   if (config?.printerName) {
     try {
@@ -145,7 +146,7 @@ function printHtmlFallback(data: ThermalReceiptData, paper: PaperWidth = '58'): 
   <div class="center title">2ND BRANCH</div>
   <div class="center title">ALHAMDULILLAH</div>
   <div class="divider"></div>
-  ${paper === '58' && data.orderNo.length > 22 ? `<div>Order No:</div><div>${data.orderNo}</div>` : `<div>Order No: ${data.orderNo}</div>`}
+  ${String(paper) === '58' && data.orderNo.length > 22 ? `<div>Order No:</div><div>${data.orderNo}</div>` : `<div>Order No: ${data.orderNo}</div>`}
   <div>By: ${data.createdBy}</div>
   <div>${data.dateStr}</div>
   ${driverHtml}${dateHtml}${notesHtml}

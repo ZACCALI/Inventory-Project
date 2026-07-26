@@ -6,6 +6,8 @@ import { useSession } from 'next-auth/react';
 import { ArrowLeft, Edit, Printer, Package, User, Truck, Calendar, Hash, CreditCard, Clock, MapPin, Phone, FileText, AlertCircle, Home } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import SalesInvoiceReceipt from '@/components/SalesInvoiceReceipt';
+import { printThermal } from '@/lib/printService';
+import { loadPrinterConfig } from '@/lib/qzService';
 
 import Image from "next/image";
 interface OrderDetail {
@@ -136,8 +138,36 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
   const subtotal = order.items.reduce((sum, item) => sum + item.subtotal, 0);
 
-  function handlePrint() {
-    window.print();
+  async function handlePrint() {
+    if (!order) return;
+    const config = await loadPrinterConfig();
+    const paperWidth = config?.paperWidth || '58';
+
+    await printThermal({
+      companyName,
+      orderNo: order.orderNumber,
+      createdBy: order.createdBy?.name || 'ADMIN',
+      dateStr: new Date(order.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',',''),
+      driverName: order.delivery?.driverName || undefined,
+      deliveryDate: order.delivery?.scheduledDate ? new Date(order.delivery.scheduledDate).toLocaleDateString() : undefined,
+      notes: order.notes || undefined,
+      items: order.items.map(i => ({
+        name: i.product.name,
+        uom: i.product.unit,
+        qty: i.quantity,
+        price: i.price,
+        subtotal: i.subtotal,
+      })),
+      subtotal,
+      discount: order.discount,
+      amountDue: order.totalAmount,
+      paymentStatus: order.paymentStatus,
+      amountPaid: order.paymentStatus === 'paid' ? order.totalAmount : undefined,
+      orderStatus: order.status,
+      paperWidthOverride: paperWidth as '58' | '80',
+    }, () => {
+      window.print();
+    });
   }
 
   return (

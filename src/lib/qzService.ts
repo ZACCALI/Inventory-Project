@@ -196,9 +196,9 @@ export async function loadPrinterConfig(): Promise<PrinterConfig | null> {
       const res = await fetch('/api/settings');
       if (res.ok) {
         const data = await res.json();
-        if (data.printerName) {
+        if (data.printerName || data.paperWidth) {
           const fetchedConfig: PrinterConfig = {
-            printerName: data.printerName,
+            printerName: data.printerName || '',
             paperWidth: data.paperWidth || '58',
             autoPrintOrder: data.autoPrintOrder,
             connectionType: data.connectionType,
