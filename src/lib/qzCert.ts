@@ -41,10 +41,10 @@ function generateKeyPair(): { publicKeyPem: string; privateKeyPem: string } {
   cert.setSubject(attrs);
   cert.setIssuer(attrs);
 
-  // Required X.509 v3 extensions — without these QZ Tray shows "Invalid Certificate"
+  // Required X.509 v3 extensions — cA MUST be true for QZ Tray override.crt to work
   cert.setExtensions([
-    { name: 'basicConstraints', cA: false, critical: true },
-    { name: 'keyUsage', digitalSignature: true, nonRepudiation: true, keyCertSign: false, critical: true },
+    { name: 'basicConstraints', cA: true, critical: true },
+    { name: 'keyUsage', digitalSignature: true, nonRepudiation: true, keyCertSign: true, critical: true },
     { name: 'extKeyUsage', codeSigning: true },
     { name: 'subjectAltName', altNames: [{ type: 2, value: 'localhost' }, { type: 7, ip: '127.0.0.1' }] },
   ]);
