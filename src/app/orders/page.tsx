@@ -2306,7 +2306,7 @@ export default function OrdersPage() {
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', borderTop: '2px solid #000', borderBottom: '2px solid #000', padding: '8px 0' }}>
                         <div>
-                          <div><strong>SOLD TO:</strong> {receiptOrder.customer?.name || 'Walk-in Customer'}</div>
+                          <div><strong>SOLD TO:</strong> {!receiptOrder.customer?.name || ['[normal walk-in]', 'normal walk-in', 'walk-in'].includes(receiptOrder.customer.name.trim().toLowerCase()) ? 'BAIE' : receiptOrder.customer.name}</div>
                           <div><strong>ADDRESS:</strong> {receiptOrder.customer?.address || 'N/A'}</div>
                         </div>
                         <div style={{ textAlign: 'right' }}>

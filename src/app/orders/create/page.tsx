@@ -91,7 +91,7 @@ export default function CreateOrderPage() {
 
   const resetIdempotencyKey = () => setIdempotencyKey(`${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
   const [categories, setCategories] = useState<string[]>(['All']);
-  const [customers, setCustomers] = useState<{id: string, name: string, customerType?: string}[]>([]);
+  const [customers, setCustomers] = useState<{id: string, name: string, phone?: string, address?: string, customerType?: string}[]>([]);
   const [drivers, setDrivers] = useState<{id: string, name: string}[]>([]);
   const [showConfirmCheckout, setShowConfirmCheckout] = useState(false);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
@@ -655,16 +655,26 @@ export default function CreateOrderPage() {
     let finalPhone = manualCustomerPhone.trim() || undefined;
     let finalAddress = manualCustomerAddress.trim() || undefined;
     
-    const isWalkInGeneral = customerIdToUse && customers.find(c => c.id === customerIdToUse)?.name === '[Normal Walk-in]';
-    if (isWalkInGeneral && fallbackCustomerName) {
-      customerIdToUse = ''; // Clear it so API uses customerName
-    } else if (!customerIdToUse) {
-      if (!fallbackCustomerName) {
-        const walkIn = customers.find(c => c.name.toLowerCase().includes('walk-in') || c.name.toLowerCase().includes('walk in'));
-        if (walkIn) {
-          customerIdToUse = walkIn.id;
-        } else {
-          fallbackCustomerName = 'Walk-in';
+    if (fulfillmentMode === 'walkin') {
+      const selectedCust = customers.find(c => c.id === customerIdToUse);
+      if (selectedCust && fallbackCustomerName !== selectedCust.name) {
+        customerIdToUse = '';
+      }
+      if (!fallbackCustomerName && !customerIdToUse) {
+        fallbackCustomerName = 'BAIE';
+      }
+    } else {
+      const isWalkInGeneral = customerIdToUse && customers.find(c => c.id === customerIdToUse)?.name === '[Normal Walk-in]';
+      if (isWalkInGeneral && fallbackCustomerName) {
+        customerIdToUse = ''; // Clear it so API uses customerName
+      } else if (!customerIdToUse) {
+        if (!fallbackCustomerName) {
+          const walkIn = customers.find(c => c.name.toLowerCase().includes('walk-in') || c.name.toLowerCase().includes('walk in'));
+          if (walkIn) {
+            customerIdToUse = walkIn.id;
+          } else {
+            fallbackCustomerName = 'Walk-in';
+          }
         }
       }
     }
@@ -739,7 +749,12 @@ export default function CreateOrderPage() {
         // Save order details for receipt printing immediately
         setLastOrder({
           ...orderResult,
-          customer: customers.find(c => c.id === customerIdToUse) || { name: fallbackCustomerName || 'Walk-in', phone: finalPhone, address: finalAddress },
+          customer: {
+            id: customerIdToUse || undefined,
+            name: manualCustomerName.trim() || (customerIdToUse ? customers.find(c => c.id === customerIdToUse)?.name : null) || fallbackCustomerName || 'BAIE',
+            phone: finalPhone || (customerIdToUse ? customers.find(c => c.id === customerIdToUse)?.phone : '') || '',
+            address: finalAddress || (customerIdToUse ? customers.find(c => c.id === customerIdToUse)?.address : '') || '',
+          },
           totalAmount: finalTotal,
           subtotal: totalAmount,
           tendered: paidAmount,
@@ -810,9 +825,18 @@ export default function CreateOrderPage() {
           createdAt: new Date().toISOString(),
         };
 
-        const customerObj = customerIdToUse
-          ? customers.find(c => c.id === customerIdToUse)
-          : (fallbackCustomerName ? { name: fallbackCustomerName, address: finalAddress || '', phone: finalPhone || '' } : { name: 'Walk-in', address: '', phone: '' });
+        const selectedObj = customerIdToUse ? customers.find(c => c.id === customerIdToUse) : null;
+        const resolvedName = manualCustomerName.trim()
+          || selectedObj?.name
+          || fallbackCustomerName
+          || 'BAIE';
+
+        const customerObj = {
+          id: customerIdToUse || undefined,
+          name: resolvedName,
+          phone: finalPhone || selectedObj?.phone || '',
+          address: finalAddress || selectedObj?.address || '',
+        };
 
         setLastOrder({
           ...offlineOrder,
@@ -947,7 +971,7 @@ export default function CreateOrderPage() {
             ${lastOrder.customer ? `
             <div style="width: 100%; border-top: 1px dashed #ddd; margin-top: 8px; padding-top: 8px;">
               <strong>Customer Details</strong>
-              Customer: ${lastOrder.customer?.name || 'Walk-in'}<br/>
+              Customer: ${(!lastOrder.customer?.name || ['[normal walk-in]', 'normal walk-in', 'walk-in'].includes(lastOrder.customer.name.trim().toLowerCase())) ? 'BAIE' : lastOrder.customer.name}<br/>
               ${lastOrder.customer?.phone ? `Phone: ${lastOrder.customer.phone}<br/>` : ''}
               Address: ${lastOrder.customer?.address || 'N/A'}
             </div>
@@ -1091,17 +1115,32 @@ export default function CreateOrderPage() {
                 )}
 
                 {fulfillmentMode === 'walkin' && (
-                  <div className="form-group">
-                    <label htmlFor="create-order-walkin-name" className="form-label">Walk-in Customer Name (Optional)</label>
-                    <input 
-                      id="create-order-walkin-name" 
-                      type="text" 
-                      className="form-input" 
-                      placeholder="e.g. Juan Dela Cruz (Default: BAIE)" 
-                      value={manualCustomerName} 
-                      onChange={e => setManualCustomerName(e.target.value)} 
-                    />
-                  </div>
+                  <>
+                    <div className="form-group">
+                      <label htmlFor="create-order-walkin-customer" className="form-label">Select Customer (Optional)</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <select id="create-order-walkin-customer" className="form-select" style={{ flex: 1 }} value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
+                          <option value="">-- Select Customer --</option>
+                          {customers
+                            .filter(c => c.customerType === 'wholesale' || !c.customerType)
+                            .map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="create-order-walkin-name" className="form-label">Walk-in Customer Name (Optional)</label>
+                      <input 
+                        id="create-order-walkin-name" 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="e.g. Juan Dela Cruz (Default: BAIE)" 
+                        value={manualCustomerName} 
+                        onChange={e => setManualCustomerName(e.target.value)} 
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div className="form-group">
