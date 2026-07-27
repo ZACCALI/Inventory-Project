@@ -50,8 +50,8 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
           </div>
         )}
         <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>{companyName}</h1>
-        <p style={{ margin: 0, fontSize: '11px' }}>
-          Marawi City, Lanao del Sur, Philippines
+        <p style={{ margin: 0, fontSize: '11px', fontWeight: 'bold' }}>
+          MAUL ILIAN, MARANTAO LANAO DEL SUR
           <br />
           VAT Reg. TIN: 000-000-000-00000
         </p>

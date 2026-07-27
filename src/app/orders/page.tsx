@@ -607,7 +607,7 @@ export default function OrdersPage() {
         <body>
           <div class="header">
             <h1>${companyName}</h1>
-            <p>Sarimanok St. Marawi City 2nd</p>
+            <p>MAUL ILIAN, MARANTAO LANAO DEL SUR</p>
             <p style="margin-top: 8px; font-weight: 600; color: #000000;">OFFICIAL RECEIPT</p>
           </div>
 
@@ -2291,8 +2291,8 @@ export default function OrdersPage() {
                           </div>
                         )}
                         <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#000000' }}>{companyName.toUpperCase()}</h2>
-                        <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#555' }}>
-                          Marawi City, Lanao del Sur, Philippines
+                        <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#555', fontWeight: 'bold' }}>
+                          MAUL ILIAN, MARANTAO LANAO DEL SUR
                           <br />
                           VAT Reg. TIN: 000-000-000-00000
                         </p>

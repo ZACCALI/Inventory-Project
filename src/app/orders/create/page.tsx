@@ -883,7 +883,7 @@ export default function CreateOrderPage() {
         <body>
           <div class="header">
             <h1>{companyName}</h1>
-            <p>Sarimanok St. Marawi City 2nd</p>
+            <p>MAUL ILIAN, MARANTAO LANAO DEL SUR</p>
             <p style="margin-top: 8px; font-weight: 600; color: #000000;">OFFICIAL RECEIPT</p>
           </div>
 

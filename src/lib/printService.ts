@@ -142,8 +142,7 @@ function printHtmlFallback(data: ThermalReceiptData, paper: PaperWidth = '58'): 
 </head>
 <body>
   <div class="center title">${data.companyName.toUpperCase()}</div>
-  <div class="center title">SARIMANOK ST. MARAWI CITY</div>
-  <div class="center title">2ND BRANCH</div>
+  <div class="center title">MAUL ILIAN, MARANTAO LANAO DEL SUR</div>
   <div class="center title">ALHAMDULILLAH</div>
   <div class="divider"></div>
   ${String(paper) === '58' && data.orderNo.length > 22 ? `<div>Order No:</div><div>${data.orderNo}</div>` : `<div>Order No: ${data.orderNo}</div>`}
