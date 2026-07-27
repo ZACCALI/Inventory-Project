@@ -71,6 +71,7 @@ export const ORDER_TYPE_LABELS: Record<string, string> = {
   pos: 'Walk in Store',
 };
 
+
 export const STOCK_SOURCE_LABELS = {
   WALK_IN_HOME: 'Walk in Home',
   WALK_IN_STORE: 'Walk in Store',
@@ -78,3 +79,24 @@ export const STOCK_SOURCE_LABELS = {
   RECEIVE: 'Receive',
 } as const;
 
+/**
+ * Dispatches a global event so that all open modules instantly refresh their SWR state.
+ * Also uses a BroadcastChannel to notify other open tabs of the change.
+ */
+export function broadcastDataChange(entity?: string) {
+  if (typeof window !== 'undefined') {
+    const detail = { entity, timestamp: Date.now() };
+    
+    // Dispatch locally in the current tab
+    window.dispatchEvent(new CustomEvent('amroding:data-changed', { detail }));
+    window.dispatchEvent(new Event('appDataSynced'));
+    window.dispatchEvent(new Event('amroding:synced'));
+    
+    // Dispatch to other open tabs
+    try {
+      const channel = new BroadcastChannel('amroding-sync-channel');
+      channel.postMessage({ type: 'DATA_CHANGED', detail });
+      channel.close();
+    } catch (e) {}
+  }
+}

@@ -5,7 +5,7 @@ import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
 import { useSession } from 'next-auth/react';
 import { Plus, Search, Edit, Trash2, X, Save, Filter, Package, AlertTriangle, XCircle, Archive, RefreshCw, Info } from 'lucide-react';
-import { formatCurrency } from '@/lib/constants';
+import { formatCurrency, broadcastDataChange } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
 import { addSyncTask } from '@/lib/offlineSync';
@@ -286,9 +286,11 @@ export default function InventoryPage() {
       fetchProducts();
     };
     window.addEventListener('appDataSynced', handleAppSync);
+    window.addEventListener('amroding:data-changed', handleAppSync);
 
     return () => {
       window.removeEventListener('appDataSynced', handleAppSync);
+      window.removeEventListener('amroding:data-changed', handleAppSync);
     };
   }, [fetchDependencies, fetchProducts]);
 
@@ -450,6 +452,7 @@ export default function InventoryPage() {
         }
         closeModal();
         setIsSaving(false);
+        broadcastDataChange('product');
 
         // Background sync
         fetch(url, {

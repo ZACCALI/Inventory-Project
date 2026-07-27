@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
 import { Search, Filter,  Download, Edit, Eye, X, Save, Trash2, Archive, RefreshCw, DollarSign, ShoppingCart, User, Unlock, Lock,  ShoppingBag, Home, Truck, Store, Printer,  Receipt, MoreVertical, Package, Calendar, AlertCircle, AlertTriangle, Phone, Mail,    Star, Loader2 } from 'lucide-react';
-import { APP_NAME, formatCurrency } from '@/lib/constants';
+import { APP_NAME, formatCurrency, broadcastDataChange } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -789,6 +789,7 @@ export default function OrdersPage() {
         setOrders(prev => prev.map(o => o.id === editingOrder.id ? updatedOrder : o));
         setIsEditOpen(false);
         setIsSaving(false);
+        broadcastDataChange('order');
 
         // Background fetch
         fetch(`/api/orders/${editingOrder.id}`, {

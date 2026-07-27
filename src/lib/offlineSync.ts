@@ -1,4 +1,5 @@
 import { db, SyncTask } from './db';
+import { broadcastDataChange } from './constants';
 
 const LOCK_KEY = 'amroding_sync_lock';
 const LOCK_TIMEOUT = 30000; // 30s
@@ -58,6 +59,9 @@ export async function addSyncTask(
       console.warn('Background sync registration failed', e);
     }
   }
+
+  // Trigger real-time UI refresh for the new queue count and local data overrides
+  broadcastDataChange('offlineSyncTaskAdded');
 
   return id as number;
 }
@@ -384,6 +388,7 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
         detail: { synced, types: Array.from(syncedTypes) }
       }));
       window.dispatchEvent(new CustomEvent('appDataSynced'));
+      broadcastDataChange('offlineSync');
     }
     if (failedDetails.length > 0) {
       window.dispatchEvent(new CustomEvent('amroding:syncfailed', {

@@ -8,6 +8,7 @@ import SyncStatusBanner from '@/components/SyncStatusBanner';
 import NextTopLoader from 'nextjs-toploader';
 import { Toaster } from 'react-hot-toast';
 import { Plus_Jakarta_Sans } from 'next/font/google';
+import SWRProvider from '@/components/SWRProvider';
 
 const plusJakartaSans = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -50,13 +51,15 @@ export default function RootLayout({
           style: { background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' },
           success: { iconTheme: { primary: 'var(--success)', secondary: '#fff' } },
         }} />
-        <AlertProvider>
-          <AuthProvider>
-            <AppShell>{children}</AppShell>
-            <ServiceWorkerRegister />
-            <SyncStatusBanner />
-          </AuthProvider>
-        </AlertProvider>
+        <SWRProvider>
+          <AlertProvider>
+            <AuthProvider>
+              <AppShell>{children}</AppShell>
+              <ServiceWorkerRegister />
+              <SyncStatusBanner />
+            </AuthProvider>
+          </AlertProvider>
+        </SWRProvider>
       </body>
     </html>
   );

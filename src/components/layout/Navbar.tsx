@@ -130,6 +130,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
 
     window.addEventListener('online', checkOnlineStatus);
     window.addEventListener('offline', checkOnlineStatus);
+    window.addEventListener('amroding:data-changed', countPending);
     checkOnlineStatus();
     countPending();
 
@@ -138,6 +139,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
     return () => {
       window.removeEventListener('online', checkOnlineStatus);
       window.removeEventListener('offline', checkOnlineStatus);
+      window.removeEventListener('amroding:data-changed', countPending);
       clearInterval(syncInterval);
     };
   }, []);
@@ -245,7 +247,14 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
 
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
+    window.addEventListener('amroding:data-changed', fetchNotifications);
+    window.addEventListener('appDataSynced', fetchNotifications);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('amroding:data-changed', fetchNotifications);
+      window.removeEventListener('appDataSynced', fetchNotifications);
+    };
 // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSession?.user?.id]);
 

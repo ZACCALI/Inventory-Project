@@ -6,7 +6,7 @@ import { fetcher } from '@/lib/fetcher';
 import { useSession } from 'next-auth/react';
 import { Search, Plus, Phone, MapPin, Edit, Trash2, X,  FileText, ShoppingCart,   ChevronDown, ChevronUp, Users, UserCheck } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
-import { formatCurrency } from '@/lib/constants';
+import { formatCurrency, broadcastDataChange } from '@/lib/constants';
 import { useDebounce } from '@/hooks/useDebounce';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db } from '@/lib/db';
@@ -169,7 +169,11 @@ export default function CustomersPage() {
       fetchCustomers();
     };
     window.addEventListener('appDataSynced', handleAppSync);
-    return () => window.removeEventListener('appDataSynced', handleAppSync);
+    window.addEventListener('amroding:data-changed', handleAppSync);
+    return () => {
+      window.removeEventListener('appDataSynced', handleAppSync);
+      window.removeEventListener('amroding:data-changed', handleAppSync);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 

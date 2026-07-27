@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Search, Plus, Trash2, Save, ShoppingBag, User,  X, Truck, CheckCircle2, AlertCircle, Minus, Camera, ScanLine, Receipt, Printer, ShoppingCart,       AlertTriangle } from 'lucide-react';
-import { formatCurrency } from '@/lib/constants';
+import { formatCurrency, broadcastDataChange } from '@/lib/constants';
 import { Html5Qrcode } from 'html5-qrcode';
 import { db } from '@/lib/db';
 import { useBarcodeScanner } from '@/lib/useBarcodeScanner';
@@ -731,6 +731,8 @@ export default function CreateOrderPage() {
           await db.products.where('id').equals(i.product.id).modify(p => { p.stock = Math.max(0, (p.stock || 0) - qtyToDeduct); });
         })).catch(() => {});
 
+        broadcastDataChange('order');
+
         // Clear cart and open success modal
         setCart([]);
         setDiscountValue('');
@@ -798,6 +800,8 @@ export default function CreateOrderPage() {
             scheduledDate: deliveryDate
           } : undefined
         });
+
+        broadcastDataChange('order');
 
         setCart([]);
         setDiscountValue('');
