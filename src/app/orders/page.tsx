@@ -554,6 +554,9 @@ export default function OrdersPage() {
       orderNo,
       createdBy,
       dateStr,
+      customerName: order.customer?.name || undefined,
+      customerPhone: order.customer?.phone || undefined,
+      customerAddress: order.customer?.address || undefined,
       driverName:   deliv?.driverName || order.deliveryDriverName || undefined,
       deliveryDate: deliv?.scheduledDate ? new Date(deliv.scheduledDate).toLocaleDateString() : order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : undefined,
       notes:        order.notes || undefined,
@@ -630,10 +633,11 @@ export default function OrdersPage() {
               <strong>Cashier</strong>
               ${escapeHtml(order.createdBy?.name || 'ADMIN')}
             </div>
-            ${order.delivery ? `
+            ${order.customer ? `
             <div style="width: 100%; border-top: 1px dashed #ddd; margin-top: 8px; padding-top: 8px;">
-              <strong>Delivery Details</strong>
+              <strong>Customer Details</strong>
               Customer: ${escapeHtml(order.customer?.name || 'Walk-in')}<br/>
+              ${order.customer?.phone ? `Phone: ${escapeHtml(order.customer.phone)}<br/>` : ''}
               Address: ${escapeHtml(order.customer?.address || 'N/A')}
             </div>
             ` : ''}
@@ -2172,6 +2176,9 @@ export default function OrdersPage() {
                       )}
                       <div>By: {receiptOrder.createdBy?.name || 'ADMIN'}</div>
                       <div>{new Date(receiptOrder.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',','')}</div>
+                      {receiptOrder.customer?.name && <div>Customer: {receiptOrder.customer.name}</div>}
+                      {receiptOrder.customer?.phone && <div>Phone: {receiptOrder.customer.phone}</div>}
+                      {receiptOrder.customer?.address && <div>Address: {receiptOrder.customer.address}</div>}
                       {driverName && <div>Driver: {driverName}</div>}
                       {deliveryDate && <div>Date: {deliveryDate}</div>}
                       {customNotes && <div>Notes: {customNotes}</div>}

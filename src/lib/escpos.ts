@@ -235,6 +235,9 @@ export interface ReceiptData {
   orderNo: string;
   createdBy: string;
   dateStr: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerAddress?: string;
   driverName?: string;
   deliveryDate?: string;
   notes?: string;
@@ -295,6 +298,12 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
   }
   p.line(`By: ${data.createdBy}`)
    .line(data.dateStr);
+
+  if (data.customerName) {
+    p.line(`Customer: ${data.customerName}`);
+    if (data.customerPhone) p.line(`Phone: ${data.customerPhone}`);
+    if (data.customerAddress) p.line(`Address: ${data.customerAddress}`);
+  }
 
   if (data.driverName)   p.line(`Driver: ${data.driverName}`);
   if (data.notes) {

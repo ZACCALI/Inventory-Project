@@ -78,6 +78,10 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
                 <td style={{ textTransform: 'uppercase', borderBottom: '1px solid #ccc' }}>{order.customer?.address || 'N/A'}</td>
               </tr>
               <tr>
+                <td style={{ fontWeight: 'bold' }}>PHONE:</td>
+                <td style={{ textTransform: 'uppercase', borderBottom: '1px solid #ccc' }}>{order.customer?.phone || 'N/A'}</td>
+              </tr>
+              <tr>
                 <td style={{ fontWeight: 'bold' }}>BUYER&apos;S TIN:</td>
                 <td style={{ borderBottom: '1px solid #ccc' }}>N/A</td>
               </tr>
