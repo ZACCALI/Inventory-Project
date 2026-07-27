@@ -2158,9 +2158,7 @@ export default function OrdersPage() {
                         </div>
                       )}
                       <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '13px' }}>AMRODING GENERAL MERCHANDISE</div>
-                      <div style={{ textAlign: 'center', fontSize: '11px' }}>SARIMANOK ST. MARAWI CITY</div>
-                      <div style={{ textAlign: 'center', fontSize: '11px' }}>2ND BRANCH</div>
-                      <div style={{ textAlign: 'center', fontSize: '11px' }}>ALHAMDULILLAH</div>
+                      <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: 'bold' }}>MAUL ILIAN, MARANTAO LANAO DEL SUR</div>
                       <div style={{ borderBottom: '1px dashed #000', margin: '6px 0' }}></div>
                       
                       {previewPaperWidth === '58' && receiptOrder.orderNumber && receiptOrder.orderNumber.length > 22 ? (

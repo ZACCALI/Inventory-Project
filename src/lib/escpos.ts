@@ -267,11 +267,20 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
   p.bold(true)
    .centerLine(cleanCompanyName.toUpperCase(), true)
    .normalSize()
-   .bold(true)
-   .centerLine(data.address.toUpperCase())
-   .centerLine(data.branch.toUpperCase())
-   .centerLine(data.slogan.toUpperCase())
-   .divider();
+   .bold(true);
+
+  const addressLine = (data.address && data.address.trim() && !data.address.toLowerCase().includes('marawi')) 
+    ? data.address.toUpperCase() 
+    : 'MAUL ILIAN, MARANTAO LANAO DEL SUR';
+
+  p.centerLine(addressLine);
+  if (data.branch && !data.branch.toLowerCase().includes('2nd branch') && data.branch.trim()) {
+    p.centerLine(data.branch.toUpperCase());
+  }
+  if (data.slogan && data.slogan.toUpperCase() !== 'ALHAMDULILLAH' && data.slogan.trim()) {
+    p.centerLine(data.slogan.toUpperCase());
+  }
+  p.divider();
 
   if (data.orderStatus === 'cancelled') {
     p.bold(true).centerLine('*** CANCELLED / VOID ORDER ***').bold(false).divider();

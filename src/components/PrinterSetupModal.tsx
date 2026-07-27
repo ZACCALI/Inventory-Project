@@ -378,9 +378,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
             }}>
               <div style={{ textAlign: 'center', fontWeight: 'bold' }}>AMRODING GENERAL MERCHANDISE</div>
-              <div style={{ textAlign: 'center' }}>SARIMANOK ST. MARAWI CITY</div>
-              <div style={{ textAlign: 'center' }}>2ND BRANCH</div>
-              <div style={{ textAlign: 'center' }}>ALHAMDULILLAH</div>
+              <div style={{ textAlign: 'center' }}>MAUL ILIAN, MARANTAO LANAO DEL SUR</div>
               <div style={{ borderBottom: '1px dashed #000', margin: '4px 0' }}></div>
               <div>Order No: TEST-001</div>
               <div>By: ADMIN</div>

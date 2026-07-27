@@ -59,9 +59,9 @@ export async function printThermal(
 
       const bytes = buildReceipt({
         companyName: data.companyName,
-        address: 'SARIMANOK ST. MARAWI CITY',
-        branch: '2ND BRANCH',
-        slogan: 'ALHAMDULILLAH',
+        address: 'MAUL ILIAN, MARANTAO LANAO DEL SUR',
+        branch: '',
+        slogan: '',
         orderNo: data.orderNo,
         createdBy: data.createdBy,
         dateStr: data.dateStr,
