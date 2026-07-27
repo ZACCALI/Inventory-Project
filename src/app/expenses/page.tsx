@@ -38,6 +38,18 @@ export default function ExpensesPage() {
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
+  useEffect(() => {
+    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -130,7 +142,7 @@ export default function ExpensesPage() {
       }
     };
 
-    if (swrRes || swrError) {
+    if (swrRes || swrError || !isOnline) {
       applyOfflineTasks();
     }
   }, [swrRes, swrError]);

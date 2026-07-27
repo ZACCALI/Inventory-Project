@@ -142,7 +142,7 @@ export default function DriversPage() {
       }
     };
 
-    if (swrRes || swrError) {
+    if (swrRes || swrError || !isOnline) {
       applyOfflineTasks();
     }
   }, [swrRes, swrError]);

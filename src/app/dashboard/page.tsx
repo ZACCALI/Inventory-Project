@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import ExpiryAlertWidget from '@/components/ExpiryAlertWidget';
+import { db } from '@/lib/db';
 
 interface DashboardData {
   totalProducts: number;
@@ -53,13 +54,13 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const { data: dashData, isLoading: isDashLoading, error: dashError, mutate: mutateDash } = useSWR<DashboardData>(
-    status === 'authenticated' ? '/api/reports?type=dashboard' : null,
+    typeof window !== 'undefined' ? '/api/reports?type=dashboard' : null,
     fetcher,
     { refreshInterval: 60000 }
   );
 
   const { data: salesResult, isLoading: isSalesLoading, mutate: mutateSales } = useSWR(
-    status === 'authenticated' ? '/api/reports?type=sales' : null,
+    typeof window !== 'undefined' ? '/api/reports?type=sales' : null,
     fetcher,
     { refreshInterval: 60000 }
   );
@@ -99,13 +100,50 @@ export default function DashboardPage() {
     return () => window.removeEventListener('appDataSynced', handleAppSync);
   }, [isOfflineMode, mutateDash, mutateSales]);
 
-  const data = dashData;
+  const [offlineDashData, setOfflineDashData] = useState<DashboardData | null>(null);
+
+  useEffect(() => {
+    if ((isOfflineMode || dashError) && !dashData) {
+      const loadOfflineStats = async () => {
+        try {
+          const products = await db.products.toArray();
+          const totalProducts = products.length;
+          const totalStock = products.reduce((acc: number, p: any) => acc + (p.stock || 0), 0);
+          const totalStockValue = products.reduce((acc: number, p: any) => acc + ((p.stock || 0) * (p.price || 0)), 0);
+          const lowStockProducts = products
+            .filter((p: any) => p.stock <= 5)
+            .map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              stock: p.stock,
+              minStock: 5,
+              category: p.categoryName ? { name: p.categoryName } : null
+            }));
+
+          setOfflineDashData({
+            totalProducts,
+            totalStock,
+            totalStockValue,
+            todaySales: 0,
+            todayExpenses: 0,
+            lowStockCount: lowStockProducts.length,
+            pendingOrders: pendingDeltas.orders,
+            recentOrders: [],
+            lowStockProducts
+          });
+        } catch {
+          // ignore
+        }
+      };
+      loadOfflineStats();
+    }
+  }, [isOfflineMode, dashError, dashData, pendingDeltas.orders]);
+
+  const data = dashData || offlineDashData;
   const salesData = salesResult?.dailySales || [];
-  const loading = isDashLoading || isSalesLoading;
+  const loading = (isDashLoading || isSalesLoading) && !data && !isOfflineMode;
 
-
-
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="page-container" style={{ paddingTop: 'var(--space-lg)' }}>
         {/* Skeleton page header */}

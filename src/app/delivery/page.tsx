@@ -48,6 +48,18 @@ export default function DeliveryPage() {
 
   const [page, setPage] = useState(1);
   const [totalDeliveries, setTotalDeliveries] = useState(0);
+  const [isOnline, setIsOnline] = useState(true);
+  useEffect(() => {
+    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   const limit = 50;
 
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
@@ -156,7 +168,7 @@ export default function DeliveryPage() {
       }
     };
 
-    if (swrRes || swrError) {
+    if (swrRes || swrError || !isOnline) {
       applyOfflineTasks();
     }
   }, [swrRes, swrError]);

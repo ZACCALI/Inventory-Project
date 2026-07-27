@@ -162,8 +162,11 @@ export default function OrdersPage() {
   };
 
   const { data: swrRes, error: swrError, mutate: mutateOrders } = useSWR(
-    session ? `/api/orders?${getQueryString()}` : null,
+    typeof window !== 'undefined' ? `/api/orders?${getQueryString()}` : null,
     async (url) => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('Offline');
+      }
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
@@ -183,15 +186,8 @@ export default function OrdersPage() {
     };
   }, [mutateOrders]);
 
-  // Stop skeleton after 2s if offline with no cache
   useEffect(() => {
-    if (!swrRes && !swrError) {
-      const t = setTimeout(() => setLoading(false), 2000);
-      return () => clearTimeout(t);
-    }
-
     const applyOfflineTasks = async () => {
-      if (!swrRes && !swrError) return;
       
       try {
         const pendingTasks = await db.syncQueue
@@ -229,7 +225,7 @@ export default function OrdersPage() {
       }
     };
 
-    if (swrRes || swrError) {
+    if (swrRes || swrError || !isOnline) {
       applyOfflineTasks();
     }
   }, [swrRes, swrError]);

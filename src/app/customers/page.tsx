@@ -69,18 +69,12 @@ export default function CustomersPage() {
   };
 
   const { data: swrRes, error: swrError } = useSWR(
-    session ? `/api/customers?${getQueryString()}` : null,
+    typeof window !== 'undefined' ? `/api/customers?${getQueryString()}` : null,
     fetcher,
     { refreshInterval: 60000 }
   );
 
-  // Stop skeleton after 2s if offline with no cache
   useEffect(() => {
-    if (!swrRes && !swrError) {
-      const t = setTimeout(() => setLoading(false), 2000);
-      return () => clearTimeout(t);
-    }
-
     const applyOfflineTasks = async () => {
       try {
         const pendingTasks = await db.syncQueue
@@ -136,7 +130,7 @@ export default function CustomersPage() {
       }
     };
 
-    if (swrRes || swrError) {
+    if (swrRes || swrError || !isOnline) {
       applyOfflineTasks();
     }
   }, [swrRes, swrError]);

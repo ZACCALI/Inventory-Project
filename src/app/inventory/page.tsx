@@ -76,18 +76,12 @@ export default function InventoryPage() {
 
   // SWR for instant caching
   const { data: swrProducts, error: swrError } = useSWR(
-    status === 'authenticated' ? `/api/products${showArchived ? '?archived=true' : ''}` : null,
+    typeof window !== 'undefined' ? `/api/products${showArchived ? '?archived=true' : ''}` : null,
     fetcher,
     { refreshInterval: 15000 }
   );
 
   useEffect(() => {
-    // If both undefined, we're offline with no cache - stop skeleton after 2s
-    if (!swrProducts && !swrError) {
-      const t = setTimeout(() => setLoading(false), 2000);
-      return () => clearTimeout(t);
-    }
-
     const applyOfflineTasks = async () => {
       try {
         const pendingTasks = await db.syncQueue
@@ -159,7 +153,7 @@ export default function InventoryPage() {
       }
     };
 
-    if (swrProducts || swrError) {
+    if (swrProducts || swrError || !isOnline) {
       applyOfflineTasks();
     }
   }, [swrProducts, swrError]);

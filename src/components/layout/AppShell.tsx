@@ -11,7 +11,15 @@ import { loadPrinterConfig } from '@/lib/qzService';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
-  const [cachedSession, setCachedSession] = useState<any>(null);
+  const [cachedSession, setCachedSession] = useState<any>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const saved = localStorage.getItem('amroding_cached_session');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     try {
@@ -83,6 +91,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Fetch settings once per session
   useEffect(() => {
     if (activeSession && !settings) {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        // Read directly from Dexie cache when offline
+        db.settings.get('current').then(cached => {
+          if (cached?.data) {
+            setSettings(JSON.parse(cached.data));
+          } else {
+            setSettings({});
+          }
+        }).catch(() => setSettings({}));
+        return;
+      }
+
       fetch('/api/settings')
         .then(res => {
           if (!res.ok) throw new Error('Settings fetch failed');
@@ -100,7 +120,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           } catch (dexieErr) {
             console.error('Failed to read settings from Dexie cache', dexieErr);
           }
-          // Set a fallback to avoid infinite loading on offline mode
           setSettings({}); 
         });
     }
@@ -155,8 +174,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Show loading state while checking auth or loading dynamic permissions
-  const isLoadingSettings = activeSession && userRole !== 'admin' && !settings;
+  // Show loading state while checking auth or loading dynamic permissions (Skip if activeSession or offline)
+  const isLoadingSettings = activeSession && userRole !== 'admin' && !settings && isOnline;
   if ((status === 'loading' && !activeSession) || isLoadingSettings) {
     return (
         <div className="loading-page" style={{ minHeight: '100vh', background: 'var(--bg-main)' }}>
