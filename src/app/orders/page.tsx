@@ -2046,7 +2046,7 @@ export default function OrdersPage() {
                     <Receipt size={20} color="var(--primary)" /> Receipt Preview & Print
                   </h2>
                   <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                    Order No: <strong style={{ color: 'var(--primary)' }}>{receiptOrder.orderNumber}</strong> • {receiptOrder.customer?.name || 'Walk-in Customer'}
+                    Order No: <strong style={{ color: 'var(--primary)' }}>{receiptOrder.orderNumber}</strong> • {!receiptOrder.customer?.name || ['[normal walk-in]', 'normal walk-in', 'walk-in'].includes(receiptOrder.customer.name.trim().toLowerCase()) ? 'BAIE' : receiptOrder.customer.name}
                   </p>
                 </div>
                 <button className="btn btn-icon btn-ghost" onClick={() => setReceiptOrder(null)} style={{ borderRadius: '50%' }}>
@@ -2176,7 +2176,7 @@ export default function OrdersPage() {
                       )}
                       <div>By: {receiptOrder.createdBy?.name || 'ADMIN'}</div>
                       <div>{new Date(receiptOrder.createdAt).toLocaleString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(',','')}</div>
-                      {receiptOrder.customer?.name && <div>Customer: {receiptOrder.customer.name}</div>}
+                      <div>Customer: {!receiptOrder.customer?.name || ['[normal walk-in]', 'normal walk-in', 'walk-in'].includes(receiptOrder.customer.name.trim().toLowerCase()) ? 'BAIE' : receiptOrder.customer.name}</div>
                       {receiptOrder.customer?.phone && <div>Phone: {receiptOrder.customer.phone}</div>}
                       {receiptOrder.customer?.address && <div>Address: {receiptOrder.customer.address}</div>}
                       {driverName && <div>Driver: {driverName}</div>}

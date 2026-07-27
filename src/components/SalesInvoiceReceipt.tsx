@@ -23,6 +23,9 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
   const vatableSales = totalAmount / (1 + vatRate);
   const vatAmount = totalAmount - vatableSales;
 
+  const rawCustName = order.customer?.name?.trim();
+  const displayCustomerName = (!rawCustName || ['[normal walk-in]', 'normal walk-in', 'walk-in'].includes(rawCustName.toLowerCase())) ? 'BAIE' : rawCustName;
+
   return (
     <div className="print-only receipt-container" style={{
       display: 'none', // Hidden on screen by default
@@ -71,7 +74,7 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
             <tbody>
               <tr>
                 <td style={{ width: '90px', fontWeight: 'bold' }}>SOLD TO:</td>
-                <td style={{ textTransform: 'uppercase', borderBottom: '1px solid #ccc' }}>{order.customer?.name}</td>
+                <td style={{ textTransform: 'uppercase', borderBottom: '1px solid #ccc' }}>{displayCustomerName}</td>
               </tr>
               <tr>
                 <td style={{ fontWeight: 'bold' }}>ADDRESS:</td>

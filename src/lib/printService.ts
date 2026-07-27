@@ -125,7 +125,9 @@ function printHtmlFallback(data: ThermalReceiptData, paper: PaperWidth = '58'): 
 
     const cashRow    = data.cash    !== undefined ? `<div class="flex-row"><span>CASH:</span><span>${data.cash.toFixed(2)}</span></div>` : '';
     const changeRow  = data.change  !== undefined ? `<div class="flex-row"><span>CHANGE:</span><span>${data.change.toFixed(2)}</span></div>` : '';
-    const customerHtml = data.customerName ? `<div>Customer: ${data.customerName}</div>${data.customerPhone ? `<div>Phone: ${data.customerPhone}</div>` : ''}${data.customerAddress ? `<div>Address: ${data.customerAddress}</div>` : ''}` : '';
+    const rawCustName = data.customerName?.trim();
+    const displayCustName = (!rawCustName || ['[normal walk-in]', 'normal walk-in', 'walk-in'].includes(rawCustName.toLowerCase())) ? 'BAIE' : rawCustName;
+    const customerHtml = `<div>Customer: ${displayCustName}</div>${data.customerPhone ? `<div>Phone: ${data.customerPhone}</div>` : ''}${data.customerAddress ? `<div>Address: ${data.customerAddress}</div>` : ''}`;
     const driverHtml = data.driverName   ? `<div>Driver: ${data.driverName}</div>` : '';
     const dateHtml   = data.deliveryDate ? `<div>Delivery: ${data.deliveryDate}</div>` : '';
     const notesHtml  = data.notes        ? `<div>Notes: ${data.notes}</div>` : '';

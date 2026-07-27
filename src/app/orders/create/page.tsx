@@ -1073,56 +1073,36 @@ export default function CreateOrderPage() {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="create-order-customer" className="form-label">Customer</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <select id="create-order-customer" name="customerId" className="form-select" style={{ flex: 1 }} value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
-                      <option value="">-- Select or Add Customer --</option>
-                      {customers
-                        .filter(c => c.customerType === 'wholesale' || !c.customerType)
-                        .filter(c => c.name !== '[Normal Walk-in]')
-                        .map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                {fulfillmentMode === 'delivery' && (
+                  <div className="form-group">
+                    <label htmlFor="create-order-customer" className="form-label">Customer <span style={{ color: 'var(--danger)' }}>*</span></label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <select id="create-order-customer" name="customerId" className="form-select" style={{ flex: 1, borderColor: !selectedCustomerId ? 'var(--danger-light)' : 'var(--border)' }} value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
+                        <option value="">-- Select Wholesale Customer --</option>
+                        {customers
+                          .filter(c => c.customerType === 'wholesale' || !c.customerType)
+                          .filter(c => c.name !== '[Normal Walk-in]')
+                          .map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="form-group">
-                  <label htmlFor="create-order-walkin-name" className="form-label">Customer Name</label>
-                  <input 
-                    id="create-order-walkin-name" 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="e.g. Juan Dela Cruz" 
-                    value={manualCustomerName} 
-                    onChange={e => setManualCustomerName(e.target.value)} 
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="create-order-customer-phone" className="form-label">Contact Number (Optional)</label>
-                  <input 
-                    id="create-order-customer-phone" 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="e.g. 09123456789" 
-                    value={manualCustomerPhone} 
-                    onChange={e => setManualCustomerPhone(e.target.value)} 
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="create-order-customer-address" className="form-label">Delivery Address (Optional)</label>
-                  <input 
-                    id="create-order-customer-address" 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="e.g. 123 Main St., City" 
-                    value={manualCustomerAddress} 
-                    onChange={e => setManualCustomerAddress(e.target.value)} 
-                  />
-                </div>
+                {fulfillmentMode === 'walkin' && (
+                  <div className="form-group">
+                    <label htmlFor="create-order-walkin-name" className="form-label">Walk-in Customer Name (Optional)</label>
+                    <input 
+                      id="create-order-walkin-name" 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="e.g. Juan Dela Cruz (Default: BAIE)" 
+                      value={manualCustomerName} 
+                      onChange={e => setManualCustomerName(e.target.value)} 
+                    />
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label htmlFor="create-order-status" className="form-label">Order Status</label>

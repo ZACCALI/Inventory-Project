@@ -299,11 +299,11 @@ export function buildReceipt(data: ReceiptData, paper: PaperWidth = '58'): numbe
   p.line(`By: ${data.createdBy}`)
    .line(data.dateStr);
 
-  if (data.customerName) {
-    p.line(`Customer: ${data.customerName}`);
-    if (data.customerPhone) p.line(`Phone: ${data.customerPhone}`);
-    if (data.customerAddress) p.line(`Address: ${data.customerAddress}`);
-  }
+  const rawCustName = data.customerName?.trim();
+  const displayCustName = (!rawCustName || ['[normal walk-in]', 'normal walk-in', 'walk-in'].includes(rawCustName.toLowerCase())) ? 'BAIE' : rawCustName;
+  p.line(`Customer: ${displayCustName}`);
+  if (data.customerPhone) p.line(`Phone: ${data.customerPhone}`);
+  if (data.customerAddress) p.line(`Address: ${data.customerAddress}`);
 
   if (data.driverName)   p.line(`Driver: ${data.driverName}`);
   if (data.notes) {
