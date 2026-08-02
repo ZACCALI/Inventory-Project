@@ -5,13 +5,15 @@ interface ReceiptProps {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   order: any;
   companyName?: string;
+  settings?: any;
 }
 
-export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GENERAL MERCHANDISE" }: ReceiptProps) {
+export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GENERAL MERCHANDISE", settings }: ReceiptProps) {
   if (!order) return null;
 
   // Assuming 12% VAT in Philippines
-  const vatRate = 0.12;
+  const taxRate = (settings?.taxRate || 12) / 100;
+  const divisor = 1 + taxRate;
   const totalAmount = order.totalAmount;
   
   // Calculate subtotal to find actual discount amount
@@ -19,8 +21,8 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
   const calculatedSubtotal = order.items?.reduce((sum: number, item: any) => sum + (item.subtotal || item.quantity * item.price), 0) || totalAmount;
   const discountAmount = calculatedSubtotal > totalAmount ? calculatedSubtotal - totalAmount : 0;
 
-  // Calculate VAT based on inclusive total: VAT = Total / 1.12 * 0.12
-  const vatableSales = totalAmount / (1 + vatRate);
+  // Calculate VAT based on inclusive total
+  const vatableSales = totalAmount / divisor;
   const vatAmount = totalAmount - vatableSales;
 
   const rawCustName = order.customer?.name?.trim();
@@ -178,7 +180,7 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
             <tbody>
               {order.discount > 0 && (
                 <tr>
-                  <td>DISCOUNT</td>
+                  <td>DISCOUNT (FLAT)</td>
                   <td style={{ textAlign: 'right' }}>{discountAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 </tr>
               )}

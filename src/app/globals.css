@@ -3692,7 +3692,7 @@ p {
     visibility: visible;
   }
   .print-only {
-    position: absolute;
+    position: static;
     left: 0;
     top: 0;
     width: 100%;
@@ -3887,10 +3887,17 @@ p {
     visibility: visible;
   }
   .print-only {
-    position: absolute;
+    position: static;
     left: 0;
     top: 0;
     width: 100%;
+  }
+
+  .invoice-totals,
+  .invoice-signature,
+  .receipt-footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   @page {
     margin: 0.5cm;

@@ -87,18 +87,19 @@ export async function POST(request: NextRequest) {
     
     const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
     if (isDuplicate) {
-      try {
-        const existing = await prisma.order.findFirst({
-          where: { orderNumber: body.orderNumber },
-          select: { id: true, orderNumber: true, createdAt: true },
-        });
-        return NextResponse.json(
-          { message: 'Already processed', id: existing?.id, orderNumber: existing?.orderNumber, createdAt: existing?.createdAt },
-          { status: 200 }
-        );
-      } catch {
-        return NextResponse.json({ message: 'Already processed' }, { status: 200 });
-      }
+      const existingOrder = await prisma.order.findFirst({
+        where: { 
+          createdAt: { gte: new Date(Date.now() - 3600000) }
+        },
+        select: { id: true, orderNumber: true, createdAt: true },
+        orderBy: { createdAt: 'desc' }
+      });
+      return NextResponse.json({ 
+        message: 'Already processed', 
+        id: existingOrder?.id,
+        orderNumber: existingOrder?.orderNumber,
+        createdAt: existingOrder?.createdAt
+      }, { status: 200 });
     }
 
     // Validate input with Zod schema
@@ -235,8 +236,16 @@ export async function POST(request: NextRequest) {
         }
 
         // 1. Deduct from batches using FEFO
+        const now = new Date();
         const availableBatches = await tx.batch.findMany({
-          where: { productId: item.productId, stock: { gt: 0 } }
+          where: { 
+            productId: item.productId, 
+            stock: { gt: 0 },
+            OR: [
+              { expiryDate: null },
+              { expiryDate: { gt: isOfflineSync ? new Date(0) : now } }
+            ]
+          }
         });
 
         // SQLite puts nulls first in ASC sort. We must manually sort in JS to put null expiryDates last!
@@ -283,23 +292,14 @@ export async function POST(request: NextRequest) {
 
         // 2. Deduct from global stock
         const stockUpdate = await tx.product.updateMany({
-          where: {
-            id: item.productId,
-            stock: { gte: item._totalStockNeeded },
+          where: { 
+            id: item.productId, 
+            stock: { gte: item._totalStockNeeded } 
           },
           data: { stock: { decrement: item._totalStockNeeded } },
         });
-
-        if (stockUpdate.count === 0) {
-          if (!isOfflineSync) {
-            throw new Error(`Insufficient stock for product ID ${item.productId}`);
-          } else {
-            // For offline sync, force the decrement even if it goes negative
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { stock: { decrement: item._totalStockNeeded } },
-            });
-          }
+        if (stockUpdate.count === 0 && !isOfflineSync) {
+          throw new Error(`Insufficient stock for product ID ${item.productId}. Please refresh and try again.`);
         }
 
         await tx.stockLog.create({

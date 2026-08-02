@@ -109,6 +109,21 @@ export async function connectQZ(): Promise<boolean> {
       });
     }
 
+    // Register disconnect callback for reactive status updates
+    qz.websocket.setClosedCallbacks(async () => {
+      qzInstance = null;
+      securityConfigured = false;
+      console.warn('[QZ Tray] WebSocket disconnected');
+      // Dispatch event so UI can update printer status
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('qz:disconnected'));
+      }
+    });
+
+    qz.websocket.setErrorCallbacks((error: unknown) => {
+      console.warn('[QZ Tray] WebSocket error:', error);
+    });
+
     await qz.websocket.connect({ retries: 3, delay: 1 });
     qzInstance = qz;
     console.log('[QZ] Connected successfully to QZ Tray');

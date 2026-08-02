@@ -73,11 +73,26 @@ export const ORDER_TYPE_LABELS: Record<string, string> = {
 
 
 export const STOCK_SOURCE_LABELS = {
+
   WALK_IN_HOME: 'Walk in Home',
   WALK_IN_STORE: 'Walk in Store',
   MANUAL: 'Manual',
   RECEIVE: 'Receive',
 } as const;
+
+// Singleton BroadcastChannel for efficient cross-tab communication
+let _broadcastChannel: BroadcastChannel | null = null;
+function getBroadcastChannel(): BroadcastChannel | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    if (!_broadcastChannel) {
+      _broadcastChannel = new BroadcastChannel('amroding-sync-channel');
+    }
+    return _broadcastChannel;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Dispatches a global event so that all open modules instantly refresh their SWR state.
@@ -92,11 +107,12 @@ export function broadcastDataChange(entity?: string) {
     window.dispatchEvent(new Event('appDataSynced'));
     window.dispatchEvent(new Event('amroding:synced'));
     
-    // Dispatch to other open tabs
+    // Dispatch to other open tabs using singleton channel
     try {
-      const channel = new BroadcastChannel('amroding-sync-channel');
-      channel.postMessage({ type: 'DATA_CHANGED', detail });
-      channel.close();
-    } catch (e) {}
+      const channel = getBroadcastChannel();
+      if (channel) {
+        channel.postMessage({ type: 'DATA_CHANGED', detail });
+      }
+    } catch (e) { /* ignore */ }
   }
 }

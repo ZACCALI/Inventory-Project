@@ -77,15 +77,15 @@ export default function BarcodeScannerPage() {
         // Prevent duplicates
         if (prev.some(item => item.id === lastScanned.id)) return prev;
         
-        // Add it to the list with 0 physical counts ready to be audited
+        // Add it to the list with 1 physical counts ready to be audited
         const newItem = {
           ...lastScanned,
-          scannedQty: 0,
+          scannedQty: 1, // Set to 1 because the first scan registers as 1 unit counted
           physicalCounts: {
-            base: 0,
+            base: 1,
  
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            uoms: lastScanned.uoms?.reduce((acc: any, uom: any) => ({ ...acc, [uom.id || uom.name]: 0 }), {}) || {}
+            uoms: lastScanned.uoms?.reduce((acc: any, uom: any) => ({ ...acc, [uom.id || uom.name]: 1 }), {}) || {}
           }
         };
         return [newItem, ...prev];

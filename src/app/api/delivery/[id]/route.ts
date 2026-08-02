@@ -35,10 +35,12 @@ export async function PUT(
       include: { order: true }
     });
 
-    if (existingDelivery?.order?.status === 'cancelled') {
+    const existingOrder = existingDelivery?.order;
+    // Guard: Do not re-activate a cancelled order
+    if (existingOrder && existingOrder.status === 'cancelled') {
       return NextResponse.json(
-        { error: 'Cannot update delivery status on a cancelled order.' },
-        { status: 400 }
+        { error: 'Cannot update delivery on a cancelled order. The order must be reinstated first.' },
+        { status: 409 }
       );
     }
 
@@ -53,6 +55,15 @@ export async function PUT(
     if (deliveredAt !== undefined) updateData.deliveredAt = deliveredAt;
 
     const delivery = await prisma.$transaction(async (tx) => {
+      // Guard: do not re-activate cancelled orders
+      const parentOrder = await tx.order.findUnique({ 
+        where: { id: existingDelivery!.orderId }, 
+        select: { status: true } 
+      });
+      if (parentOrder?.status === 'cancelled') {
+        throw new Error('Cannot update delivery: the parent order has been cancelled.');
+      }
+
       const updated = await tx.delivery.update({
         where: { id },
         data: updateData,

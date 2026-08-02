@@ -515,11 +515,11 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
         <div className="user-dropdown" ref={dropdownRef}>
           <button
             className="navbar-profile-btn"
-            aria-label="User menu"
+            aria-label="Open user menu"
             onClick={() => setDropdownOpen(!dropdownOpen)}
           >
             {(activeSession?.user as { avatar?: string })?.avatar ? (
-              <Image width={400} height={400} src={(activeSession?.user as { avatar?: string }).avatar || '/icon.svg'} alt="Avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+              <Image width={64} height={64} src={(activeSession?.user as { avatar?: string }).avatar || '/icon.svg'} alt="Avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
               <span className="navbar-avatar-circle">
                 {activeSession?.user?.name ? getInitials(activeSession.user.name) : 'U'}

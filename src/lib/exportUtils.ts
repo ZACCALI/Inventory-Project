@@ -69,6 +69,17 @@ export async function exportToPDF(data: any[], columns: { header: string, dataKe
   const pageWidth = doc.internal.pageSize.width;
   doc.line(14, 44, pageWidth - 14, 44);
 
+  const dynamicColumnStyles: Record<number, any> = {};
+  columns.forEach((col, idx) => {
+    const lower = col.header.toLowerCase();
+    if (lower.includes('revenue') || lower.includes('cost') || lower.includes('profit') || 
+        lower.includes('value') || lower.includes('amount') || lower.includes('price') ||
+        lower.includes('total') || lower.includes('subtotal') || lower.includes('qty') || 
+        lower.includes('quantity')) {
+      dynamicColumnStyles[idx] = { halign: 'right' };
+    }
+  });
+
   // Add table with premium grid styling
   autoTable(doc, {
     startY: 50,
@@ -82,9 +93,15 @@ export async function exportToPDF(data: any[], columns: { header: string, dataKe
       return val ?? '';
     })),
     theme: 'grid',
-    styles: { fontSize: 9, cellPadding: 4, textColor: [40, 40, 40] },
-    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+    styles: { halign: 'left', fontSize: 9, cellPadding: 4, textColor: [40, 40, 40] },
+    headStyles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
     alternateRowStyles: { fillColor: [249, 250, 251] },
+    columnStyles: dynamicColumnStyles,
+    didParseCell: function(data) {
+      if (data.section === 'head' && dynamicColumnStyles[data.column.index]) {
+        data.cell.styles.halign = 'right';
+      }
+    }
   });
 
   if (summaryData && summaryData.length > 0) {

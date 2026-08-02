@@ -42,15 +42,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
+    
+    const handleSessionExpired = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      console.warn('[Session Expired]', detail?.message);
+      alert('Your session has expired. Please refresh the page and log in again to sync your offline transactions.');
+    };
 
     if (typeof window !== 'undefined') {
       window.addEventListener('online', handleOnline);
       window.addEventListener('offline', handleOffline);
+      window.addEventListener('amroding:session-expired', handleSessionExpired);
     }
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('online', handleOnline);
         window.removeEventListener('offline', handleOffline);
+        window.removeEventListener('amroding:session-expired', handleSessionExpired);
       }
     };
   }, []);

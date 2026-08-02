@@ -96,8 +96,18 @@ export interface OfflineOrder {
   totalAmount: number;
   discount: number;
   orderType: string;
-  createdAt: number;
+  isDelivery: boolean;
+  notes: string | null;
+  createdAt: number; // timestamp
   lastSynced: number;
+  items?: {
+    productId: string;
+    productName: string;
+    quantity: number;
+    price: number;
+    uomName: string | null;
+    multiplier: number;
+  }[];
 }
 
 export interface OfflineExpense {
@@ -105,6 +115,7 @@ export interface OfflineExpense {
   amount: number;
   category: string;
   description: string;
+  reference: string | null;
   date: string;
   lastSynced: number;
 }

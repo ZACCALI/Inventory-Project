@@ -146,7 +146,7 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
                   {modal.title}
                 </h2>
               </div>
-              <button className="btn btn-icon btn-ghost" onClick={close} style={{ flexShrink: 0 }} aria-label="Close">
+              <button className="btn btn-icon btn-ghost" onClick={close} style={{ flexShrink: 0 }} aria-label="Close dialog">
                 <X size={18} />
               </button>
             </div>

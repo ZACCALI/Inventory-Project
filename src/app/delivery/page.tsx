@@ -216,11 +216,13 @@ export default function DeliveryPage() {
 
       if (proofPhotoBase64) {
         payload.proofPhotoBase64 = proofPhotoBase64;
-        if (isOffline) {
-          // Store base64 in the dedicated field for offline photo uploads
-          payload.proofPhotoBase64 = payload.proofPhoto; // Store for offline upload
-          payload.proofPhoto = null; // Clear from main payload
-        }
+      }
+      if (isOffline && payload.proofPhoto && typeof payload.proofPhoto === 'string' && payload.proofPhoto.startsWith('data:')) {
+        // Store as base64 for offline upload — offlineSync will upload it when back online
+        payload.proofPhotoBase64 = payload.proofPhoto;
+        payload.proofPhoto = null;
+      } else if (isOffline) {
+        payload.proofPhoto = null;
       }
 
       if (!isOffline) {

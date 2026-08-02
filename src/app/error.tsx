@@ -10,7 +10,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Application error:', error);
+    console.error('Application Error:', error);
   }, [error]);
 
   return (
@@ -20,41 +20,34 @@ export default function Error({
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
+      background: '#0f172a',
+      color: '#f1f5f9',
+      fontFamily: 'system-ui, sans-serif',
       padding: '2rem',
-      background: 'var(--bg-main, #f3f4f6)',
-      fontFamily: 'Inter, sans-serif',
+      textAlign: 'center',
     }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '12px',
-        padding: '2rem',
-        maxWidth: '480px',
-        width: '100%',
-        textAlign: 'center',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        border: '1px solid #fee2e2',
-      }}>
-        <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</div>
-        <h2 style={{ color: '#dc2626', margin: '0 0 0.5rem', fontSize: '1.25rem' }}>Something went wrong</h2>
-        <p style={{ color: '#6b7280', margin: '0 0 1.5rem', fontSize: '0.875rem' }}>
-          {error.message || 'An unexpected error occurred. Please try again.'}
-        </p>
-        <button
-          onClick={reset}
-          style={{
-            background: 'var(--primary, #2563eb)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '0.625rem 1.25rem',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '600',
-          }}
-        >
-          Try again
-        </button>
-      </div>
+      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+      <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem', color: '#f87171' }}>
+        Something went wrong
+      </h1>
+      <p style={{ color: '#94a3b8', marginBottom: '2rem', maxWidth: '400px' }}>
+        An unexpected error occurred. Your data is safe. Please try again.
+      </p>
+      <button
+        onClick={reset}
+        style={{
+          background: '#3b82f6',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          padding: '0.75rem 1.5rem',
+          fontSize: '1rem',
+          cursor: 'pointer',
+          fontWeight: 600,
+        }}
+      >
+        Try Again
+      </button>
     </div>
   );
 }

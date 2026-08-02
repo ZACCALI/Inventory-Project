@@ -50,6 +50,20 @@ export async function GET(req: Request) {
     // ── Run sync for all users ──────────────────────────────────
     const { totalUsers, results } = await syncNotificationsForAllUsers();
 
+    // Clean up old idempotency records (older than 48 hours)
+    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    try {
+      const { PrismaClient } = await import('@prisma/client');
+      const prisma = new PrismaClient();
+      await prisma.idempotencyRecord.deleteMany({
+        where: {
+          createdAt: { lt: twoDaysAgo },
+        },
+      });
+    } catch (e) {
+      console.error('Failed to cleanup idempotency records:', e);
+    }
+
     const totalCreated = results.reduce((sum, r) => sum + r.result.created, 0);
     const totalPushed = results.reduce((sum, r) => sum + r.result.pushed, 0);
     const totalDismissed = results.reduce((sum, r) => sum + r.result.dismissed, 0);

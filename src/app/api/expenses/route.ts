@@ -60,7 +60,18 @@ export async function POST(request: NextRequest) {
     
     const isDuplicate = await checkAndSetIdempotency(bodyRaw.idempotencyKey);
     if (isDuplicate) {
-      return NextResponse.json({ message: 'Already processed' }, { status: 200 });
+      const existingExpense = await prisma.expense.findFirst({
+        where: { 
+          createdAt: { gte: new Date(Date.now() - 3600000) }
+        },
+        select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' }
+      });
+      return NextResponse.json({ 
+        message: 'Already processed', 
+        id: existingExpense?.id,
+        createdAt: existingExpense?.createdAt
+      }, { status: 200 });
     }
 
     // Validate input with Zod schema

@@ -94,7 +94,13 @@ export async function printThermal(
 
   // ── Fallback: HTML window.print() ───────────────────────────────────────────
   if (onFallback) onFallback();
-  return printHtmlFallback(data, paper) ? 'html' : 'error';
+  const printResult = printHtmlFallback(data, paper);
+  if (!printResult && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('print:blocked', {
+      detail: { message: 'Popup blocked — please allow popups for this site to print receipts.' }
+    }));
+  }
+  return printResult ? 'html' : 'error';
 }
 
 // ─── HTML Fallback ─────────────────────────────────────────────────────────────

@@ -161,7 +161,7 @@ export default function ReportsPage() {
     worksheet.addRow(['Month', 'Orders', 'Revenue', 'Cost', 'Profit', 'Collections']);
     
     filteredMonthlyData.forEach(m => {
-      worksheet.addRow([
+      const row = worksheet.addRow([
         m.month,
         m.orders,
         m.revenue,
@@ -169,14 +169,22 @@ export default function ReportsPage() {
         m.profit,
         m.collections || 0
       ]);
+      row.getCell(3).numFmt = '"₱"#,##0.00';
+      row.getCell(4).numFmt = '"₱"#,##0.00';
+      row.getCell(5).numFmt = '"₱"#,##0.00';
+      row.getCell(6).numFmt = '"₱"#,##0.00';
     });
 
     worksheet.getColumn(1).width = 25;
     worksheet.getColumn(2).width = 15;
     worksheet.getColumn(3).width = 15;
+    worksheet.getColumn(3).numFmt = '"₱"#,##0.00';
     worksheet.getColumn(4).width = 15;
+    worksheet.getColumn(4).numFmt = '"₱"#,##0.00';
     worksheet.getColumn(5).width = 15;
+    worksheet.getColumn(5).numFmt = '"₱"#,##0.00';
     worksheet.getColumn(6).width = 15;
+    worksheet.getColumn(6).numFmt = '"₱"#,##0.00';
     
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -550,7 +558,7 @@ export default function ReportsPage() {
                       display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
                     }}>
                       {item.product?.image ? (
-                        <Image width={400} height={400} src={item.product.image} alt={item.product?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}  />
+                        <Image width={64} height={64} src={item.product.image} alt={item.product?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}  />
                       ) : (
                         <Package size={20} color="var(--text-tertiary)" />
                       )}

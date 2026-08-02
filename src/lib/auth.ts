@@ -153,7 +153,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 8 * 60 * 60, // 8 hours — reduced from 30 days for security
+    // Note: Admin sessions will also expire after 8 hours; users will need to log in daily
+    // For extended sessions, implement a remember-me flow with explicit user consent
   },
   trustHost: true,
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,

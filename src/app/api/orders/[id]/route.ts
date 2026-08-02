@@ -150,13 +150,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
               const qtyDiff = newBaseQty - oldBaseQty;
               if (qtyDiff > 0) {
                 // Increased quantity - Deduct stock
-                const stockUpdate = await tx.product.updateMany({
-                  where: { id: oldItem.productId, stock: { gte: qtyDiff } },
+                const productCheck = await tx.product.findUnique({ where: { id: oldItem.productId } });
+                if (productCheck && productCheck.stock < qtyDiff) {
+                  throw new Error(`Insufficient stock for product "${productCheck.name}". Available: ${productCheck.stock}, needed: ${qtyDiff}.`);
+                }
+                await tx.product.update({
+                  where: { id: oldItem.productId },
                   data: { stock: { decrement: qtyDiff } },
                 });
-                if (stockUpdate.count === 0) {
-                  throw new Error(`Insufficient stock to increase quantity for product ${oldItem.productId}`);
-                }
                 await deductBatchStock(tx, oldItem.productId, qtyDiff);
                 await tx.stockLog.create({ data: { type: 'OUT', quantity: qtyDiff, reason: `${orderPrefix} (Quantity Increased on Order #${existingOrder.orderNumber.split('-').pop()})`, source: logSource, productId: oldItem.productId, userId: user.id } });
               } else if (qtyDiff < 0) {

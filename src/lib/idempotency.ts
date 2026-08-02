@@ -31,3 +31,16 @@ export async function checkAndSetIdempotency(idempotencyKey?: string | null): Pr
     return false;
   }
 }
+
+/**
+ * Check if an idempotency key exists (without creating it).
+ * Returns true if the key already exists.
+ */
+export async function hasIdempotencyKey(idempotencyKey: string): Promise<boolean> {
+  try {
+    const record = await prisma.idempotencyRecord.findUnique({ where: { key: idempotencyKey } });
+    return !!record;
+  } catch {
+    return false;
+  }
+}

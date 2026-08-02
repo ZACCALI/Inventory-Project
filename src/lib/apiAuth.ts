@@ -11,6 +11,25 @@ export interface AuthUser {
 
 type AllowedRole = 'admin' | 'staff' | 'cashier';
 
+// Settings cache to reduce DB queries (60-second TTL)
+let settingsCache: { data: { staffPermissions: string; cashierPermissions: string } | null; expiresAt: number } | null = null;
+
+async function getCachedSettings() {
+  if (settingsCache && Date.now() < settingsCache.expiresAt) {
+    return settingsCache.data;
+  }
+  const settings = await prisma.systemSettings.findUnique({ where: { id: '1' } });
+  settingsCache = {
+    data: settings ? { staffPermissions: settings.staffPermissions, cashierPermissions: settings.cashierPermissions } : null,
+    expiresAt: Date.now() + 60 * 1000, // 60 seconds TTL
+  };
+  return settingsCache.data;
+}
+
+export function invalidateSettingsCache() {
+  settingsCache = null;
+}
+
 /**
  * Authenticate the current request and optionally check role.
  * Returns { user } on success, or { error: NextResponse } on failure.
@@ -109,7 +128,7 @@ export async function requirePermission(request: unknown, moduleName: string) {
 
   if (user.role === 'admin') return { user };
 
-  const settings = await prisma.systemSettings.findUnique({ where: { id: "1" } });
+  const settings = await getCachedSettings();
   
   if (!settings) {
     return {

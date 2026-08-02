@@ -748,62 +748,63 @@ export default function CreateOrderPage() {
           }
         } catch (err: unknown) {
           console.warn('Network error, order background save failed', err);
-          showToast('Failed to save order: ' + ((err as Error).message || 'Network Error'), 'error');
-          setIsSubmitting(false);
-          return;
+          showToast('Failed to save order online, queueing offline...', 'warning');
+          networkFailed = true;
         }
 
-        // Save order details for receipt printing immediately
-        setLastOrder({
-          ...orderResult,
-          customer: {
-            id: customerIdToUse || undefined,
-            name: manualCustomerName.trim() || (customerIdToUse ? customers.find(c => c.id === customerIdToUse)?.name : null) || fallbackCustomerName || 'BAIE',
-            phone: finalPhone || (customerIdToUse ? customers.find(c => c.id === customerIdToUse)?.phone : '') || '',
-            address: finalAddress || (customerIdToUse ? customers.find(c => c.id === customerIdToUse)?.address : '') || '',
-          },
-          totalAmount: finalTotal,
-          subtotal: totalAmount,
-          tendered: paidAmount,
-          change: Math.max(0, paidAmount - finalTotal),
-          discount: discountAmount,
-          discountPercent: discountType === 'percent' ? parsedDiscount : 0,
-          items: validItems.map(i => ({ product: i.product, quantity: Number(i.qty), price: i.cartPrice, uomName: i.uomName, multiplier: i.multiplier })),
-          createdAt: orderResult.createdAt,
-          createdBy: { name: session?.user?.name || 'ADMIN' },
-          isDelivery: fulfillmentMode === 'delivery',
-          delivery: fulfillmentMode === 'delivery' ? {
-            driverName: deliveryDriverName,
-            scheduledDate: deliveryDate
-          } : undefined
-        });
+        if (!networkFailed) {
+          // Save order details for receipt printing immediately
+          setLastOrder({
+            ...orderResult,
+            customer: {
+              id: customerIdToUse || undefined,
+              name: manualCustomerName.trim() || (customerIdToUse ? customers.find(c => c.id === customerIdToUse)?.name : null) || fallbackCustomerName || 'BAIE',
+              phone: finalPhone || (customerIdToUse ? customers.find(c => c.id === customerIdToUse)?.phone : '') || '',
+              address: finalAddress || (customerIdToUse ? customers.find(c => c.id === customerIdToUse)?.address : '') || '',
+            },
+            totalAmount: finalTotal,
+            subtotal: totalAmount,
+            tendered: paidAmount,
+            change: Math.max(0, paidAmount - finalTotal),
+            discount: discountAmount,
+            discountPercent: discountType === 'percent' ? parsedDiscount : 0,
+            items: validItems.map(i => ({ product: i.product, quantity: Number(i.qty), price: i.cartPrice, uomName: i.uomName, multiplier: i.multiplier })),
+            createdAt: orderResult.createdAt,
+            createdBy: { name: session?.user?.name || 'ADMIN' },
+            isDelivery: fulfillmentMode === 'delivery',
+            delivery: fulfillmentMode === 'delivery' ? {
+              driverName: deliveryDriverName,
+              scheduledDate: deliveryDate
+            } : undefined
+          });
 
-        // Optimistically update stock locally
-        Promise.all(validItems.map(async i => {
-          const qtyToDeduct = (typeof i.qty === 'number' ? i.qty : 0) * (i.multiplier || 1);
-          await db.products.where('id').equals(i.product.id).modify(p => { p.stock = Math.max(0, (p.stock || 0) - qtyToDeduct); });
-        })).catch(() => {});
+          // Optimistically update stock locally
+          Promise.all(validItems.map(async i => {
+            const qtyToDeduct = (typeof i.qty === 'number' ? i.qty : 0) * (i.multiplier || 1);
+            await db.products.where('id').equals(i.product.id).modify(p => { p.stock = Math.max(0, (p.stock || 0) - qtyToDeduct); });
+          })).catch(() => {});
 
-        broadcastDataChange('order');
+          broadcastDataChange('order');
 
-        // Clear cart and open success modal
-        setCart([]);
-        setDiscountValue('');
-        setAmountPaid('');
-        setPaymentStatus('unpaid');
-        
-        setSelectedCustomerId('');
-        setManualCustomerName('');
-        setManualCustomerPhone('');
-        setManualCustomerAddress('');
-        setDeliveryDriverId('');
-        setDeliveryDriverName('');
-        setDeliveryDate('');
-        
-        setIsSubmitting(false);
-        resetIdempotencyKey();
-        setIsSuccessOpen(true);
-        return;
+          // Clear cart and open success modal
+          setCart([]);
+          setDiscountValue('');
+          setAmountPaid('');
+          setPaymentStatus('unpaid');
+          
+          setSelectedCustomerId('');
+          setManualCustomerName('');
+          setManualCustomerPhone('');
+          setManualCustomerAddress('');
+          setDeliveryDriverId('');
+          setDeliveryDriverName('');
+          setDeliveryDate('');
+          
+          setIsSubmitting(false);
+          resetIdempotencyKey();
+          setIsSuccessOpen(true);
+          return;
+        }
       }
 
       if (isOffline || networkFailed) {

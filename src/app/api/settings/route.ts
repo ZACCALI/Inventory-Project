@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import {  requireAdmin } from '@/lib/apiAuth';
+import { requireAdmin, invalidateSettingsCache } from '@/lib/apiAuth';
 import { settingsSchema } from '@/lib/validations';
 import { checkAndSetIdempotency } from '@/lib/idempotency';
 
@@ -140,6 +140,8 @@ export async function PUT(request: NextRequest) {
 
       return updated;
     });
+
+    invalidateSettingsCache();
 
     return NextResponse.json(settings);
   } catch (error) {

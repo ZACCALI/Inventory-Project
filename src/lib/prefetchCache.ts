@@ -7,6 +7,29 @@ import { db } from './db';
 const PREFETCH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 const PREFETCH_LS_KEY = 'amroding_last_prefetch';
 
+interface APIOrder {
+  id: string;
+  orderNumber: string;
+  customerId: string | null;
+  customer?: { name: string } | null;
+  status: string;
+  paymentStatus: string;
+  totalAmount: number;
+  discount: number;
+  orderType: string;
+  notes: string | null;
+  createdAt: string;
+}
+
+interface APIExpense {
+  id: string;
+  amount: number;
+  category: string;
+  description: string;
+  date: string;
+  reference?: string | null;
+}
+
 interface APIProduct {
   id: string;
   name: string;
@@ -57,12 +80,14 @@ async function runPrefetch() {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return;
 
   try {
-    const [productsRes, customersRes, driversRes, categoriesRes, settingsRes] = await Promise.allSettled([
+    const [productsRes, customersRes, driversRes, categoriesRes, settingsRes, ordersRes, expensesRes] = await Promise.allSettled([
       fetch('/api/products'),
       fetch('/api/customers?limit=500'),
       fetch('/api/drivers'),
       fetch('/api/categories'),
       fetch('/api/settings'),
+      fetch('/api/orders?limit=100&page=1'),
+      fetch('/api/expenses?limit=100'),
     ]);
 
     // Cache products
@@ -150,6 +175,67 @@ async function runPrefetch() {
           data: JSON.stringify(settings),
           lastSynced: Date.now(),
         });
+      }
+    }
+
+    // Cache recent orders (last 7 days for offline access)
+    try {
+      const ordersFetchRes = await fetch('/api/orders?limit=100');
+      if (ordersFetchRes.ok) {
+        const ordersBody = await ordersFetchRes.json();
+        const ordersList = Array.isArray(ordersBody) ? ordersBody : (ordersBody?.data ?? []);
+        if (Array.isArray(ordersList)) {
+          const now = Date.now();
+          await db.orders.bulkPut(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ordersList.map((o: any) => ({
+              id: o.id,
+              orderNumber: o.orderNumber || '',
+              customerName: o.customer?.name || o.customerName || null,
+              customerId: o.customerId || null,
+              status: o.status || 'pending',
+              paymentStatus: o.paymentStatus || 'unpaid',
+              totalAmount: o.totalAmount || 0,
+              discount: o.discount || 0,
+              orderType: o.orderType || 'wholesale',
+              isDelivery: !!o.delivery,
+              notes: o.notes || null,
+              createdAt: new Date(o.createdAt || Date.now()).getTime(),
+              lastSynced: now,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              items: o.items?.map((i: any) => ({
+                productId: i.productId,
+                productName: i.product?.name || 'Item',
+                quantity: i.quantity || 1,
+                price: i.price || 0,
+                uomName: i.uomName || null,
+                multiplier: i.multiplier || 1,
+              })) || [],
+            }))
+          );
+        }
+      }
+    } catch (e) {
+      console.warn('[Amroding] Failed to cache orders', e);
+    }
+
+    // Cache recent expenses for offline viewing
+    if (expensesRes.status === 'fulfilled' && expensesRes.value.ok) {
+      const body = await expensesRes.value.json();
+      const expenses = Array.isArray(body) ? body : (body?.data ?? []);
+      if (Array.isArray(expenses)) {
+        const now = Date.now();
+        await db.expenses.bulkPut(
+          expenses.map((e: APIExpense) => ({
+            id: e.id,
+            amount: e.amount,
+            category: e.category,
+            description: e.description,
+            reference: e.reference || null,
+            date: e.date,
+            lastSynced: now,
+          }))
+        );
       }
     }
 

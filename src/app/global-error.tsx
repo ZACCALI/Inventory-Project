@@ -9,24 +9,23 @@ export default function GlobalError({
 }) {
   return (
     <html>
-      <body>
+      <body style={{ margin: 0, background: '#0f172a' }}>
         <div style={{
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          color: '#f1f5f9',
+          fontFamily: 'system-ui, sans-serif',
+          textAlign: 'center',
           padding: '2rem',
-          background: '#f3f4f6',
-          fontFamily: 'sans-serif',
         }}>
-          <h2 style={{ color: '#dc2626' }}>Critical Application Error</h2>
-          <p style={{ color: '#6b7280' }}>{error.message}</p>
-          <button
-            onClick={reset}
-            style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: '6px', padding: '0.5rem 1rem', cursor: 'pointer' }}
-          >
-            Reload Application
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚨</div>
+          <h1 style={{ color: '#f87171', marginBottom: '1rem' }}>Critical Application Error</h1>
+          <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>Please refresh the page.</p>
+          <button onClick={reset} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0.75rem 2rem', fontSize: '1rem', cursor: 'pointer' }}>
+            Reload
           </button>
         </div>
       </body>
