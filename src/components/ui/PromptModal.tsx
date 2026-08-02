@@ -44,7 +44,7 @@ export function PromptModal({
       <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '400px' }}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
-          <button type="button" className="btn btn-icon btn-ghost" onClick={onCancel}>
+          <button type="button" className="btn btn-icon btn-ghost" onClick={onCancel} aria-label="Close">
             <X size={20} />
           </button>
         </div>

@@ -217,7 +217,9 @@ export default function DeliveryPage() {
       if (proofPhotoBase64) {
         payload.proofPhotoBase64 = proofPhotoBase64;
         if (isOffline) {
-          payload.proofPhoto = null; // Clear base64 so we don't save it in db queue
+          // Store base64 in the dedicated field for offline photo uploads
+          payload.proofPhotoBase64 = payload.proofPhoto; // Store for offline upload
+          payload.proofPhoto = null; // Clear from main payload
         }
       }
 

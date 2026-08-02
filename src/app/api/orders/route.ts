@@ -87,7 +87,18 @@ export async function POST(request: NextRequest) {
     
     const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
     if (isDuplicate) {
-      return NextResponse.json({ message: 'Already processed' }, { status: 200 });
+      try {
+        const existing = await prisma.order.findFirst({
+          where: { orderNumber: body.orderNumber },
+          select: { id: true, orderNumber: true, createdAt: true },
+        });
+        return NextResponse.json(
+          { message: 'Already processed', id: existing?.id, orderNumber: existing?.orderNumber, createdAt: existing?.createdAt },
+          { status: 200 }
+        );
+      } catch {
+        return NextResponse.json({ message: 'Already processed' }, { status: 200 });
+      }
     }
 
     // Validate input with Zod schema
@@ -121,7 +132,12 @@ export async function POST(request: NextRequest) {
       let cust = await prisma.customer.findFirst({ where: { name: customerName } });
       if (!cust) {
         cust = await prisma.customer.create({
-          data: { name: customerName, customerType: 'walk-in' }
+          data: {
+            name: customerName,
+            customerType: 'walk-in',
+            phone: parsed.data.customerPhone || null,
+            address: parsed.data.customerAddress || null,
+          }
         });
       }
       finalCustomerId = cust.id;
@@ -175,8 +191,8 @@ export async function POST(request: NextRequest) {
       // Verify stock first
       for (const item of orderItems) {
         const product = productMap.get(item.productId);
-        if (!product || (product.stock < item._totalStockNeeded && !isOfflineSync)) {
-          throw new Error(`Insufficient stock for product ID ${item.productId}`);
+        if (!product) {
+          throw new Error(`Product ID ${item.productId} not found`);
         }
         if (product) {
           totalCost += (product.costPrice * item._totalStockNeeded);
@@ -184,7 +200,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Profit margin safety check - Enforced for ALL orders including Walk-in Store
-      if (totalAmount < totalCost) {
+      if (totalCost > 0 && totalAmount < totalCost) {
         throw new Error(`Discount too high! The final selling price (₱${totalAmount.toFixed(2)}) must not be less than your total cost price (₱${totalCost.toFixed(2)}).`);
       }
 
@@ -266,10 +282,25 @@ export async function POST(request: NextRequest) {
         }
 
         // 2. Deduct from global stock
-        await tx.product.update({
-          where: { id: item.productId },
+        const stockUpdate = await tx.product.updateMany({
+          where: {
+            id: item.productId,
+            stock: { gte: item._totalStockNeeded },
+          },
           data: { stock: { decrement: item._totalStockNeeded } },
         });
+
+        if (stockUpdate.count === 0) {
+          if (!isOfflineSync) {
+            throw new Error(`Insufficient stock for product ID ${item.productId}`);
+          } else {
+            // For offline sync, force the decrement even if it goes negative
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stock: { decrement: item._totalStockNeeded } },
+            });
+          }
+        }
 
         await tx.stockLog.create({
           data: {

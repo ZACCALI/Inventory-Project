@@ -737,14 +737,21 @@ export default function CreateOrderPage() {
           createdAt: new Date().toISOString()
         };
 
-        // Fire request in background
-        fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Idempotency-Key': idempotencyKey },
-          body: JSON.stringify(payload)
-        }).catch(err => {
+        try {
+          const response = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Idempotency-Key': idempotencyKey },
+            body: JSON.stringify(payload)
+          });
+          if (!response.ok) {
+            throw new Error('Order submission failed: ' + response.statusText);
+          }
+        } catch (err: unknown) {
           console.warn('Network error, order background save failed', err);
-        });
+          showToast('Failed to save order: ' + ((err as Error).message || 'Network Error'), 'error');
+          setIsSubmitting(false);
+          return;
+        }
 
         // Save order details for receipt printing immediately
         setLastOrder({
@@ -784,6 +791,15 @@ export default function CreateOrderPage() {
         setDiscountValue('');
         setAmountPaid('');
         setPaymentStatus('unpaid');
+        
+        setSelectedCustomerId('');
+        setManualCustomerName('');
+        setManualCustomerPhone('');
+        setManualCustomerAddress('');
+        setDeliveryDriverId('');
+        setDeliveryDriverName('');
+        setDeliveryDate('');
+        
         setIsSubmitting(false);
         resetIdempotencyKey();
         setIsSuccessOpen(true);
@@ -862,6 +878,15 @@ export default function CreateOrderPage() {
         setDiscountValue('');
         setAmountPaid('');
         setPaymentStatus('unpaid');
+        
+        setSelectedCustomerId('');
+        setManualCustomerName('');
+        setManualCustomerPhone('');
+        setManualCustomerAddress('');
+        setDeliveryDriverId('');
+        setDeliveryDriverName('');
+        setDeliveryDate('');
+        
         setIsSubmitting(false);
         resetIdempotencyKey();
         setIsSuccessOpen(true);

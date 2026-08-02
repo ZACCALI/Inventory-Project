@@ -9,7 +9,7 @@ import { useAlert } from '@/components/AlertModal';
 import { exportToPDF } from '@/lib/exportUtils';
 import dynamic from 'next/dynamic';
 const RevenueChart = dynamic(() => import('@/components/RevenueChart'), { ssr: false, loading: () => <div style={{ height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Loading charts...</div> });
-import ExcelJS from 'exceljs';
+
 
 import Image from "next/image";
 interface MonthlyData {
@@ -144,6 +144,7 @@ export default function ReportsPage() {
   };
 
   const handleExportExcel = async () => {
+    const ExcelJS = (await import('exceljs')).default;
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Monthly Report');
     

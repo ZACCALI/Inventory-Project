@@ -11,14 +11,22 @@ export async function GET(request: NextRequest) {
     const { error } = await requirePermission(request, 'inventory');
     if (error) return error;
 
-    const logs = await prisma.stockLog.findMany({
-      include: {
-        product: { include: { category: true } },
-        user: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 1000,
-    });
+    const page = parseInt(request.nextUrl.searchParams.get('page') || '1');
+    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '50');
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      prisma.stockLog.findMany({
+        include: {
+          product: { include: { category: true } },
+          user: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: skip,
+      }),
+      prisma.stockLog.count(),
+    ]);
 
     const formattedLogs = logs.map(log => ({
       id: log.id,
@@ -36,7 +44,9 @@ export async function GET(request: NextRequest) {
       isVoided: log.isVoided,
     }));
 
-    return NextResponse.json(formattedLogs);
+    return NextResponse.json(formattedLogs, {
+      headers: { 'X-Total-Count': total.toString() },
+    });
   } catch (error) {
     console.error('Failed to fetch stock logs:', error);
     return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });

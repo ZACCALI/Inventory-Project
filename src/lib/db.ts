@@ -32,6 +32,7 @@ export interface SyncTask {
   syncAttempts: number;
   lastError: string | null;
   idempotencyKey: string;
+  nextRetryAfter?: number;
 }
 
 export interface OfflineCustomer {
@@ -85,6 +86,29 @@ export interface OfflineExpiryAlert {
   lastSynced: number;
 }
 
+export interface OfflineOrder {
+  id: string;
+  orderNumber: string;
+  customerName: string | null;
+  customerId: string | null;
+  status: string;
+  paymentStatus: string;
+  totalAmount: number;
+  discount: number;
+  orderType: string;
+  createdAt: number;
+  lastSynced: number;
+}
+
+export interface OfflineExpense {
+  id: string;
+  amount: number;
+  category: string;
+  description: string;
+  date: string;
+  lastSynced: number;
+}
+
 export const db = new Dexie('amroding_pos') as Dexie & {
   products: EntityTable<OfflineProduct, 'id'>;
   customers: EntityTable<OfflineCustomer, 'id'>;
@@ -94,7 +118,23 @@ export const db = new Dexie('amroding_pos') as Dexie & {
   syncQueue: EntityTable<SyncTask, 'id'>;
   stockMovements: EntityTable<OfflineStockMovement, 'id'>;
   expiryAlerts: EntityTable<OfflineExpiryAlert, 'id'>;
+  orders: EntityTable<OfflineOrder, 'id'>;
+  expenses: EntityTable<OfflineExpense, 'id'>;
 };
+
+// Version 6 — adds orders, expenses tables and nextRetryAfter to syncQueue
+db.version(6).stores({
+  products: 'id, name, sku, barcode, categoryName',
+  customers: 'id, name',
+  drivers: 'id, name, status',
+  categories: 'id, name',
+  settings: 'key',
+  syncQueue: '++id, type, action, syncStatus, createdAt, idempotencyKey, nextRetryAfter',
+  stockMovements: 'id, productId, type, date',
+  expiryAlerts: 'id, productId, batchNumber',
+  orders: 'id, orderNumber, customerId, status, paymentStatus, createdAt',
+  expenses: 'id, category, date'
+});
 
 // Version 5 — adds stockMovements, expiryAlerts tables
 db.version(5).stores({

@@ -109,6 +109,8 @@ const orderItemSchema = z.object({
 export const createOrderSchema = z.object({
   customerId: z.string().optional(),
   customerName: safeOptionalString(200),
+  customerPhone: safeOptionalString(50),
+  customerAddress: safeOptionalString(500),
   items: z.array(orderItemSchema).min(1, 'At least one item is required'),
   notes: safeOptionalString(1000),
   orderReference: safeOptionalString(200),

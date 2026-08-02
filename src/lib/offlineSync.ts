@@ -142,13 +142,24 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
     .where('syncStatus')
     .anyOf(['pending', 'failed'])
     .and(t => t.syncAttempts < 15) // Max 15 retries
+    .and(t => !t.nextRetryAfter || Date.now() >= t.nextRetryAfter)
     .toArray();
 
   let synced = 0;
   let failed = 0;
   const syncedTypes = new Set<string>();
   const failedDetails: Array<{ type: string; action: string; error: string }> = [];
-  const permanentlyFailedIds = new Set<string>();
+  const preFailedTasks = await db.syncQueue
+    .filter(t => t.syncAttempts >= 999)
+    .toArray();
+  const permanentlyFailedIds = new Set<string>(
+    preFailedTasks
+      .map(t => {
+        try { return (JSON.parse(t.payload) as { id?: string }).id || null; } 
+        catch { return null; }
+      })
+      .filter((id): id is string => !!id)
+  );
 
   // Process sequentially to maintain order
   pending.sort((a, b) => a.createdAt - b.createdAt);
@@ -229,7 +240,10 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
 
       const res = await fetch(endpoint, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Offline-Sync': '1',
+        },
         body: JSON.stringify(payload),
       });
 
@@ -237,6 +251,11 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
       if (res.status === 401) {
         console.warn('Session expired. Halting sync queue.');
         await db.syncQueue.update(task.id!, { syncStatus: 'pending' }); // Revert so it doesn't count as attempt
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('amroding:session-expired', {
+            detail: { message: 'Your session expired. Please log in again to sync your offline transactions.' }
+          }));
+        }
         break; // Stop processing the queue
       }
 
@@ -249,7 +268,6 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
       if (responseText) {
         try { responseJson = JSON.parse(responseText); } catch { /* non-JSON response */ }
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const responseJsonData = responseJson as { id?: string; orderNumber?: string; createdAt?: string; error?: string; message?: string } | null;
 
       if (res.ok) {
@@ -287,6 +305,13 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
                   if (ptPayload.deliveryDriverId === tempId) { ptPayload.deliveryDriverId = realId; modified = true; }
                   if (ptPayload.orderId === tempId) { ptPayload.orderId = realId; modified = true; }
                   
+                  // Remap for expense entity
+                  if (ptPayload.categoryId === tempId) { ptPayload.categoryId = realId; modified = true; }
+                  // Remap for batch/stock entities
+                  if (ptPayload.batchId === tempId) { ptPayload.batchId = realId; modified = true; }
+                  if (ptPayload.forceBatchId === tempId) { ptPayload.forceBatchId = realId; modified = true; }
+                  if (ptPayload.targetBatchId === tempId) { ptPayload.targetBatchId = realId; modified = true; }
+                  
                   // Remap nested order items (productId inside items array)
                   if (Array.isArray(ptPayload.items)) {
                     for (const item of ptPayload.items) {
@@ -320,13 +345,12 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
                      }
                    }));
                 }
-                // Try to update orders table if it exists in DB (even if not strongly typed)
+                // Try to update orders table if it exists in DB
                 try {
                   if (db.tables.some(t => t.name === 'orders')) {
-                     // @ts-ignore
                      await db.table('orders').where('id').equals(tempId).modify({ id: realId, orderNumber: responseJsonData.orderNumber || responseJsonData.id, createdAt: responseJsonData.createdAt }).catch(() => {});
                   }
-                } catch(e) {}
+                } catch {}
               }
             }
           } catch (e) {
@@ -352,10 +376,17 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
            permanentlyFailedIds.add(payload.id); // Mark this temp ID as failed so children are canceled
         }
 
+        let nextRetryAfter: number | undefined;
+        if (!isPermanentError) {
+          const backoffMs = Math.min(30000, 1000 * Math.pow(2, task.syncAttempts));
+          nextRetryAfter = Date.now() + backoffMs;
+        }
+
         await db.syncQueue.update(task.id!, {
           syncStatus: 'failed',
           syncAttempts: finalAttempts,
           lastError: errorMsg,
+          ...(nextRetryAfter ? { nextRetryAfter } : {})
         });
         failed++;
         failedDetails.push({ type: task.type, action: task.action, error: errorMsg });
@@ -363,10 +394,12 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const errorMsg = err.message || 'Network error';
+      const backoffMs = Math.min(30000, 1000 * Math.pow(2, task.syncAttempts));
       await db.syncQueue.update(task.id!, {
         syncStatus: 'failed',
         syncAttempts: task.syncAttempts + 1,
         lastError: errorMsg,
+        nextRetryAfter: Date.now() + backoffMs,
       });
       failed++;
       failedDetails.push({ type: task.type, action: task.action, error: errorMsg });

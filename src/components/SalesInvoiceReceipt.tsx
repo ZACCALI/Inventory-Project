@@ -178,7 +178,7 @@ export default function SalesInvoiceReceipt({ order, companyName = "AMRODING GEN
             <tbody>
               {order.discount > 0 && (
                 <tr>
-                  <td>DISCOUNT ({order.discount}%)</td>
+                  <td>DISCOUNT</td>
                   <td style={{ textAlign: 'right' }}>{discountAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 </tr>
               )}

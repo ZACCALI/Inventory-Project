@@ -30,6 +30,18 @@ export async function PUT(
     const { status, driverId, driverName, driverPhone, proofPhoto, deliveredAt } = parsed.data;
     const isOfflineSync = !!body.isOfflineSync;
 
+    const existingDelivery = await prisma.delivery.findUnique({
+      where: { id },
+      include: { order: true }
+    });
+
+    if (existingDelivery?.order?.status === 'cancelled') {
+      return NextResponse.json(
+        { error: 'Cannot update delivery status on a cancelled order.' },
+        { status: 400 }
+      );
+    }
+
     const updateData: Prisma.DeliveryUpdateInput = {};
     if (status !== undefined) updateData.status = status;
     if (driverId !== undefined) {

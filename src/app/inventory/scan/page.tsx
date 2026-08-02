@@ -512,11 +512,11 @@ export default function BarcodeScannerPage() {
               const newPhysical = { base: 0, uoms: {} as Record<string, number> };
               if (isUomScanned) {
                 const uomKey = product.scannedUom!.id || product.scannedUom!.name;
-                newPhysical.uoms[uomKey] = 0; // User requested: start at 0 not 1
+                newPhysical.uoms[uomKey] = 1;
               } else {
-                newPhysical.base = 0; // User requested: start at 0 not 1
+                newPhysical.base = 1;
               }
-              const newQty = 0;
+              const newQty = calculateTotalQty(product, newPhysical);
               
               return [{ ...product, status: 'success', scannedQty: newQty, physicalCounts: newPhysical }, ...prev];
             }

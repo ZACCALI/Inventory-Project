@@ -84,6 +84,19 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
   const notificationsRef = useRef<HTMLDivElement>(null);
   const isSyncingRef = useRef(false);
 
+  // Session Expired Event Listener
+  useEffect(() => {
+    const handleSessionExpired = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      toast.error(detail?.message || 'Your session has expired. Please log in again to sync offline transactions.', {
+        duration: 8000,
+        icon: '⚠️',
+      });
+    };
+    window.addEventListener('amroding:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('amroding:session-expired', handleSessionExpired);
+  }, []);
+
   // Monitor Offline Status & Sync Queue
   useEffect(() => {
     const checkOnlineStatus = async () => {
@@ -338,7 +351,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
   return (
     <header className="navbar">
       <div className="navbar-left">
-        <button className="menu-toggle" onClick={onMenuToggle}>
+        <button className="menu-toggle" onClick={onMenuToggle} aria-label="Toggle navigation menu">
           <Menu size={22} strokeWidth={1.75} />
         </button>
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', overflow: 'hidden' }}>
@@ -400,6 +413,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
         <div className="notification-wrapper" ref={notificationsRef} style={{ position: 'relative' }}>
           <button 
             className={`notification-btn ${notificationsOpen ? 'active' : ''}`}
+            aria-label="View notifications"
             data-tooltip="Notifications"
             data-tooltip-position="bottom"
             data-tooltip-align="right"
@@ -501,6 +515,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
         <div className="user-dropdown" ref={dropdownRef}>
           <button
             className="navbar-profile-btn"
+            aria-label="User menu"
             onClick={() => setDropdownOpen(!dropdownOpen)}
           >
             {(activeSession?.user as { avatar?: string })?.avatar ? (
@@ -536,10 +551,18 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
               <div className="dropdown-divider" />
               <button
                 className="dropdown-item danger"
-                onClick={() => {
+                onClick={async () => {
                   try {
                     localStorage.removeItem('amroding_cached_session');
-                  } catch (e) {}
+                    const { db } = await import('@/lib/db');
+                    await db.products.clear();
+                    await db.customers.clear();
+                    await db.drivers.clear();
+                    await db.categories.clear();
+                    await db.settings.clear();
+                  } catch (e) {
+                    console.warn('Failed to clear offline cache on logout:', e);
+                  }
                   signOut({ callbackUrl: '/login' });
                 }}
               >

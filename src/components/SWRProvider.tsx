@@ -30,7 +30,7 @@ function GlobalSWRListeners({ children }: { children: React.ReactNode }) {
           handleDataChange();
         }
       };
-    } catch (e) {}
+    } catch {}
 
     // Global interceptor for all API mutations to broadcast changes immediately
     const originalFetch = window.fetch;
@@ -40,8 +40,12 @@ function GlobalSWRListeners({ children }: { children: React.ReactNode }) {
         const fetchMethod = (args[1]?.method || 'GET').toUpperCase();
         const fetchUrl = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
         if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(fetchMethod) && fetchUrl.includes('/api/')) {
-           // Schedule broadcast to happen right after the current execution stack finishes
-           setTimeout(() => broadcastDataChange('api_mutation'), 0);
+           const init = args[1];
+           const isOfflineSync = (init?.headers as Record<string,string>)?.['X-Offline-Sync'] === '1';
+           if (!isOfflineSync) {
+             // Schedule broadcast to happen right after the current execution stack finishes
+             setTimeout(() => broadcastDataChange('api_mutation'), 0);
+           }
         }
       }
       return response;

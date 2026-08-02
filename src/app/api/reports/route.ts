@@ -139,15 +139,16 @@ export async function GET(request: NextRequest) {
       const salesByDate: Record<string, number> = {};
       const nowUTC = new Date();
       for (let i = 0; i < 30; i++) {
-        const date = new Date(nowUTC.getTime() + (8 * 3600000));
-        date.setUTCDate(date.getUTCDate() - (29 - i));
-        const key = date.toISOString().split('T')[0];
+        const utcMs = nowUTC.getTime() + (8 * 3600000) - ((29 - i) * 24 * 3600 * 1000);
+        const d = new Date(utcMs);
+        const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
         salesByDate[key] = 0;
       }
 
       orders.forEach(order => {
-        const orderPST = new Date(new Date(order.createdAt).getTime() + (8 * 3600000));
-        const key = orderPST.toISOString().split('T')[0];
+        const utcMs = new Date(order.createdAt).getTime() + (8 * 3600 * 1000);
+        const d = new Date(utcMs);
+        const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
         if (salesByDate[key] !== undefined) {
           salesByDate[key] += order.totalAmount;
         }
@@ -225,7 +226,7 @@ export async function GET(request: NextRequest) {
         monthlySummary[key].revenue += order.totalAmount;
         monthlySummary[key].orders += 1;
         order.items.forEach(item => {
-          monthlySummary[key].cost += item.quantity * (item.product?.costPrice || 0);
+          monthlySummary[key].cost += item.quantity * (item.multiplier || 1) * (item.product?.costPrice || 0);
         });
       });
 
