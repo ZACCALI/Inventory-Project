@@ -11,6 +11,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const bodyRaw = await request.json();
     
+    const isOfflineSync = Boolean(
+      bodyRaw?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
+    
     // Validate input with Zod schema
     const parsed = expenseSchema.safeParse(bodyRaw);
     if (!parsed.success) {
@@ -41,7 +47,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           action: 'UPDATE',
           entity: 'Expense',
           details: `Updated expense: ${description} (₱${amount})`,
-          mode: bodyRaw.isOfflineSync ? 'offline' : 'online',
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
 
@@ -65,7 +71,10 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
     const { id } = await params;
     let isOfflineSync = false;
-    try { const delBody = await _request.json(); isOfflineSync = !!delBody?.isOfflineSync; } catch {}
+    try { 
+      const delBody = await _request.clone().json(); 
+      isOfflineSync = Boolean(delBody?.isOfflineSync || _request.headers.get('x-offline-sync') === '1' || _request.headers.get('x-offline-sync') === 'true');
+    } catch {}
 
     await prisma.$transaction(async (tx) => {
       const expense = await tx.expense.findUnique({ where: { id } });

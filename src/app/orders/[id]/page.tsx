@@ -189,7 +189,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <div>
           <h1 className="page-title">Order {order.orderNumber}</h1>
           <p className="page-subtitle">
-            Walk in Home • Created {new Date(order.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            Walk-in • Created {new Date(order.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -216,7 +216,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           {order.paymentStatus}
         </span>
         <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
-          <Home size={16} style={{ display: 'inline', marginBottom: '-3px', marginRight: '6px' }} /> Walk in Home
+          <Home size={16} style={{ display: 'inline', marginBottom: '-3px', marginRight: '6px' }} /> Walk-in
         </span>
       </div>
 

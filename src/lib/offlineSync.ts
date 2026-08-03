@@ -83,8 +83,13 @@ async function uploadBase64Photo(base64: string): Promise<string | null> {
 
     const formData = new FormData();
     formData.append('file', blob, 'offline-photo.jpg');
+    formData.append('isOfflineSync', 'true');
 
-    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const res = await fetch('/api/upload', { 
+      method: 'POST', 
+      headers: { 'X-Offline-Sync': '1' },
+      body: formData 
+    });
     if (res.ok) {
       const data = await res.json();
       return data.url as string;

@@ -73,7 +73,7 @@ const getNavItems = (userRole?: string, permissions: string[] = []) => {
       section: 'Sales',
       items: [
         { name: 'All Orders', href: '/orders', icon: ClipboardList },
-        { name: 'Walk in Home', href: '/orders/create', icon: FilePlus },
+        { name: 'Walk-in', href: '/orders/create', icon: FilePlus },
       ],
     });
   }

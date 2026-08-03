@@ -39,6 +39,12 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
+    
     const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
     if (isDuplicate) {
       const existingCustomer = await prisma.customer.findFirst({
@@ -70,7 +76,7 @@ export async function POST(request: NextRequest) {
           action: 'CREATE',
           entity: 'Customer',
           details: `Created customer ${body.name}`,
-          mode: body.isOfflineSync ? 'offline' : 'online',
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
       return newCustomer;

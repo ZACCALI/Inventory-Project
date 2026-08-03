@@ -29,6 +29,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const body = await request.json();
 
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
+
     // Validate input with Zod schema
     const parsed = updateProductSchema.safeParse(body);
     if (!parsed.success) {
@@ -159,7 +165,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           action: 'UPDATE',
           entity: 'Product',
           details: `Updated product ${updated.name} (SKU: ${updated.sku})`,
-          mode: body.isOfflineSync ? 'offline' : 'online',
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
 
@@ -194,7 +200,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { id } = await params;
     
     let isOfflineSync = false;
-    try { const delBody = await request.clone().json(); isOfflineSync = !!delBody?.isOfflineSync; } catch {}
+    try { 
+      const delBody = await request.clone().json(); 
+      isOfflineSync = Boolean(delBody?.isOfflineSync || request.headers.get('x-offline-sync') === '1' || request.headers.get('x-offline-sync') === 'true');
+    } catch {}
 
     await prisma.$transaction(async (tx) => {
       // 1. Verify Cleanup Mode

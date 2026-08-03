@@ -79,7 +79,11 @@ export async function POST(request: NextRequest) {
     }
 
     const { productId, type, quantity: rawQuantity, reason, source: validatedSource, expiryDate, forceBatchId, batchNumber, targetBatchId } = parsed.data;
-    const isOfflineSync = !!body.isOfflineSync;
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
     const userId = user.id;
 
     const actualQuantity = rawQuantity;
@@ -225,7 +229,7 @@ export async function POST(request: NextRequest) {
           type,
           quantity: actualQuantity,
           reason: finalReason,
-          source: validatedSource,
+          source: isOfflineSync ? 'OFFLINE' : validatedSource,
           productId,
           userId,
           batchId: stockLogBatchId

@@ -11,6 +11,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const body = await request.json();
 
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
+
     // Validate input with Zod schema
     const parsed = driverSchema.safeParse(body);
     if (!parsed.success) {
@@ -30,7 +36,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         }
       });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'UPDATE', entity: 'Driver', details: `Updated driver ${updated.name}`, mode: body.isOfflineSync ? 'offline' : 'online' }
+        data: { userId: user.id, action: 'UPDATE', entity: 'Driver', details: `Updated driver ${updated.name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
       return updated;
     });
@@ -63,7 +69,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await prisma.$transaction(async (tx) => {
       await tx.driver.delete({ where: { id } });
       let isOfflineSync = false;
-      try { const delBody = await request.clone().json(); isOfflineSync = !!delBody?.isOfflineSync; } catch {}
+      try { 
+        const delBody = await request.clone().json(); 
+        isOfflineSync = Boolean(delBody?.isOfflineSync || request.headers.get('x-offline-sync') === '1' || request.headers.get('x-offline-sync') === 'true');
+      } catch {}
       await tx.auditLog.create({
         data: { userId: user.id, action: 'DELETE', entity: 'Driver', details: `Deleted driver ${driver.name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });

@@ -58,6 +58,12 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
+
     // Validate input with Zod schema
     const parsed = updateStockMovementSchema.safeParse(body);
     if (!parsed.success) {
@@ -125,6 +131,7 @@ export async function PUT(
           action: 'UPDATE',
           entity: 'Stock Movement',
           details: `Edited Stock ${log.type} log (ID: ${id}) to quantity ${quantity} for ${log.product.name} (Ref: ${reason}). Old quantity was ${log.quantity}.`,
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
 
@@ -172,6 +179,12 @@ export async function DELETE(
     if (authErr) return authErr;
 
     const { id } = await params;
+    
+    let isOfflineSync = false;
+    try { 
+      const delBody = await request.clone().json(); 
+      isOfflineSync = Boolean(delBody?.isOfflineSync || request.headers.get('x-offline-sync') === '1' || request.headers.get('x-offline-sync') === 'true');
+    } catch {}
 
     const log = await prisma.stockLog.findUnique({ where: { id }, include: { product: true } });
     if (!log) {
@@ -219,6 +232,7 @@ export async function DELETE(
           action: 'DELETE',
           entity: 'Stock Movement',
           details: `Voided Stock ${log.type} log for ${log.product.name}, reversing ${log.quantity} units`,
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
 

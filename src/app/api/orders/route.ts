@@ -85,6 +85,12 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
+    
     const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
     if (isDuplicate) {
       const existingOrder = await prisma.order.findFirst({
@@ -109,7 +115,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: firstError.message }, { status: 400 });
     }
 
-    const { customerId, items, orderReference, orderType, status, paymentStatus, amountPaid, isDelivery, deliveryDriverName, deliveryDate, isOfflineSync, customerName } = parsed.data;
+    const { customerId, items, orderReference, orderType, status, paymentStatus, amountPaid, isDelivery, deliveryDriverName, deliveryDate, isOfflineSync: _isOfflineSync, customerName } = parsed.data;
     let { notes, discount, orderDate } = parsed.data;
     let deliveryDriverId: string | null | undefined = parsed.data.deliveryDriverId;
 
@@ -308,7 +314,7 @@ export async function POST(request: NextRequest) {
             type: 'OUT',
             quantity: item._totalStockNeeded,
             reason: `${orderType === 'pos' ? 'Store' : (isDelivery ? 'Delivery' : 'Walk in')} (Order #${orderNumber} - Input: ${item.quantity} ${item.uomName || 'Pack/Pcs'})`,
-            source: orderType === 'pos' ? 'WALK_IN_STORE' : (isDelivery ? 'DELIVERY' : 'WALK_IN_HOME'),
+            source: isOfflineSync ? 'OFFLINE' : (orderType === 'pos' ? 'WALK_IN_STORE' : (isDelivery ? 'DELIVERY' : 'WALK_IN_HOME')),
             userId: createdById,
           }
         });
@@ -352,8 +358,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Create audit log
-      const entityLabel = orderType === 'pos' ? 'Order (Walk in Store)' : (isDelivery ? 'Order (Delivery)' : 'Order (Walk in Home)');
-      const friendlyLabel = orderType === 'pos' ? 'Walk in Store' : (isDelivery ? 'Delivery' : 'Walk in Home');
+      const entityLabel = orderType === 'pos' ? 'Order (Store POS)' : (isDelivery ? 'Order (Delivery)' : 'Order (Walk-in)');
+      const friendlyLabel = orderType === 'pos' ? 'Store POS' : (isDelivery ? 'Delivery' : 'Walk-in');
       await tx.auditLog.create({
         data: {
           userId: createdById,

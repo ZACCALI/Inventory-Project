@@ -58,6 +58,12 @@ export async function POST(request: NextRequest) {
 
     const bodyRaw = await request.json();
     
+    const isOfflineSync = Boolean(
+      bodyRaw?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
+    
     const isDuplicate = await checkAndSetIdempotency(bodyRaw.idempotencyKey);
     if (isDuplicate) {
       const existingExpense = await prisma.expense.findFirst({
@@ -102,7 +108,7 @@ export async function POST(request: NextRequest) {
           action: 'CREATE',
           entity: 'Expense',
           details: `Logged expense: ${description} (₱${parsedAmount})`,
-          mode: bodyRaw.isOfflineSync ? 'offline' : 'online',
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
 

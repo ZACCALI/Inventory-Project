@@ -72,6 +72,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
     console.log("DEBUG PRODUCTS POST BODY:", JSON.stringify(body));
 
     const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
@@ -177,7 +182,7 @@ export async function POST(request: NextRequest) {
             type: 'IN',
             quantity: initialStock,
             reason: 'Initial stock on creation',
-            source: 'MANUAL',
+            source: isOfflineSync ? 'OFFLINE' : 'MANUAL',
             productId: newProduct.id,
             batchId: batch.id,
             userId: user.id,
@@ -191,7 +196,7 @@ export async function POST(request: NextRequest) {
           action: 'CREATE',
           entity: 'Product',
           details: `Created product ${name} (SKU: ${sku}) with initial stock ${initialStock}`,
-          mode: body.isOfflineSync ? 'offline' : 'online',
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
 

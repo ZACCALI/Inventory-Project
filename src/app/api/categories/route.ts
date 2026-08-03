@@ -26,6 +26,12 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
+
     const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
     if (isDuplicate) {
       return NextResponse.json({ message: 'Already processed' }, { status: 200 });
@@ -45,7 +51,7 @@ export async function POST(request: Request) {
     const category = await prisma.$transaction(async (tx) => {
       const newCat = await tx.category.create({ data: { name: body.name, description: body.description } });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'CREATE', entity: 'Category', details: `Created category ${body.name}` }
+        data: { userId: user.id, action: 'CREATE', entity: 'Category', details: `Created category ${body.name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
       return newCat;
     });

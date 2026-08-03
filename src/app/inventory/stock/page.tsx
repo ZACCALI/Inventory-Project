@@ -846,8 +846,9 @@ export default function StockInOutPage() {
                     <option value="ALL">All Sources</option>
                     <option value="STOCK_IN">Stock In ({formatCount(logs.filter(l => l.type === 'IN' && ['RECEIVE', 'MANUAL'].includes(l.source)).length)})</option>
                     <option value="STOCK_OUT">Stock Out ({formatCount(logs.filter(l => l.type === 'OUT' && l.source === 'MANUAL').length)})</option>
-                    <option value="EXPIRY_TRACKING">Expiry Tracking ({formatCount(disposalCount)})</option>
-                    <option value="WALK_IN_HOME">Walk in Home ({formatCount(walkInHomeCount)})</option>
+                    <option value="EXPIRY_TRACKING">Expiry Disposal ({formatCount(disposalCount)})</option>
+                    <option value="WALK_IN_HOME">Walk-in ({formatCount(walkInHomeCount)})</option>
+                    <option value="WALK_IN_STORE">Store POS ({formatCount(logs.filter(l => l.source === 'WALK_IN_STORE').length)})</option>
                     <option value="AUDIT">Barcode Scanner ({formatCount(auditCount)})</option>
                   </select>
                 </div>
@@ -1003,12 +1004,15 @@ export default function StockInOutPage() {
                               fontSize: '11px',
                               fontWeight: 600,
                               letterSpacing: '0.2px',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                              whiteSpace: 'nowrap' as const
                             });
                             
-                            if (movement.source === 'WALK_IN_HOME') return <span style={widgetStyle('#4f46e5', '#ffffff')}>Walk in Home</span>;
+                            if (movement.source === 'WALK_IN_HOME') return <span style={widgetStyle('#4f46e5', '#ffffff')}>Walk-in</span>;
+                            if (movement.source === 'WALK_IN_STORE') return <span style={widgetStyle('#4f46e5', '#ffffff')}>Store POS</span>;
+                            if (movement.source === 'DELIVERY') return <span style={widgetStyle('#f59e0b', '#ffffff')}>Delivery</span>;
                             if (movement.source === 'AUDIT') return <span style={widgetStyle('#0ea5e9', '#ffffff')}>Barcode Scanner</span>;
-                            if (movement.source === 'EXPIRY_TRACKING') return <span style={widgetStyle('#ef4444', '#ffffff')}>Expiry Tracking</span>;
+                            if (movement.source === 'EXPIRY_TRACKING') return <span style={widgetStyle('#ef4444', '#ffffff')}>Expiry Disposal</span>;
                             if (movement.type === 'IN') return <span style={widgetStyle('#10b981', '#ffffff')}>Stock In</span>;
                             return <span style={widgetStyle('#ef4444', '#ffffff')}>Stock Out</span>;
                           })()}

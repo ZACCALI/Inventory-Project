@@ -67,15 +67,13 @@ export type UserRole = typeof USER_ROLES[number];
 export type StockType = typeof STOCK_TYPES[number];
 
 export const ORDER_TYPE_LABELS: Record<string, string> = {
-  wholesale: 'Walk in Home',
-  pos: 'Walk in Store',
+  wholesale: 'Walk-in',
+  pos: 'Store POS',
 };
 
-
 export const STOCK_SOURCE_LABELS = {
-
-  WALK_IN_HOME: 'Walk in Home',
-  WALK_IN_STORE: 'Walk in Store',
+  WALK_IN_HOME: 'Walk-in',
+  WALK_IN_STORE: 'Store POS',
   MANUAL: 'Manual',
   RECEIVE: 'Receive',
 } as const;

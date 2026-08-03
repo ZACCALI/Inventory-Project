@@ -76,6 +76,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const bodyRaw = await request.json();
 
+    const isOfflineSync = Boolean(
+      bodyRaw?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
+
     // Validate input with Zod schema
     const parsed = updateOrderSchema.safeParse(bodyRaw);
     if (!parsed.success) {
@@ -140,7 +146,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
               const restoreQty = oldItem.quantity * (oldItem.multiplier || 1);
               await restoreBatchStock(tx, oldItem.productId, restoreQty);
               await tx.product.update({ where: { id: oldItem.productId }, data: { stock: { increment: restoreQty } } });
-              await tx.stockLog.create({ data: { type: 'IN', quantity: restoreQty, reason: `${orderPrefix} (Item Removed from Order #${existingOrder.orderNumber.split('-').pop()})`, source: logSource, productId: oldItem.productId, userId: user.id } });
+              await tx.stockLog.create({ data: { type: 'IN', quantity: restoreQty, reason: `${orderPrefix} (Item Removed from Order #${existingOrder.orderNumber.split('-').pop()})`, source: isOfflineSync ? 'OFFLINE' : logSource, productId: oldItem.productId, userId: user.id } });
             } else {
               // MODIFIED - Only adjust the delta
               const oldMultiplier = oldItem.multiplier || 1;
@@ -159,13 +165,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
                   data: { stock: { decrement: qtyDiff } },
                 });
                 await deductBatchStock(tx, oldItem.productId, qtyDiff);
-                await tx.stockLog.create({ data: { type: 'OUT', quantity: qtyDiff, reason: `${orderPrefix} (Quantity Increased on Order #${existingOrder.orderNumber.split('-').pop()})`, source: logSource, productId: oldItem.productId, userId: user.id } });
+                await tx.stockLog.create({ data: { type: 'OUT', quantity: qtyDiff, reason: `${orderPrefix} (Quantity Increased on Order #${existingOrder.orderNumber.split('-').pop()})`, source: isOfflineSync ? 'OFFLINE' : logSource, productId: oldItem.productId, userId: user.id } });
               } else if (qtyDiff < 0) {
                 // Decreased quantity - Restore stock
                 const absDiff = Math.abs(qtyDiff);
                 await restoreBatchStock(tx, oldItem.productId, absDiff);
                 await tx.product.update({ where: { id: oldItem.productId }, data: { stock: { increment: absDiff } } });
-                await tx.stockLog.create({ data: { type: 'IN', quantity: absDiff, reason: `${orderPrefix} (Quantity Decreased on Order #${existingOrder.orderNumber.split('-').pop()})`, source: logSource, productId: oldItem.productId, userId: user.id } });
+                await tx.stockLog.create({ data: { type: 'IN', quantity: absDiff, reason: `${orderPrefix} (Quantity Decreased on Order #${existingOrder.orderNumber.split('-').pop()})`, source: isOfflineSync ? 'OFFLINE' : logSource, productId: oldItem.productId, userId: user.id } });
               }
               // If qtyDiff === 0, this item was not changed, so do nothing
             }
@@ -183,7 +189,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
               await tx.product.update({ where: { id: (newItem as any).productId }, data: { stock: { decrement: addedBaseQty } } });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              await tx.stockLog.create({ data: { type: 'OUT', quantity: addedBaseQty, reason: `${orderPrefix} (Item Added to Order #${existingOrder.orderNumber.split('-').pop()})`, source: logSource, productId: (newItem as any).productId, userId: user.id } });
+              await tx.stockLog.create({ data: { type: 'OUT', quantity: addedBaseQty, reason: `${orderPrefix} (Item Added to Order #${existingOrder.orderNumber.split('-').pop()})`, source: isOfflineSync ? 'OFFLINE' : logSource, productId: (newItem as any).productId, userId: user.id } });
             }
           }
         }
@@ -286,7 +292,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
               type: 'IN',
               quantity: cancelRestoreQty,
               reason: `${orderPrefix} (Cancelled Order #${existingOrder.orderNumber.split('-').pop()})`,
-              source: logSource,
+              source: isOfflineSync ? 'OFFLINE' : logSource,
               productId: item.productId,
               userId: user.id,
             }
@@ -321,7 +327,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           action: 'UPDATE',
           entity: 'Order',
           details: `Updated order ${updatedOrder.orderNumber} ${body.items ? 'Items & Details' : 'Status'}`,
-          mode: bodyRaw.isOfflineSync ? 'offline' : 'online',
+          mode: isOfflineSync ? 'offline' : 'online',
         }
       });
 
@@ -349,7 +355,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     let isOfflineSync = false;
-    try { const delBody = await request.clone().json(); isOfflineSync = !!delBody?.isOfflineSync; } catch {}
+    try { 
+      const delBody = await request.clone().json(); 
+      isOfflineSync = Boolean(delBody?.isOfflineSync || request.headers.get('x-offline-sync') === '1' || request.headers.get('x-offline-sync') === 'true');
+    } catch {}
 
     await prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({

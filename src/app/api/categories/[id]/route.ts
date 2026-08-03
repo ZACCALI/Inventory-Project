@@ -9,6 +9,11 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 
     const { id } = await context.params;
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
     const { name, description } = body;
 
     // Guard: offline temp IDs are not yet in the database
@@ -35,7 +40,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         data: { name, description },
       });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'UPDATE', entity: 'Category', details: `Updated category ${name}` }
+        data: { userId: user.id, action: 'UPDATE', entity: 'Category', details: `Updated category ${name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
       return updatedCategory;
     });
@@ -65,6 +70,11 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     if (String(id).startsWith('OFF-')) {
       return NextResponse.json({ error: 'This category was created offline and has not yet synced. It cannot be deleted until sync completes.' }, { status: 400 });
     }
+    let isOfflineSync = false;
+    try { 
+      const delBody = await request.clone().json(); 
+      isOfflineSync = Boolean(delBody?.isOfflineSync || request.headers.get('x-offline-sync') === '1' || request.headers.get('x-offline-sync') === 'true');
+    } catch {}
     
     const productsCount = await prisma.product.count({ where: { categoryId: id } });
     if (productsCount > 0) {
@@ -74,7 +84,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     await prisma.$transaction(async (tx) => {
       const deletedCategory = await tx.category.delete({ where: { id } });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'DELETE', entity: 'Category', details: `Deleted category ${deletedCategory.name}` }
+        data: { userId: user.id, action: 'DELETE', entity: 'Category', details: `Deleted category ${deletedCategory.name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
     });
 

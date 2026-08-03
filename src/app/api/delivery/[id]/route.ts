@@ -16,6 +16,12 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
+
     const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
     if (isDuplicate) {
       return NextResponse.json({ message: 'Already processed' }, { status: 200 });
@@ -28,7 +34,6 @@ export async function PUT(
     }
 
     const { status, driverId, driverName, driverPhone, proofPhoto, deliveredAt } = parsed.data;
-    const isOfflineSync = !!body.isOfflineSync;
 
     const existingDelivery = await prisma.delivery.findUnique({
       where: { id },

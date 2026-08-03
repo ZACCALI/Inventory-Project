@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Package, ShoppingCart, Truck, BarChart3, Shield, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
+  const { status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const [email, setEmail] = useState('');
@@ -18,6 +19,12 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.replace('/dashboard');
+    }
+  }, [status, router]);
 
   useEffect(() => {
     // Load settings
