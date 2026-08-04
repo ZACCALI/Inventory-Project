@@ -130,7 +130,7 @@ export default function Sidebar({ collapsed, onToggle, userRole, isOpen, onNavig
 
   return (
     <>
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${isOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${isOpen ? 'mobile-open' : ''}`}>
 
         <nav className="sidebar-nav">
           {allNavItems.map((section) => (

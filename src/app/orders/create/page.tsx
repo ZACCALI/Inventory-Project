@@ -1070,7 +1070,7 @@ export default function CreateOrderPage() {
 
   return (
     <>
-      <div className="walkin-layout" style={{ display: 'flex', height: 'calc(100vh - 64px)', overflow: 'hidden', background: 'var(--bg-main)', margin: '-24px' }}>
+      <div className="pos-layout" style={{ height: 'calc(100vh - 64px)', overflow: 'hidden', background: 'var(--bg-main)', margin: '-24px' }}>
         
         {/* LEFT PANEL: Order Details & Product Grid */}
         <div className="walkin-left-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
@@ -1322,7 +1322,7 @@ export default function CreateOrderPage() {
             </div>
 
             {/* Product Grid */}
-            <div className="walkin-product-grid" style={{ paddingBottom: '24px', display: 'grid', gap: '16px', alignContent: 'start' }}>
+            <div className="walkin-product-grid product-grid" style={{ paddingBottom: '24px', display: 'grid', gap: '16px', alignContent: 'start' }}>
               {filteredProducts.map(product => (
                 <div 
                   key={product.id}
@@ -1413,7 +1413,7 @@ export default function CreateOrderPage() {
         </div>
 
         {/* RIGHT PANEL: Cart & Payment */}
-        <div className={`walkin-right-panel ${isMobileCartOpen ? 'mobile-open' : ''}`} style={{ width: '420px', display: 'flex', flexDirection: 'column', background: '#FFFFFF', borderLeft: '1px solid var(--border)', boxShadow: '-4px 0 25px rgba(0,0,0,0.03)', zIndex: 10, borderRadius: '16px 16px 0 0' }}>
+        <div className={`walkin-right-panel ${isMobileCartOpen ? 'mobile-open' : ''}`} style={{ display: 'flex', flexDirection: 'column', background: '#FFFFFF', borderLeft: '1px solid var(--border)', boxShadow: '-4px 0 25px rgba(0,0,0,0.03)', zIndex: 10, borderRadius: '16px 16px 0 0' }}>
           <div className="mobile-drag-handle" style={{ width: '40px', height: '4px', background: 'var(--border)', borderRadius: '2px', margin: '12px auto 0 auto' }}></div>
           <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>

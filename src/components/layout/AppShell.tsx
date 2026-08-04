@@ -217,7 +217,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile Sidebar Overlay */}
       {mobileSidebarOpen && (
         <div
-          className="sidebar-overlay open"
+          className="sidebar-backdrop active"
           onClick={() => setMobileSidebarOpen(false)}
         />
       )}

@@ -4425,3 +4425,141 @@ p {
 
 .spin-animation { animation: spin 1s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* ============================================================
+   RESPONSIVE AUDIT FIXES (2026-08-05)
+   ============================================================ */
+
+/* 2B. Fix Layout Shell */
+.main-content { margin-left: var(--sidebar-width); min-height: 100vh; }
+@media (max-width: 1023px) {
+  .main-content { margin-left: 0; padding-top: var(--navbar-height); }
+}
+
+/* 2C. Fix Stat Card Grids */
+.stats-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+@media (max-width: 767px) {
+  .stats-grid, .stats-grid-3, .stats-grid-4 { grid-template-columns: 1fr 1fr; gap: 12px; }
+}
+@media (max-width: 480px) {
+  .stats-grid, .stats-grid-3, .stats-grid-4 { grid-template-columns: 1fr; }
+}
+
+/* 2D. Fix Table Responsiveness */
+.table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+@media (max-width: 767px) {
+  .table-container table { min-width: 600px; }
+  /* Stack table rows on very small screens where data-label is used */
+  .table-container table.mobile-stack tbody tr { display: block; border-bottom: 1px solid var(--border); padding: 12px 0; }
+  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: center; padding: 4px 16px; border: none; }
+  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: var(--font-xs); text-transform: uppercase; }
+  .table-container table.mobile-stack thead { display: none; }
+}
+
+/* 2E. Fix Modal Widths */
+.modal-content { width: min(90vw, 640px); max-height: 90vh; overflow-y: auto; }
+@media (max-width: 767px) {
+  .modal-content { width: 95vw; max-height: 85vh; border-radius: var(--radius-lg); padding: 20px 16px; }
+  .modal-header { padding: 16px 16px 0; }
+  .modal-body { padding: 16px; }
+  .modal-footer { padding: 12px 16px 16px; flex-direction: column; gap: 8px; }
+  .modal-footer .btn { width: 100%; justify-content: center; }
+}
+
+/* 2F. Fix Card Padding Consistency */
+.card { padding: 0; }
+.card-header { padding: 20px 24px 16px; }
+.card-body { padding: 0 24px 24px; }
+@media (max-width: 767px) {
+  .card-header { padding: 16px 16px 12px; }
+  .card-body { padding: 0 16px 16px; }
+  .card .card-header + .table-container { padding: 0; }
+}
+
+/* 2G. Fix Page Header (title + action button row) */
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+.page-title { font-size: var(--font-2xl); font-weight: 700; }
+@media (max-width: 767px) {
+  .page-header { flex-direction: column; align-items: flex-start; margin-bottom: 16px; }
+  .page-header .btn { width: 100%; justify-content: center; }
+  .page-title { font-size: var(--font-xl); }
+}
+
+/* 2H. Fix Filter Bar */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.filter-bar .search-bar { flex: 1; min-width: 200px; }
+@media (max-width: 767px) {
+  .filter-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .filter-bar .search-bar { min-width: unset; width: 100%; }
+  .filter-bar select, .filter-bar input[type="date"] { width: 100%; }
+  .filter-bar .btn { width: 100%; justify-content: center; }
+}
+
+/* 2I. Fix Form Grids */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+@media (max-width: 767px) {
+  .form-grid, .form-grid-3 { grid-template-columns: 1fr; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .form-grid-3 { grid-template-columns: 1fr 1fr; }
+}
+
+/* 2J. Fix Sidebar on Mobile (hamburger overlay) */
+@media (max-width: 1023px) {
+  .sidebar { position: fixed; top: 0; left: -260px; height: 100vh; z-index: 1000; transition: left var(--transition-slow); }
+  .sidebar.mobile-open { left: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.3); }
+  .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+  .sidebar-backdrop.active { display: block; }
+}
+
+/* 2K. Fix Navbar on Mobile */
+.navbar { height: var(--navbar-height); position: fixed; top: 0; right: 0; left: 0; z-index: 100; }
+@media (max-width: 1023px) {
+  .navbar { left: 0; }
+}
+
+/* 2L. Fix Button Sizing on Mobile */
+@media (max-width: 767px) {
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 36px; }
+}
+
+/* 2M. Fix Dashboard Charts */
+.chart-container { width: 100%; overflow-x: auto; }
+@media (max-width: 767px) {
+  .chart-container { min-height: 200px; }
+}
+
+/* 2N. Fix Page Content Padding */
+.page-content { padding: 24px; max-width: 1600px; }
+@media (max-width: 1023px) { .page-content { padding: 80px 16px 16px; } }
+@media (max-width: 767px) { .page-content { padding: 72px 12px 24px; } }
+
+/* 2O. Fix Order Create POS Layout */
+.pos-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+@media (max-width: 1200px) { .pos-layout { grid-template-columns: 1fr 320px; } }
+@media (max-width: 1023px) { .pos-layout { grid-template-columns: 1fr; } }
+@media (max-width: 767px) { .pos-layout { gap: 12px; } }
+
+/* 2P. Fix Badge & Pill Overflow on Mobile */
+@media (max-width: 767px) {
+  .badge { white-space: nowrap; font-size: 10px; padding: 2px 6px; }
+  .badge-group { display: flex; flex-wrap: wrap; gap: 4px; }
+}
+
+/* 2Q. Fix Expiry/Inventory Product Cards Grid */
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+@media (max-width: 767px) { .product-grid { grid-template-columns: 1fr 1fr; gap: 12px; } }
+@media (max-width: 480px) { .product-grid { grid-template-columns: 1fr; } }
+
+/* 2R. Fix Reports Page Charts/Cards */
+.reports-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+@media (max-width: 767px) { .reports-grid { grid-template-columns: 1fr; gap: 16px; } }
+
+/* 2S. Scrollable bottom sheet on mobile for modals */
+@media (max-width: 480px) {
+  .modal-overlay { align-items: flex-end; padding-bottom: 0; }
+  .modal-content { width: 100%; max-width: 100%; border-radius: var(--radius-xl) var(--radius-xl) 0 0; max-height: 92vh; }
+}
+
