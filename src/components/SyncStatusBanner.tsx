@@ -70,7 +70,7 @@ export default function SyncStatusBanner() {
       const types = ev.detail?.types?.join(', ') || 'data';
       setBanner({
         kind: 'success',
-        message: `✅ ${count} offline action${count !== 1 ? 's' : ''} synced successfully (${types}).`,
+        message: `${count} offline action${count !== 1 ? 's' : ''} synced successfully (${types}).`,
       });
       setVisible(true);
       // Auto-dismiss success after 4 seconds
@@ -91,9 +91,9 @@ export default function SyncStatusBanner() {
 
       let message = '';
       if (stockConflicts.length > 0) {
-        message = `⚠️ ${stockConflicts.length} stock action${stockConflicts.length !== 1 ? 's' : ''} failed due to insufficient stock. The items could not be deducted because the inventory was already updated by someone else while you were offline.`;
+        message = `${stockConflicts.length} stock action${stockConflicts.length !== 1 ? 's' : ''} failed due to insufficient stock. The items could not be deducted because the inventory was already updated by someone else while you were offline.`;
       } else {
-        message = `⚠️ ${failures.length} offline action${failures.length !== 1 ? 's' : ''} failed to sync. Check your connection and try refreshing.`;
+        message = `${failures.length} offline action${failures.length !== 1 ? 's' : ''} failed to sync. Check your connection and try refreshing.`;
       }
 
       if (otherFailures.length > 0) {
