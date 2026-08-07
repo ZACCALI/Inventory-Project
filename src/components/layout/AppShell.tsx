@@ -239,7 +239,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Navbar */}
       <Navbar 
         onMenuToggle={() => {
-          if (window.innerWidth <= 768) {
+          if (window.innerWidth <= 1023) {
             setMobileSidebarOpen(!mobileSidebarOpen);
           } else {
             setSidebarCollapsed(!sidebarCollapsed);
