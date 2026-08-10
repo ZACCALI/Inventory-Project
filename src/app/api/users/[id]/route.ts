@@ -56,6 +56,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params;
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
     const parsed = updateUserSchema.safeParse(body);
     if (!parsed.success) {
       const firstError = parsed.error.issues[0];
@@ -94,7 +99,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         select: { id: true, name: true, email: true, role: true }
       });
       await tx.auditLog.create({
-        data: { userId: adminUser.id, action: 'UPDATE', entity: 'User', details: `Updated user ${name} (${email}) to role ${role}` }
+        data: { userId: adminUser.id, action: 'UPDATE', entity: 'User', details: `Updated user ${name} (${email}) to role ${role}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
       return updated;
     });

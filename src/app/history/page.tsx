@@ -293,7 +293,7 @@ export default function HistoryPage() {
       )}
 
       <div className="card">
-        <div className="card-header filter-bar" style={{ paddingTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center', marginBottom: 0 }}>
+        <div className="card-header filter-bar" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 16px 0' }}>
           <div className="search-bar" style={{ flex: 1, minWidth: '280px', maxWidth: '400px' }}>
             <Search size={18} className="search-icon" />
             <input 
@@ -364,11 +364,11 @@ export default function HistoryPage() {
             <thead>
               <tr>
                 <th style={{ width: '180px' }}>Date &amp; Time</th>
-                <th>User</th>
-                <th>Action</th>
-                <th>Module</th>
-                <th>Mode</th>
-                <th style={{ width: '30%' }}>Details</th>
+                <th style={{ width: '150px' }}>User</th>
+                <th style={{ width: '100px' }}>Action</th>
+                <th style={{ width: '150px' }}>Module</th>
+                <th style={{ width: '100px' }}>Mode</th>
+                <th style={{ width: 'auto' }}>Details</th>
               </tr>
             </thead>
             <tbody>
@@ -420,7 +420,7 @@ export default function HistoryPage() {
                       <span className="badge badge-neutral">{log.entity}</span>
                     </td>
                     <td data-label="Mode">
-                      {log.mode === 'offline' ? (
+                      {String(log.mode || '').toLowerCase().includes('offline') ? (
                         <span style={{
                           display: 'inline-flex',
                           alignItems: 'center',

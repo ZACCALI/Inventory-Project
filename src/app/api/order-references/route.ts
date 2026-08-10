@@ -23,6 +23,11 @@ export async function POST(request: NextRequest) {
     if (error) return error;
 
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
     const { name } = body;
     
     if (!name?.trim()) {
@@ -34,7 +39,7 @@ export async function POST(request: NextRequest) {
         data: { name: name.trim() },
       });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'CREATE', entity: 'OrderReference', details: `Created order reference: ${name}` }
+        data: { userId: user.id, action: 'CREATE', entity: 'OrderReference', details: `Created order reference: ${name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
       return newRef;
     });

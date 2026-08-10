@@ -22,6 +22,11 @@ export async function POST(request: NextRequest) {
     if (error) return error;
 
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
 
     const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
     if (isDuplicate) {
@@ -42,7 +47,7 @@ export async function POST(request: NextRequest) {
     const unit = await prisma.$transaction(async (tx) => {
       const newUnit = await tx.unit.create({ data: { name } });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'CREATE', entity: 'Unit', details: `Created unit ${name}` }
+        data: { userId: user.id, action: 'CREATE', entity: 'Unit', details: `Created unit ${name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
       return newUnit;
     });

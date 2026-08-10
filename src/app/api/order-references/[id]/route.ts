@@ -9,6 +9,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params;
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
     const { name } = body;
     
     if (!name?.trim()) {
@@ -21,7 +26,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         data: { name: name.trim() },
       });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'UPDATE', entity: 'OrderReference', details: `Updated order reference to: ${name}` }
+        data: { userId: user.id, action: 'UPDATE', entity: 'OrderReference', details: `Updated order reference to: ${name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
       return updatedRef;
     });
@@ -43,13 +48,17 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (error) return error;
 
     const { id } = await params;
+    const isOfflineSync = Boolean(
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
     
     await prisma.$transaction(async (tx) => {
       const ref = await tx.orderReference.findUnique({ where: { id } });
       if (!ref) throw new Error('Reference not found');
       await tx.orderReference.delete({ where: { id } });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'DELETE', entity: 'OrderReference', details: `Deleted order reference: ${ref.name}` }
+        data: { userId: user.id, action: 'DELETE', entity: 'OrderReference', details: `Deleted order reference: ${ref.name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
     });
 

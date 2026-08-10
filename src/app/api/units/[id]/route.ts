@@ -9,6 +9,11 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 
     const { id } = await context.params;
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
     const { name } = body;
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -23,7 +28,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     const unit = await prisma.$transaction(async (tx) => {
       const updatedUnit = await tx.unit.update({ where: { id }, data: { name } });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'UPDATE', entity: 'Unit', details: `Updated unit ${name}` }
+        data: { userId: user.id, action: 'UPDATE', entity: 'Unit', details: `Updated unit ${name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
       return updatedUnit;
     });
@@ -44,6 +49,10 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     if (error) return error;
 
     const { id } = await context.params;
+    const isOfflineSync = Boolean(
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
     const unit = await prisma.unit.findUnique({ where: { id } });
     if (!unit) return NextResponse.json({ error: 'Unit not found' }, { status: 404 });
     
@@ -55,7 +64,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     await prisma.$transaction(async (tx) => {
       await tx.unit.delete({ where: { id } });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'DELETE', entity: 'Unit', details: `Deleted unit ${unit.name}` }
+        data: { userId: user.id, action: 'DELETE', entity: 'Unit', details: `Deleted unit ${unit.name}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
     });
     return NextResponse.json({ success: true });

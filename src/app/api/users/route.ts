@@ -55,6 +55,11 @@ export async function POST(request: NextRequest) {
     if (error) return error;
 
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
 
     // Validate input with Zod schema
     const parsed = createUserSchema.safeParse(body);
@@ -77,7 +82,7 @@ export async function POST(request: NextRequest) {
         select: { id: true, name: true, email: true, role: true }
       });
       await tx.auditLog.create({
-        data: { userId: adminUser.id, action: 'CREATE', entity: 'User', details: `Created user ${name} (${email}) with role ${role}` }
+        data: { userId: adminUser.id, action: 'CREATE', entity: 'User', details: `Created user ${name} (${email}) with role ${role}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
       return created;
     });

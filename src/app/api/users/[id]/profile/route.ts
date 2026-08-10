@@ -22,6 +22,11 @@ export async function PUT(
     }
 
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
 
     const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
     if (isDuplicate) {
@@ -58,7 +63,7 @@ export async function PUT(
         select: { id: true, name: true, email: true, role: true, avatar: true }
       });
       await tx.auditLog.create({
-        data: { userId: currentUserId, action: 'UPDATE', entity: 'User Profile', details: `User updated their own profile (${name}, ${email})` }
+        data: { userId: currentUserId, action: 'UPDATE', entity: 'User Profile', details: `User updated their own profile (${name}, ${email})`, mode: isOfflineSync ? 'offline' : 'online' }
       });
       return updated;
     });

@@ -63,6 +63,11 @@ export async function POST(request: NextRequest) {
     if (error) return error;
 
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
 
     // Validate input with Zod schema
     const parsed = createDeliverySchema.safeParse(body);
@@ -83,7 +88,7 @@ export async function POST(request: NextRequest) {
         include: { order: { include: { customer: true } } },
       });
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'CREATE', entity: 'Delivery', details: `Created delivery for order ${newDelivery.order.orderNumber}` }
+        data: { userId: user.id, action: 'CREATE', entity: 'Delivery', details: `Created delivery for order ${newDelivery.order.orderNumber}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
       return newDelivery;
     });

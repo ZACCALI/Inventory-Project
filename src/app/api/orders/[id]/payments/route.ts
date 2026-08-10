@@ -21,6 +21,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (error) return error;
     const { id } = await params;
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
     const { amount, method, reference, notes } = body;
     const parsedAmount = parseFloat(amount);
     if (!amount || isNaN(parsedAmount) || parsedAmount < 0.01) {
@@ -47,7 +52,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await tx.order.update({ where: { id }, data: { paymentStatus: newStatus } });
 
       await tx.auditLog.create({
-        data: { userId: user.id, action: 'CREATE', entity: 'Payment', details: `Recorded payment of ₱${parsedAmount.toFixed(2)} (${method || 'cash'}) for order ${order.orderNumber}` }
+        data: { userId: user.id, action: 'CREATE', entity: 'Payment', details: `Recorded payment of ₱${parsedAmount.toFixed(2)} (${method || 'cash'}) for order ${order.orderNumber}`, mode: isOfflineSync ? 'offline' : 'online' }
       });
 
       return payment;

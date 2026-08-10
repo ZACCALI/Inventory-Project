@@ -18,6 +18,11 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
 
     const parsed = updateBatchSchema.safeParse(body);
     if (!parsed.success) {
@@ -57,6 +62,7 @@ export async function PUT(
         action: 'UPDATE',
         entity: 'Batch',
         details: `Updated expiry date for batch ${batch.batchNumber || batch.id} of ${batch.product.name} to ${expiryDate || 'none'}`,
+        mode: isOfflineSync ? 'offline' : 'online',
       }
     });
 

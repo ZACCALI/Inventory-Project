@@ -618,12 +618,36 @@ export default function BarcodeScannerPage() {
         </div>
       )}
 
-      <div className="scanner-layout" style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))',
-        gap: 'var(--space-xl)', 
-        alignItems: 'start' 
-      }}>
+      <style>{`
+        .scanner-layout {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 24px;
+          align-items: start;
+        }
+        @media (min-width: 992px) {
+          .scanner-layout {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+        
+        .pill-input {
+          font-size: var(--font-lg);
+          padding: 16px 24px;
+          text-align: center;
+          letter-spacing: 2px;
+          border: 2px solid var(--border);
+          border-radius: var(--radius-full);
+          transition: all 0.2s ease;
+          width: 100%;
+        }
+        .pill-input:focus {
+          border-color: var(--primary);
+          box-shadow: 0 0 0 4px var(--primary-light);
+          outline: none;
+        }
+      `}</style>
+      <div className="scanner-layout">
         
         {/* Left Column: Scanner Interface */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
@@ -673,24 +697,17 @@ export default function BarcodeScannerPage() {
                 <span style={{ fontSize: 'var(--font-xs)', color: 'var(--primary)' }}><Info size={14} style={{ display: 'inline', marginBottom: '-2px', marginRight: '4px' }} /> USB Barcode Scanners are supported natively (plug and play)</span>
               </p>
 
-              <form onSubmit={handleFormScan} style={{ position: 'relative', maxWidth: '300px', margin: '0 auto var(--space-xl)' }}>
+              <form onSubmit={handleFormScan} style={{ position: 'relative', width: '100%', maxWidth: '300px', margin: '0 auto var(--space-xl)', display: 'flex', justifyContent: 'center' }}>
                 <input 
                   id="scanner-input"
                   name="scannerInput"
                   aria-label="Scanner input"
                   ref={inputRef}
                   type="text" 
-                  className="form-input" 
+                  className="pill-input" 
                   value={scannedCode}
                   onChange={(e) => setScannedCode(e.target.value)}
                   placeholder="Waiting for input..."
-                  style={{ 
-                    fontSize: 'var(--font-lg)', padding: '16px 24px', 
-                    textAlign: 'center', letterSpacing: '2px',
-                    border: '2px solid var(--primary)',
-                    boxShadow: '0 0 0 4px var(--primary-light)',
-                    borderRadius: 'var(--radius-full)'
-                  }}
                 />
               </form>
             </>
@@ -793,29 +810,45 @@ export default function BarcodeScannerPage() {
         <div className={`card scanner-right-panel ${isMobileDrawerOpen ? 'mobile-open' : ''}`} style={{ minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
           <div className="mobile-drag-handle"></div>
           {/* Sticky Header Toolbar */}
-          <div className="scanner-drawer-header" style={{ flexShrink: 0, paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+          <div className="scanner-drawer-header" style={{ flexShrink: 0, paddingBottom: '16px', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center' }}>
                 {auditMode ? 'Audit Mode' : 'Scan Results'}
-                {auditMode && auditItems.length > 0 && <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-tertiary)', marginLeft: '6px' }}>({auditItems.length})</span>}
+                {auditMode && auditItems.length > 0 && <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-tertiary)', marginLeft: '8px' }}>({auditItems.length})</span>}
               </h2>
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                {(lastScanned || auditItems.length > 0) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button 
+                  onClick={() => {
+                    if (auditMode) {
+                      if (auditItems.length > 0) {
+                        showConfirm('Exit Audit Mode', 'Are you sure you want to exit? Your scanned items will be saved locally.').then(res => {
+                          if (res) setAuditState(false);
+                        });
+                      } else {
+                        setAuditState(false);
+                      }
+                    } else {
+                      setAuditState(true);
+                    }
+                  }}
+                  className={`btn btn-sm ${auditMode ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <ClipboardList size={14} />
+                  {auditMode ? 'Active Audit' : 'Start Audit'}
+                </button>
+
+                {(lastScanned || auditItems.length > 0 || notFoundCode) && (
                   <button 
                     onClick={clearResults}
-                    data-tooltip="Clear Results"
-                    style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s ease' }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ color: 'var(--danger)', borderColor: 'var(--danger-light)' }}
+                    title="Clear All"
                   >
-                    <Trash2 size={13} /> Clear
+                    <Trash2 size={14} />
                   </button>
                 )}
-                <button 
-                  onClick={() => setAuditState(!auditMode)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '8px', border: auditMode ? 'none' : '1px solid var(--border)', background: auditMode ? 'var(--primary)' : 'var(--bg-main)', color: auditMode ? '#fff' : 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s ease', boxShadow: auditMode ? '0 2px 8px rgba(37,99,235,0.3)' : 'none' }}
-                >
-                  <ClipboardList size={13} />
-                  {auditMode ? 'Exit' : 'Audit'}
-                </button>
+
                 <button onClick={() => setIsMobileDrawerOpen(false)} className="mobile-only-close" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-tertiary)', cursor: 'pointer', transition: 'all 0.15s ease' }}>
                   <X size={16} />
                 </button>

@@ -23,6 +23,11 @@ export async function PUT(
     }
 
     const body = await request.json();
+    const isOfflineSync = Boolean(
+      body?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
 
     // Validate input with Zod schema
     const parsed = changePasswordSchema.safeParse(body);
@@ -59,7 +64,8 @@ export async function PUT(
           userId: id,
           action: 'UPDATE',
           entity: 'User Security',
-          details: `User changed their own password`
+          details: `User changed their own password`,
+          mode: isOfflineSync ? 'offline' : 'online'
         }
       });
     });

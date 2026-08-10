@@ -30,6 +30,11 @@ export async function PUT(request: NextRequest) {
     if (error) return error;
 
     const bodyRaw = await request.json();
+    const isOfflineSync = Boolean(
+      bodyRaw?.isOfflineSync || 
+      request.headers.get('x-offline-sync') === '1' || 
+      request.headers.get('x-offline-sync') === 'true'
+    );
     
     const isDuplicate = await checkAndSetIdempotency(bodyRaw.idempotencyKey);
     if (isDuplicate) {
@@ -134,7 +139,7 @@ export async function PUT(request: NextRequest) {
 
       if (hasChanges) {
         await tx.auditLog.create({
-          data: { userId: user.id, action: 'UPDATE', entity: 'Settings', details: `Updated system settings` }
+          data: { userId: user.id, action: 'UPDATE', entity: 'Settings', details: `Updated system settings`, mode: isOfflineSync ? 'offline' : 'online' }
         });
       }
 

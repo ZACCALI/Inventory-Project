@@ -872,15 +872,15 @@ p {
    ============================================================ */
 .sidebar {
   position: fixed;
-  top: var(--navbar-height);
+  top: calc(var(--navbar-height) - 1px);
   left: 0;
   width: var(--sidebar-width);
-  height: calc(100vh - var(--navbar-height));
+  height: calc(100vh - var(--navbar-height) + 1px);
   background: var(--bg-sidebar);
   border-right: none;
   display: flex;
   flex-direction: column;
-  z-index: 100;
+  z-index: 102;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
   overflow-x: hidden;
