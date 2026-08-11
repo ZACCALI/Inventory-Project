@@ -621,13 +621,12 @@ export default function BarcodeScannerPage() {
       <style>{`
         .scanner-layout {
           display: grid;
-          grid-template-columns: 1fr;
-          gap: 24px;
-          align-items: stretch;
+          grid-template-columns: 1fr 1fr;
+          gap: var(--space-lg);
         }
-        @media (min-width: 992px) {
+        @media (max-width: 1023px) {
           .scanner-layout {
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
           }
         }
         

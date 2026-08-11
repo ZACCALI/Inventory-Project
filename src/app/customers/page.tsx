@@ -418,7 +418,7 @@ export default function CustomersPage() {
         </div>
 
         <div className="table-container">
-          <table className="table">
+          <table className="table mobile-stack">
             <thead>
               <tr>
                 <th>Store / Business Name</th>
@@ -617,7 +617,7 @@ export default function CustomersPage() {
                     ) : customerOrders.length === 0 ? (
                       <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-tertiary)' }}>No orders found for this customer.</div>
                     ) : (
-                      <table className="table" style={{ fontSize: '13px' }}>
+                      <table className="table mobile-stack" style={{ fontSize: '13px' }}>
                         <thead>
                           <tr>
                             <th>Order #</th>

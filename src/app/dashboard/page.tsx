@@ -171,7 +171,7 @@ export default function DashboardPage() {
           <div style={{ padding: 'var(--space-lg)', borderBottom: '1px solid var(--border-light)' }}>
             <div className="skeleton" style={{ height: '18px', width: '140px' }} />
           </div>
-          <table className="table">
+          <table className="table mobile-stack">
             <tbody>
               {[1,2,3,4,5].map(i => (
                 <tr key={i} className="skeleton-row">

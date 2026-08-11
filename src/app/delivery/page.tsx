@@ -467,7 +467,7 @@ export default function DeliveryPage() {
         </div>
 
         <div className="table-container">
-          <table className="table">
+          <table className="table mobile-stack">
             <thead>
               <tr>
                 <th>Order Ref</th>

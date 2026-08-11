@@ -829,7 +829,7 @@ export default function InventoryPage() {
         </div>
 
         <div className="table-container">
-          <table className="table">
+          <table className="table mobile-stack">
             <thead>
               <tr>
                 <th>Product Details</th>
@@ -863,7 +863,7 @@ export default function InventoryPage() {
               ) : (
                 filteredProducts.map((product) => (
                   <tr key={product.id} style={{ opacity: product.isArchived ? 0.6 : 1 }}>
-                    <td>
+                    <td data-label="Product">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%' }}>
                         <div style={{ width: '40px', height: '40px', borderRadius: '4px', overflow: 'hidden', background: 'var(--bg-hover)', border: '1px solid var(--border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           {product.image ? (

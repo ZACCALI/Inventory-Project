@@ -391,7 +391,7 @@ export default function DriversPage() {
         </div>
 
         <div className="table-container">
-          <table className="table">
+          <table className="table mobile-stack">
             <thead>
               <tr>
                 <th>Driver</th>
@@ -559,7 +559,7 @@ export default function DriversPage() {
                     </div>
                   ) : (
                     <div style={{ overflowX: 'auto', margin: '0 -16px' }}>
-                      <table className="table" style={{ margin: 0, fontSize: '13px' }}>
+                      <table className="table mobile-stack" style={{ margin: 0, fontSize: '13px' }}>
                         <thead style={{ position: 'sticky', top: 0, background: '#FFFFFF', zIndex: 1, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
                           <tr>
                             <th style={{ padding: '12px 24px' }}>Date</th>

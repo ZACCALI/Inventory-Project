@@ -456,7 +456,7 @@ export default function ExpensesPage() {
         </div>
 
         <div className="table-container">
-          <table className="table">
+          <table className="table mobile-stack">
             <thead>
               <tr>
                 <th>Date</th>
@@ -488,28 +488,28 @@ export default function ExpensesPage() {
               ) : (
                 expenses.map((expense) => (
                   <tr key={expense.id}>
-                    <td>
+                    <td data-label="Date">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}>
                         <Calendar size={14} />
                         {new Date(expense.date).toLocaleDateString()}
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Category">
                       <span className="badge badge-neutral" style={{ fontWeight: 500 }}>
                         {expense.category}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Description">
                       <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{expense.description}</div>
                     </td>
-                    <td>
+                    <td data-label="Reference">
                       <div style={{ fontSize: 'var(--font-sm)', color: 'var(--text-tertiary)' }}>{expense.reference || '-'}</div>
                     </td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--danger-dark)' }}>
+                    <td data-label="Amount" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--danger-dark)' }}>
                       {formatCurrency(expense.amount)}
                     </td>
                     {isAdmin && (
-                      <td style={{ textAlign: 'center' }}>
+                      <td data-label="Actions" style={{ textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
                           <button
                             onClick={() => openEdit(expense)}

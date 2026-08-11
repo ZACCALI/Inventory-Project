@@ -4444,12 +4444,12 @@ p {
 /* 2D. Fix Table Responsiveness */
 .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
 @media (max-width: 767px) {
+  .table-container { overflow-x: hidden; width: 100%; }
   .table-container table { min-width: 600px; }
-  .table-container table.mobile-stack { min-width: 100% !important; }
-  /* Stack table rows on very small screens where data-label is used */
-  .table-container table.mobile-stack tbody tr { display: block; border-bottom: 1px solid var(--border); padding: 12px 0; }
-  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: center; padding: 6px 16px; border: none; text-align: right; word-break: break-word; }
-  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: var(--font-xs); text-transform: uppercase; text-align: left; margin-right: 12px; flex-shrink: 0; }
+  .table-container table.mobile-stack { min-width: 100% !important; width: 100% !important; }
+  .table-container table.mobile-stack tbody tr { display: block; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 12px; padding: 12px; background: var(--bg-card); box-shadow: var(--shadow-sm); }
+  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border: none; text-align: right; word-break: break-word; font-size: 13px; }
+  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; text-align: left; margin-right: 12px; flex-shrink: 0; }
   .table-container table.mobile-stack thead { display: none; }
 }
 

@@ -321,7 +321,7 @@ export default function UsersPage() {
         </div>
 
         <div className="table-container" style={{ border: 'none', boxShadow: 'none' }}>
-          <table className="table">
+          <table className="table mobile-stack">
             <thead>
               <tr>
                 <th>Name</th>

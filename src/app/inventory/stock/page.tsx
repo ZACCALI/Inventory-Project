@@ -926,7 +926,7 @@ export default function StockInOutPage() {
           {loading ? (
              <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>
           ) : (
-            <table className="table">
+            <table className="table mobile-stack">
               <thead>
                 <tr>
                   <th>Product Details</th>
@@ -943,7 +943,7 @@ export default function StockInOutPage() {
                   const isProtected = ['WALK_IN_HOME', 'WALK_IN_STORE', 'DELIVERY'].includes(movement.source);
                   return (
                   <tr key={movement.id} style={{ opacity: movement.isVoided ? 0.6 : 1, background: movement.isVoided ? 'var(--bg-main)' : 'transparent' }}>
-                    <td>
+                    <td data-label="Product Details">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%' }}>
                         <div style={{
                           width: '40px', height: '40px', borderRadius: 'var(--radius-md)',
