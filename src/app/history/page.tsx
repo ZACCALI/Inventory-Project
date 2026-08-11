@@ -362,15 +362,15 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        <div className="table-container" style={{ overflowX: 'auto', width: '100%' }}>
-          <table className="table mobile-stack" style={{ tableLayout: 'auto', width: '100%' }}>
+        <div className="table-container" style={{ width: '100%', overflowX: 'auto' }}>
+          <table className="table mobile-stack" style={{ width: '100%', tableLayout: 'auto' }}>
             <thead>
               <tr>
-                <th style={{ width: '140px', minWidth: '140px' }}>Date &amp; Time</th>
-                <th style={{ width: '100px', minWidth: '100px' }}>User</th>
-                <th style={{ width: '70px', minWidth: '70px' }}>Action</th>
-                <th style={{ width: '80px', minWidth: '80px' }}>Module</th>
-                <th style={{ width: '85px', minWidth: '85px' }}>Mode</th>
+                <th style={{ width: '110px', minWidth: '100px' }}>Date &amp; Time</th>
+                <th style={{ width: '110px', minWidth: '100px' }}>User</th>
+                <th style={{ width: '75px', minWidth: '70px' }}>Action</th>
+                <th style={{ width: '85px', minWidth: '80px' }}>Module</th>
+                <th style={{ width: '85px', minWidth: '80px' }}>Mode</th>
                 <th style={{ width: 'auto' }}>Details</th>
               </tr>
             </thead>
@@ -393,51 +393,58 @@ export default function HistoryPage() {
                   </td>
                 </tr>
               ) : (
-                logs.map(log => (
-                  <tr key={log.id}>
-                    <td data-label="Date & Time" style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-                      {new Date(log.createdAt).toLocaleString()}
-                    </td>
-                    <td data-label="User">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <User size={14} color="var(--text-secondary)" />
+                logs.map(log => {
+                  const d = new Date(log.createdAt);
+                  const dateStr = d.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: '2-digit' });
+                  const timeStr = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+
+                  return (
+                    <tr key={log.id}>
+                      <td data-label="Date & Time" style={{ color: 'var(--text-secondary)', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                        <div>{dateStr}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{timeStr}</div>
+                      </td>
+                      <td data-label="User">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500, fontSize: '13px' }}>
+                          <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <User size={12} color="var(--text-secondary)" />
+                          </div>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.user?.name || 'System User'}</span>
                         </div>
-                        {log.user?.name || 'System User'}
-                      </div>
-                    </td>
-                    <td data-label="Action">
-                      <span style={{ 
-                        color: getActionColor(log.action),
-                        fontWeight: 700,
-                        fontSize: '12px',
-                        padding: '4px 8px',
-                        background: 'var(--bg-main)',
-                        borderRadius: '4px',
-                        display: 'inline-block'
-                      }}>
-                        {log.action}
-                      </span>
-                    </td>
-                    <td data-label="Module">
-                      <span className="badge badge-neutral">{log.entity}</span>
-                    </td>
-                    <td data-label="Mode" style={{ minWidth: '110px' }}>
-                      {String(log.mode || '').toLowerCase().includes('offline') ? (
-                        <span className="badge badge-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <WifiOff size={12} /> OFFLINE
+                      </td>
+                      <td data-label="Action">
+                        <span style={{ 
+                          color: getActionColor(log.action),
+                          fontWeight: 700,
+                          fontSize: '11px',
+                          padding: '2px 6px',
+                          background: 'var(--bg-main)',
+                          borderRadius: '4px',
+                          display: 'inline-block'
+                        }}>
+                          {log.action}
                         </span>
-                      ) : (
-                        <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <Wifi size={12} /> ONLINE
-                        </span>
-                      )}
-                    </td>
-                    <td data-label="Details" style={{ color: 'var(--text-primary)' }}>
-                      <span>{log.details}</span>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td data-label="Module">
+                        <span className="badge badge-neutral" style={{ fontSize: '11px', padding: '2px 6px' }}>{log.entity}</span>
+                      </td>
+                      <td data-label="Mode">
+                        {String(log.mode || '').toLowerCase().includes('offline') ? (
+                          <span className="badge badge-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', padding: '2px 6px' }}>
+                            <WifiOff size={11} /> OFFLINE
+                          </span>
+                        ) : (
+                          <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', padding: '2px 6px' }}>
+                            <Wifi size={11} /> ONLINE
+                          </span>
+                        )}
+                      </td>
+                      <td data-label="Details" style={{ color: 'var(--text-primary)', fontSize: '13px', wordBreak: 'break-word' }}>
+                        <span>{log.details}</span>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
