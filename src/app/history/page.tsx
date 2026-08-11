@@ -363,15 +363,15 @@ export default function HistoryPage() {
         </div>
 
         <div className="table-container" style={{ overflowX: 'auto', width: '100%' }}>
-          <table className="table">
+          <table className="table mobile-stack">
             <thead>
               <tr>
-                <th style={{ width: '180px', minWidth: '150px' }}>Date &amp; Time</th>
-                <th style={{ width: '150px', minWidth: '130px' }}>User</th>
-                <th style={{ width: '100px', minWidth: '90px' }}>Action</th>
-                <th style={{ width: '150px', minWidth: '120px' }}>Module</th>
-                <th style={{ width: '110px', minWidth: '110px' }}>Mode</th>
-                <th style={{ width: 'auto', minWidth: 'auto' }}>Details</th>
+                <th style={{ minWidth: '135px' }}>Date &amp; Time</th>
+                <th style={{ minWidth: '100px' }}>User</th>
+                <th style={{ minWidth: '75px' }}>Action</th>
+                <th style={{ minWidth: '85px' }}>Module</th>
+                <th style={{ minWidth: '95px' }}>Mode</th>
+                <th style={{ minWidth: '150px' }}>Details</th>
               </tr>
             </thead>
             <tbody>

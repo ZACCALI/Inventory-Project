@@ -131,15 +131,6 @@ export default function Sidebar({ collapsed, onToggle, userRole, isOpen, onNavig
   return (
     <>
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${isOpen ? 'mobile-open open' : ''}`}>
-        <div className="sidebar-header" style={{ padding: '20px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <Link href="/dashboard" className="sidebar-logo" onClick={() => onNavigate?.()}>
-            <div className="sidebar-logo-icon">
-              <Truck size={20} strokeWidth={2.5} />
-            </div>
-            {!collapsed && <span className="sidebar-logo-text">DistriTrack</span>}
-          </Link>
-        </div>
-
         <nav className="sidebar-nav">
           {allNavItems.map((section) => (
             <div key={section.section} className="nav-section">

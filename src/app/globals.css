@@ -4445,10 +4445,11 @@ p {
 .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
 @media (max-width: 767px) {
   .table-container table { min-width: 600px; }
+  .table-container table.mobile-stack { min-width: 100% !important; }
   /* Stack table rows on very small screens where data-label is used */
   .table-container table.mobile-stack tbody tr { display: block; border-bottom: 1px solid var(--border); padding: 12px 0; }
-  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: center; padding: 4px 16px; border: none; }
-  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: var(--font-xs); text-transform: uppercase; }
+  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: center; padding: 6px 16px; border: none; text-align: right; word-break: break-word; }
+  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: var(--font-xs); text-transform: uppercase; text-align: left; margin-right: 12px; flex-shrink: 0; }
   .table-container table.mobile-stack thead { display: none; }
 }
 
