@@ -623,7 +623,7 @@ export default function BarcodeScannerPage() {
           display: grid;
           grid-template-columns: 1fr;
           gap: 24px;
-          align-items: start;
+          align-items: stretch;
         }
         @media (min-width: 992px) {
           .scanner-layout {
@@ -720,23 +720,23 @@ export default function BarcodeScannerPage() {
                   placeholder="Waiting for input..."
                   style={{
                     background: 'var(--bg-main)',
-                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)',
-                    fontSize: '20px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05), inset 0 2px 4px rgba(0,0,0,0.02)',
+                    fontSize: '18px',
                     fontWeight: 600,
-                    color: 'var(--primary-dark)',
-                    letterSpacing: '2px',
-                    border: '2px solid var(--primary-light)'
+                    color: 'var(--text-primary)',
+                    letterSpacing: '1px',
+                    border: '2px solid var(--border)',
+                    textAlign: 'center'
                   }}
                 />
               </form>
             </>
           )}
           </div>
-        </div>
 
-        {/* Alternative Input Methods Card */}
-        <div className="card" style={{ padding: 'var(--space-lg)', textAlign: 'center' }}>
-          <h3 style={{ fontSize: 'var(--font-md)', fontWeight: 600, marginBottom: 'var(--space-lg)', color: 'var(--text-secondary)' }}>Alternative Input Methods</h3>
+          {/* Alternative Input Methods inside the same card */}
+          <div style={{ marginTop: 'var(--space-2xl)', paddingTop: 'var(--space-xl)', borderTop: '1px solid var(--border-light)' }}>
+            <h3 style={{ fontSize: 'var(--font-sm)', fontWeight: 600, marginBottom: 'var(--space-md)', color: 'var(--text-secondary)' }}>Alternative Input Methods</h3>
 
               <div ref={fallbackRef} style={{ position: 'relative', width: '100%', maxWidth: '300px', margin: '0 auto' }}>
                 <div style={{ position: 'relative' }}>
@@ -823,7 +823,8 @@ export default function BarcodeScannerPage() {
                 </div>
                 <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', fontWeight: 500 }}>Scan barcodes using your phone or webcam</span>
               </button>
-        </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Scan Results */}
@@ -1167,7 +1168,6 @@ export default function BarcodeScannerPage() {
           </div>
         </button>
       </div>
-
     </>
   );
 }

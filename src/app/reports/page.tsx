@@ -437,7 +437,7 @@ export default function ReportsPage() {
           <h1 className="page-title">Reports & Analytics</h1>
           <p className="page-subtitle">Key performance metrics and insights for your business</p>
         </div>
-        <div className="page-header-actions" style={{ display: 'flex', gap: '12px', width: '100%' }}>
+        <div className="page-header-actions" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flex: 1, alignItems: 'center', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '6px 12px' }}>
             <Calendar size={16} color="var(--text-secondary)" style={{ marginRight: '8px', flexShrink: 0 }} />
             <select 
@@ -583,7 +583,7 @@ export default function ReportsPage() {
       {/* Detailed Reports Section */}
       <div style={{ marginTop: '40px' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '20px' }}>Detailed PDF Reports</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
           
           {/* Inventory Report Card */}
           <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '24px', display: 'flex', flexDirection: 'column' }}>
