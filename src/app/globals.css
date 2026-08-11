@@ -4139,9 +4139,9 @@ p {
 
 
   
-  /* Center specific text blocks only on mobile */
+  /* Ensure text blocks remain left aligned on mobile */
   .mobile-text-center {
-    text-align: center !important;
+    text-align: left !important;
   }
 }
 

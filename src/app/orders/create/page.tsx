@@ -1078,7 +1078,7 @@ export default function CreateOrderPage() {
           <div style={{ padding: '24px', paddingBottom: '0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
 
-              <div className="mobile-text-center" style={{ width: '100%' }}>
+              <div style={{ width: '100%', textAlign: 'left' }}>
                 <h1 className="page-title" style={{ margin: 0 }}>Walk-in Home Order</h1>
                 <p className="page-subtitle" style={{ margin: 0 }}>Process a new wholesale delivery or walk-in pickup.</p>
               </div>
