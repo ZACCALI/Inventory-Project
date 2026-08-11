@@ -35,10 +35,15 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
       );
     }
 
+    const isOfflineSync = Boolean(
+      _request.headers.get('x-offline-sync') === '1' || 
+      _request.headers.get('x-offline-sync') === 'true'
+    );
+
     await prisma.$transaction(async (tx) => {
       await tx.user.delete({ where: { id } });
       await tx.auditLog.create({
-        data: { userId: adminUser.id, action: 'DELETE', entity: 'User', details: `Deleted user ${targetUser.name} (${targetUser.email})` }
+        data: { userId: adminUser.id, action: 'DELETE', entity: 'User', details: `Deleted user ${targetUser.name} (${targetUser.email})`, mode: isOfflineSync ? 'offline' : 'online' }
       });
     });
 

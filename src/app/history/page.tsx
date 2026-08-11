@@ -226,7 +226,10 @@ export default function HistoryPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Audit Logs</h1>
-          <p className="page-subtitle">Audit log of all user activities and system changes</p>
+          <p className="page-subtitle">
+            Audit log of all user activities and system changes
+            {lastUpdated && <span style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--text-tertiary)' }}>(Last updated: {new Date(lastUpdated).toLocaleTimeString()})</span>}
+          </p>
         </div>
       </div>
 
@@ -236,8 +239,8 @@ export default function HistoryPage() {
           <AlertTriangle size={16} color="#92400e" />
           <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>
             {!navigator.onLine
-              ? `⚠️ You are offline — showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. Pending actions will sync when reconnected.`
-              : `⚠️ Could not load recent audit logs. Showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}.`}
+              ? `You are offline — showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. Pending actions will sync when reconnected.`
+              : `Could not load recent audit logs. Showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}.`}
           </span>
         </div>
       )}
@@ -359,16 +362,16 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        <div className="table-container">
+        <div className="table-container" style={{ overflowX: 'auto', width: '100%' }}>
           <table className="table">
             <thead>
               <tr>
-                <th style={{ width: '180px' }}>Date &amp; Time</th>
-                <th style={{ width: '150px' }}>User</th>
-                <th style={{ width: '100px' }}>Action</th>
-                <th style={{ width: '150px' }}>Module</th>
-                <th style={{ width: '100px' }}>Mode</th>
-                <th style={{ width: 'auto' }}>Details</th>
+                <th style={{ width: '180px', minWidth: '150px' }}>Date &amp; Time</th>
+                <th style={{ width: '150px', minWidth: '130px' }}>User</th>
+                <th style={{ width: '100px', minWidth: '90px' }}>Action</th>
+                <th style={{ width: '150px', minWidth: '120px' }}>Module</th>
+                <th style={{ width: '100px', minWidth: '90px' }}>Mode</th>
+                <th style={{ width: 'auto', minWidth: 'auto' }}>Details</th>
               </tr>
             </thead>
             <tbody>
@@ -419,7 +422,7 @@ export default function HistoryPage() {
                     <td data-label="Module">
                       <span className="badge badge-neutral">{log.entity}</span>
                     </td>
-                    <td data-label="Mode">
+                    <td data-label="Mode" style={{ minWidth: '90px' }}>
                       {String(log.mode || '').toLowerCase().includes('offline') ? (
                         <span style={{
                           display: 'inline-flex',

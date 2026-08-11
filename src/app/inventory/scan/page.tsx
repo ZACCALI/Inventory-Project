@@ -651,7 +651,17 @@ export default function BarcodeScannerPage() {
         
         {/* Left Column: Scanner Interface */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-          <div className="card" style={{ textAlign: 'center', padding: 'var(--space-2xl) var(--space-lg)' }}>
+          <div className="card">
+            <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--border-light)', padding: '16px 20px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ScanBarcode size={20} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Barcode Scanner</h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>Scan using hardware or camera</p>
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', padding: 'var(--space-2xl) var(--space-lg)' }}>
           
           {cameraActive ? (
             <div style={{ position: 'relative' }}>
@@ -685,16 +695,16 @@ export default function BarcodeScannerPage() {
             <>
               <div style={{ 
                 width: '80px', height: '80px', 
-                borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)',
+                borderRadius: '50%', background: 'var(--bg-main)', border: '2px dashed var(--border)', color: 'var(--text-tertiary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto var(--space-md)' 
               }}>
                 <ScanBarcode size={40} />
               </div>
-              <h2 className="card-title" style={{ fontSize: 'var(--font-xl)', marginBottom: 'var(--space-sm)' }}>Hardware Scanner Ready</h2>
+              <h2 className="card-title" style={{ fontSize: 'var(--font-xl)', marginBottom: 'var(--space-sm)' }}>Ready to Scan</h2>
               <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-xl)' }}>
-                Start scanning barcodes now. The system is listening. <br/>
-                <span style={{ fontSize: 'var(--font-xs)', color: 'var(--primary)' }}><Info size={14} style={{ display: 'inline', marginBottom: '-2px', marginRight: '4px' }} /> USB Barcode Scanners are supported natively (plug and play)</span>
+                Focus the input below and scan your item.<br/>
+                <span style={{ fontSize: 'var(--font-xs)', color: 'var(--primary)' }}><Info size={14} style={{ display: 'inline', marginBottom: '-2px', marginRight: '4px' }} /> USB Barcode Scanners are supported natively</span>
               </p>
 
               <form onSubmit={handleFormScan} style={{ position: 'relative', width: '100%', maxWidth: '300px', margin: '0 auto var(--space-xl)', display: 'flex', justifyContent: 'center' }}>
@@ -708,10 +718,20 @@ export default function BarcodeScannerPage() {
                   value={scannedCode}
                   onChange={(e) => setScannedCode(e.target.value)}
                   placeholder="Waiting for input..."
+                  style={{
+                    background: 'var(--bg-main)',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)',
+                    fontSize: '20px',
+                    fontWeight: 600,
+                    color: 'var(--primary-dark)',
+                    letterSpacing: '2px',
+                    border: '2px solid var(--primary-light)'
+                  }}
                 />
               </form>
             </>
           )}
+          </div>
         </div>
 
         {/* Alternative Input Methods Card */}
@@ -807,8 +827,7 @@ export default function BarcodeScannerPage() {
         </div>
 
         {/* Right Column: Scan Results */}
-        <div className={`card scanner-right-panel ${isMobileDrawerOpen ? 'mobile-open' : ''}`} style={{ minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
-          <div className="mobile-drag-handle"></div>
+        <div className="card" style={{ minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
           {/* Sticky Header Toolbar */}
           <div className="scanner-drawer-header" style={{ flexShrink: 0, paddingBottom: '16px', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -849,9 +868,6 @@ export default function BarcodeScannerPage() {
                   </button>
                 )}
 
-                <button onClick={() => setIsMobileDrawerOpen(false)} className="mobile-only-close" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-tertiary)', cursor: 'pointer', transition: 'all 0.15s ease' }}>
-                  <X size={16} />
-                </button>
               </div>
             </div>
           </div>
@@ -1068,9 +1084,12 @@ export default function BarcodeScannerPage() {
               </div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '300px', color: 'var(--text-tertiary)' }}>
-              <AlertCircle size={48} style={{ marginBottom: 'var(--space-md)', opacity: 0.5 }} />
-              <p>No item scanned yet.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--text-tertiary)', padding: 'var(--space-2xl)' }}>
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg-main)', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-lg)' }}>
+                <ScanBarcode size={32} color="var(--text-tertiary)" />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>Waiting for Scan</h3>
+              <p style={{ textAlign: 'center', maxWidth: '250px' }}>Use your barcode scanner or camera to scan an item, or search manually.</p>
             </div>
           )}
           </div>{/* end scanner-drawer-body */}
@@ -1127,13 +1146,8 @@ export default function BarcodeScannerPage() {
         </div>
       </div>
 
-      {/* Mobile Overlay */}
-      {isMobileDrawerOpen && (
-        <div className="mobile-drawer-overlay" onClick={() => setIsMobileDrawerOpen(false)}></div>
-      )}
-
-      {/* Mobile Floating Drawer Button */}
-      <div className="mobile-fab-container">
+      {/* Mobile Floating Drawer Button (Hidden via CSS if standard stack is used, but keeping for logic safety) */}
+      <div className="mobile-fab-container" style={{ display: 'none' }}>
         <button className="mobile-fab" onClick={() => setIsMobileDrawerOpen(true)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ position: 'relative' }}>
