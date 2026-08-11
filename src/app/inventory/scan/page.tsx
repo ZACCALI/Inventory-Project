@@ -646,18 +646,32 @@ export default function BarcodeScannerPage() {
           box-shadow: 0 0 0 4px var(--primary-light);
           outline: none;
         }
+        
+        @keyframes pulse-green {
+          0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+          70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .pulse-dot {
+          animation: pulse-green 2s infinite;
+        }
       `}</style>
       <div className="scanner-layout">
         
         {/* Left Column: Scanner Interface */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-          <div className="card">
+          <div className="card" style={{ minHeight: '450px', display: 'flex', flexDirection: 'column' }}>
             <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--border-light)', padding: '16px 20px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ScanBarcode size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Barcode Scanner</h2>
+                <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  Barcode Scanner
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 500, color: 'var(--success)', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.2)' }} className="pulse-dot" /> Hardware Ready
+                  </span>
+                </h2>
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>Scan using hardware or camera</p>
               </div>
             </div>
@@ -719,13 +733,13 @@ export default function BarcodeScannerPage() {
                   onChange={(e) => setScannedCode(e.target.value)}
                   placeholder="Waiting for input..."
                   style={{
-                    background: 'var(--bg-main)',
+                    background: '#f8fafc',
                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05), inset 0 2px 4px rgba(0,0,0,0.02)',
                     fontSize: '18px',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     color: 'var(--text-primary)',
-                    letterSpacing: '1px',
-                    border: '2px solid var(--border)',
+                    letterSpacing: '2px',
+                    border: '1.5px solid var(--primary)',
                     textAlign: 'center'
                   }}
                 />
@@ -735,7 +749,7 @@ export default function BarcodeScannerPage() {
           </div>
 
           {/* Alternative Input Methods inside the same card */}
-          <div style={{ marginTop: 'var(--space-2xl)', paddingTop: 'var(--space-xl)', borderTop: '1px solid var(--border-light)' }}>
+          <div style={{ padding: 'var(--space-lg) var(--space-xl)', borderTop: '1px solid var(--border-light)', background: 'var(--bg-main)', marginTop: 'auto', borderBottomLeftRadius: 'var(--radius-lg)', borderBottomRightRadius: 'var(--radius-lg)' }}>
             <h3 style={{ fontSize: 'var(--font-sm)', fontWeight: 600, marginBottom: 'var(--space-md)', color: 'var(--text-secondary)' }}>Alternative Input Methods</h3>
 
               <div ref={fallbackRef} style={{ position: 'relative', width: '100%', maxWidth: '300px', margin: '0 auto' }}>
@@ -828,7 +842,7 @@ export default function BarcodeScannerPage() {
         </div>
 
         {/* Right Column: Scan Results */}
-        <div className="card" style={{ minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
+        <div className="card" style={{ minHeight: '450px', display: 'flex', flexDirection: 'column' }}>
           {/* Sticky Header Toolbar */}
           <div className="scanner-drawer-header" style={{ flexShrink: 0, paddingBottom: '16px', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

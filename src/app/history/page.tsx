@@ -370,7 +370,7 @@ export default function HistoryPage() {
                 <th style={{ width: '150px', minWidth: '130px' }}>User</th>
                 <th style={{ width: '100px', minWidth: '90px' }}>Action</th>
                 <th style={{ width: '150px', minWidth: '120px' }}>Module</th>
-                <th style={{ width: '100px', minWidth: '90px' }}>Mode</th>
+                <th style={{ width: '110px', minWidth: '110px' }}>Mode</th>
                 <th style={{ width: 'auto', minWidth: 'auto' }}>Details</th>
               </tr>
             </thead>
@@ -422,37 +422,13 @@ export default function HistoryPage() {
                     <td data-label="Module">
                       <span className="badge badge-neutral">{log.entity}</span>
                     </td>
-                    <td data-label="Mode" style={{ minWidth: '90px' }}>
+                    <td data-label="Mode" style={{ minWidth: '110px' }}>
                       {String(log.mode || '').toLowerCase().includes('offline') ? (
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          background: 'rgba(245, 158, 11, 0.1)',
-                          color: 'var(--warning)',
-                          border: '1px solid rgba(245, 158, 11, 0.2)',
-                          whiteSpace: 'nowrap'
-                        }}>
+                        <span className="badge badge-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <WifiOff size={12} /> OFFLINE
                         </span>
                       ) : (
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          background: 'rgba(16, 185, 129, 0.1)',
-                          color: 'var(--success)',
-                          border: '1px solid rgba(16, 185, 129, 0.2)',
-                          whiteSpace: 'nowrap'
-                        }}>
+                        <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <Wifi size={12} /> ONLINE
                         </span>
                       )}
