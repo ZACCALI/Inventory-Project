@@ -874,7 +874,7 @@ export default function InventoryPage() {
                         </div>
                         <div style={{ textAlign: 'left' }}>
                           <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{product.name}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)' }}>{product.sku}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', wordBreak: 'break-all' }}>{product.sku}</div>
                         </div>
                       </div>
                     </td>

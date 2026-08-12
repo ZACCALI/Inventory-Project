@@ -4447,9 +4447,10 @@ p {
   .table-container { overflow-x: hidden; width: 100%; }
   .table-container table { min-width: 600px; }
   .table-container table.mobile-stack { min-width: 100% !important; width: 100% !important; }
-  .table-container table.mobile-stack tbody tr { display: block; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 12px; padding: 12px; background: var(--bg-card); box-shadow: var(--shadow-sm); }
-  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border: none; text-align: right; word-break: break-word; font-size: 13px; }
-  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; text-align: left; margin-right: 12px; flex-shrink: 0; }
+  .table-container table.mobile-stack tbody tr { display: block; border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 16px; padding: 16px; background: var(--bg-card); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border: none; border-bottom: 1px dashed var(--border-light); text-align: right; word-break: break-word; font-size: 13px; }
+  .table-container table.mobile-stack td:last-child { border-bottom: none; padding-bottom: 0; }
+  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; text-align: left; margin-right: 12px; flex-shrink: 0; letter-spacing: 0.5px; margin-top: 2px; }
   .table-container table.mobile-stack thead { display: none; }
 }
 

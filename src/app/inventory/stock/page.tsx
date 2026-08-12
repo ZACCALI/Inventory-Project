@@ -958,7 +958,7 @@ export default function StockInOutPage() {
                         </div>
                         <div style={{ textAlign: 'left' }}>
                           <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>{movement.product}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)' }}>{movement.sku}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', wordBreak: 'break-all' }}>{movement.sku}</div>
                         </div>
                       </div>
                     </td>

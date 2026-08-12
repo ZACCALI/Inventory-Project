@@ -358,7 +358,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
           <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0, boxShadow: '0 2px 8px rgba(37,99,235,0.3)' }}>
             <Truck size={20} strokeWidth={1.5} />
           </div>
-          <span className="system-name" style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{companyName}</span>
+          <span className="system-name" style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{companyName}</span>
         </Link>
         <div className="navbar-greeting" style={{ marginLeft: '16px', display: 'none' }}>
           {getGreeting()}, <strong>{activeSession?.user?.name || 'User'}</strong>
