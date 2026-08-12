@@ -872,9 +872,9 @@ export default function InventoryPage() {
                             <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>No Img</span>
                           )}
                         </div>
-                        <div style={{ textAlign: 'left' }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{product.name}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{product.sku}</div>
+                        <div style={{ textAlign: 'left', minWidth: 0, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{product.name}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflowWrap: 'anywhere', wordBreak: 'break-all' }}>{product.sku}</div>
                         </div>
                       </div>
                     </td>

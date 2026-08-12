@@ -354,7 +354,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
         <button className="menu-toggle" onClick={onMenuToggle} aria-label="Toggle navigation menu">
           <Menu size={22} strokeWidth={1.75} />
         </button>
-        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', overflow: 'hidden', minWidth: 0, flexShrink: 1 }}>
+        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', overflow: 'hidden' }}>
           <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0, boxShadow: '0 2px 8px rgba(37,99,235,0.3)' }}>
             <Truck size={20} strokeWidth={1.5} />
           </div>
@@ -525,10 +525,10 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
                 {activeSession?.user?.name ? getInitials(activeSession.user.name) : 'U'}
               </span>
             )}
-            <span className="admin-name hide-mobile" style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-family)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
+            <span className="admin-name hide-mobile" style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-family)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {activeSession?.user?.name || 'User'}
             </span>
-            <ChevronDown size={14} className="hide-mobile" style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
+            <ChevronDown size={14} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
           </button>
 
           {dropdownOpen && (

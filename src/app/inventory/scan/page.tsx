@@ -659,7 +659,7 @@ export default function BarcodeScannerPage() {
         
         {/* Left Column: Scanner Interface */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-          <div className="card scanner-card-mobile" style={{ minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
+          <div className="card" style={{ minHeight: '450px', display: 'flex', flexDirection: 'column' }}>
             <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--border-light)', padding: '16px 20px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ScanBarcode size={20} />
@@ -841,7 +841,7 @@ export default function BarcodeScannerPage() {
         </div>
 
         {/* Right Column: Scan Results */}
-        <div className="card scanner-card-mobile" style={{ minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
+        <div className="card" style={{ minHeight: '450px', display: 'flex', flexDirection: 'column' }}>
           {/* Sticky Header Toolbar */}
           <div className="scanner-drawer-header" style={{ flexShrink: 0, paddingBottom: '16px', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1161,7 +1161,7 @@ export default function BarcodeScannerPage() {
       </div>
 
       {/* Mobile Floating Drawer Button (Hidden via CSS if standard stack is used, but keeping for logic safety) */}
-      <div className="mobile-fab-container">
+      <div className="mobile-fab-container" style={{ display: 'none' }}>
         <button className="mobile-fab" onClick={() => setIsMobileDrawerOpen(true)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ position: 'relative' }}>

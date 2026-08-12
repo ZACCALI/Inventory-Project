@@ -3056,14 +3056,14 @@ p {
   }
 
   .system-name {
-    max-width: 100px;
+    max-width: 220px;
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: var(--font-base);
   }
 
   .admin-name {
-    max-width: 80px !important;
+    display: none !important;
   }
 
   .navbar {
@@ -4441,26 +4441,30 @@ p {
   .stats-grid, .stats-grid-3, .stats-grid-4 { grid-template-columns: 1fr; }
 }
 
-/* 2D. Fix Table Responsiveness */
+/* 2D. Fix Table Responsiveness & Mobile Stacking */
 .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
 @media (max-width: 767px) {
   .table-container { overflow-x: hidden; width: 100%; }
-  .table-container table { min-width: 600px; }
+  .table-container table { min-width: 100%; }
   .table-container table.mobile-stack { min-width: 100% !important; width: 100% !important; }
   .table-container table.mobile-stack tbody tr { display: block; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 12px; padding: 12px; background: var(--bg-card); box-shadow: var(--shadow-sm); }
-  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border: none; text-align: right; word-break: break-word; font-size: 13px; }
-  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; text-align: left; margin-right: 12px; flex-shrink: 0; }
+  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border: none; text-align: right; word-break: break-word; overflow-wrap: anywhere; font-size: 13px; min-width: 0; width: 100%; }
+  .table-container table.mobile-stack td > * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; text-align: left; margin-right: 12px; flex-shrink: 0; padding-top: 2px; }
   .table-container table.mobile-stack thead { display: none; }
+  .table-container table.mobile-stack td[data-label="Product"],
+  .table-container table.mobile-stack td[data-label="Product Details"] { flex-direction: row; align-items: flex-start; }
 }
 
-/* 2E. Fix Modal Widths */
-.modal-content { width: min(90vw, 640px); max-height: 90vh; overflow-y: auto; }
+/* 2E. Fix Modal Widths & Button Contrast */
+.modal, .modal-content { width: min(90vw, 640px); max-height: 90vh; overflow-y: auto; }
+.btn-secondary { background: var(--bg-hover); color: var(--text-primary) !important; border: 1px solid var(--border); }
 @media (max-width: 767px) {
-  .modal-content { width: 95vw; max-height: 85vh; border-radius: var(--radius-lg); padding: 20px 16px; }
+  .modal, .modal-content { width: 95vw; max-height: 85vh; border-radius: var(--radius-lg); padding: 20px 16px; }
   .modal-header { padding: 16px 16px 0; }
   .modal-body { padding: 16px; }
   .modal-footer { padding: 12px 16px 16px; flex-direction: column; gap: 8px; }
-  .modal-footer .btn { width: 100%; justify-content: center; }
+  .modal-footer .btn { width: 100%; justify-content: center; min-height: 44px; }
 }
 
 /* 2F. Fix Card Padding Consistency */
@@ -4482,14 +4486,16 @@ p {
   .page-title { font-size: var(--font-xl); }
 }
 
-/* 2H. Fix Filter Bar */
+/* 2H. Fix Filter Bar & Dropdown Positioning */
 .filter-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .filter-bar .search-bar { flex: 1; min-width: 200px; }
+.filter-dropdown-menu { max-width: calc(100vw - 32px) !important; }
 @media (max-width: 767px) {
   .filter-bar { flex-direction: column; align-items: stretch; gap: 8px; }
   .filter-bar .search-bar { min-width: unset; width: 100%; }
   .filter-bar select, .filter-bar input[type="date"] { width: 100%; }
   .filter-bar .btn { width: 100%; justify-content: center; }
+  .filter-dropdown-menu { right: 0 !important; left: auto !important; width: 100% !important; }
 }
 
 /* 2I. Fix Form Grids */
@@ -4596,149 +4602,4 @@ p {
   .modal-overlay { align-items: flex-end; padding-bottom: 0; }
   .modal-content { width: 100%; max-width: 100%; border-radius: var(--radius-xl) var(--radius-xl) 0 0; max-height: 92vh; }
 }
-
-/* ============================================================
-   UNIVERSAL RESPONSIVE & LAYOUT INCONSISTENCY FIXES (2026-08-12)
-   ============================================================ */
-
-/* 1. Global SKU, Table Cell & Alphanumeric Text Word-Breaking */
-.product-sku,
-.sku-badge,
-.product-name,
-.product-title,
-.table-container td,
-.table-card,
-.badge,
-.code-text,
-.text-break-all {
-  overflow-wrap: anywhere !important;
-  word-break: break-word !important;
-}
-
-/* 2. Enhanced Table Mobile Cards Stacking */
-@media (max-width: 767px) {
-  .table-container table.mobile-stack tbody tr {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 14px;
-    margin-bottom: 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--bg-card);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  }
-  .table-container table.mobile-stack tbody td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 0 !important;
-    border: none !important;
-    border-bottom: 1px dashed var(--border-light) !important;
-    font-size: 13px;
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-  .table-container table.mobile-stack tbody td:last-child {
-    border-bottom: none !important;
-    padding-top: 10px !important;
-  }
-  .table-container table.mobile-stack tbody td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-tertiary);
-    flex-shrink: 0;
-    margin-right: 12px;
-  }
-  .table-container table.mobile-stack tbody td[data-label="Product"],
-  .table-container table.mobile-stack tbody td[data-label="Product Details"] {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-  .table-container table.mobile-stack tbody td[data-label="Product"] > div,
-  .table-container table.mobile-stack tbody td[data-label="Product Details"] > div {
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-}
-
-/* 3. Universal Modal Dialog Responsiveness */
-@media (max-width: 640px) {
-  .modal-overlay {
-    padding: 10px !important;
-    align-items: flex-end !important;
-  }
-  .modal,
-  .modal-content {
-    width: 100% !important;
-    max-width: 100% !important;
-    max-height: 90vh !important;
-    margin: 0 !important;
-    border-radius: 16px 16px 0 0 !important;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .modal-body {
-    padding: 16px !important;
-    overflow-y: auto !important;
-    max-height: calc(90vh - 120px) !important;
-  }
-  .modal-header {
-    padding: 14px 16px !important;
-  }
-  .modal-footer {
-    padding: 12px 16px !important;
-    flex-direction: column-reverse !important;
-    gap: 8px !important;
-  }
-  .modal-footer .btn {
-    width: 100% !important;
-  }
-  .form-grid-2,
-  .form-row,
-  .modal-split-layout {
-    grid-template-columns: 1fr !important;
-    flex-direction: column !important;
-    gap: 12px !important;
-  }
-}
-
-/* 4. Navbar Header Layout Fixes */
-@media (max-width: 640px) {
-  .navbar {
-    padding: 0 10px !important;
-  }
-  .navbar-left {
-    gap: 6px !important;
-    min-width: 0 !important;
-    flex-shrink: 1 !important;
-  }
-  .navbar-right {
-    gap: 6px !important;
-    flex-shrink: 0 !important;
-  }
-  .system-name {
-    font-size: 14px !important;
-  }
-}
-
-/* 5. Barcode Scanner & Page Bottom Cutoff Fix */
-.scanner-layout {
-  min-height: auto !important;
-}
-@media (max-width: 767px) {
-  .page-container {
-    padding: 12px !important;
-    padding-bottom: 90px !important;
-  }
-  .scanner-card-mobile {
-    min-height: auto !important;
-  }
-}
-
 

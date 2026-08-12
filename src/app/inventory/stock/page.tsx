@@ -956,9 +956,9 @@ export default function StockInOutPage() {
                             <Package size={20} color="var(--text-tertiary)" />
                           )}
                         </div>
-                        <div style={{ textAlign: 'left' }}>
-                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>{movement.product}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)' }}>{movement.sku}</div>
+                        <div style={{ textAlign: 'left', minWidth: 0, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{movement.product}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflowWrap: 'anywhere', wordBreak: 'break-all' }}>{movement.sku}</div>
                         </div>
                       </div>
                     </td>
@@ -1320,7 +1320,7 @@ export default function StockInOutPage() {
                 </div>
                 
                 {modalType === 'IN' && (
-                  <div className="form-grid-2" style={{ gap: '20px' }}>
+                  <div className="form-grid">
                     <div className="form-group">
                       <label htmlFor="stock-modal-expiry" className="form-label">Expiry Date *</label>
                       <input 
