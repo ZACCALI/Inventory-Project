@@ -569,7 +569,7 @@ export default function ExpensesPage() {
             </div>
             
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div className="modal-body" style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
+              <div className="modal-body" style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label htmlFor="expense-date" className="form-label">Date <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -579,7 +579,7 @@ export default function ExpensesPage() {
                       type="date" 
                       required 
                       className="form-input"
-                      style={{ height: '48px', borderRadius: '12px' }}
+                      style={{ height: '44px', borderRadius: '12px' }}
                       value={formData.date}
                       onChange={e => setFormData({...formData, date: e.target.value})}
                     />
@@ -587,20 +587,20 @@ export default function ExpensesPage() {
 
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label htmlFor="expense-category" className="form-label">Category <span style={{ color: 'var(--danger)' }}>*</span></label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <select 
                         id="expense-category"
                         name="category"
                         className="form-select"
                         required
-                        style={{ height: '48px', borderRadius: '12px', flex: 1 }}
+                        style={{ height: '44px', borderRadius: '12px', flex: 1 }}
                         value={formData.category}
                         onChange={e => setFormData({...formData, category: e.target.value})}
                       >
                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                       {isAdmin && (
-                        <button type="button" onClick={() => setIsCategoryManageOpen(true)} className="btn btn-outline" style={{ height: '48px', borderRadius: '12px', padding: '0 12px', whiteSpace: 'nowrap', fontSize: '12px' }}>
+                        <button type="button" onClick={() => setIsCategoryManageOpen(true)} className="btn btn-outline" style={{ height: '44px', borderRadius: '12px', padding: '0 12px', whiteSpace: 'nowrap', fontSize: '12px' }}>
                           <Edit size={14} /> Manage
                         </button>
                       )}
@@ -619,7 +619,7 @@ export default function ExpensesPage() {
                         min="0.01"
                         required 
                         className="form-input"
-                        style={{ paddingLeft: '32px', height: '48px', borderRadius: '12px', fontWeight: 600 }}
+                        style={{ paddingLeft: '32px', height: '44px', borderRadius: '12px', fontWeight: 600 }}
                         value={formData.amount}
                         onChange={e => setFormData({...formData, amount: e.target.value})}
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
@@ -636,7 +636,7 @@ export default function ExpensesPage() {
                       required 
                       placeholder="e.g. June Electricity Bill"
                       className="form-input"
-                      style={{ height: '48px', borderRadius: '12px' }}
+                      style={{ height: '44px', borderRadius: '12px' }}
                       value={formData.description}
                       onChange={e => setFormData({...formData, description: e.target.value})}
                     />
@@ -650,7 +650,7 @@ export default function ExpensesPage() {
                       type="text" 
                       placeholder="Receipt No / Invoice No"
                       className="form-input"
-                      style={{ height: '48px', borderRadius: '12px' }}
+                      style={{ height: '44px', borderRadius: '12px' }}
                       value={formData.reference}
                       onChange={e => setFormData({...formData, reference: e.target.value})}
                     />
@@ -658,7 +658,7 @@ export default function ExpensesPage() {
                 </div>
               </div>
               
-              <div className="modal-footer" style={{ padding: '24px 32px', borderTop: '1px solid var(--border)', display: 'flex', gap: '16px', background: '#FFFFFF', borderRadius: '0 0 24px 24px' }}>
+              <div className="modal-footer" style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', gap: '12px', background: '#FFFFFF', borderRadius: '0 0 24px 24px' }}>
                 <button type="button" className="btn btn-secondary" style={{ flex: 1, height: '48px', borderRadius: '12px', fontSize: '15px' }} onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>
