@@ -525,7 +525,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
                 {activeSession?.user?.name ? getInitials(activeSession.user.name) : 'U'}
               </span>
             )}
-            <span className="admin-name hide-mobile" style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-family)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span className="admin-name" style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-family)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
               {activeSession?.user?.name || 'User'}
             </span>
             <ChevronDown size={14} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />

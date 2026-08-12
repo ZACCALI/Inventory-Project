@@ -728,7 +728,7 @@ p {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: var(--space-md);
   margin: 0;
   animation: overlayFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -3056,14 +3056,14 @@ p {
   }
 
   .system-name {
-    max-width: 220px;
+    max-width: 100px;
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: var(--font-base);
   }
 
   .admin-name {
-    display: none !important;
+    max-width: 80px !important;
   }
 
   .navbar {
@@ -4441,30 +4441,31 @@ p {
   .stats-grid, .stats-grid-3, .stats-grid-4 { grid-template-columns: 1fr; }
 }
 
-/* 2D. Fix Table Responsiveness & Mobile Stacking */
+/* 2D. Fix Table Responsiveness */
 .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
 @media (max-width: 767px) {
   .table-container { overflow-x: hidden; width: 100%; }
-  .table-container table { min-width: 100%; }
-  .table-container table.mobile-stack { min-width: 100% !important; width: 100% !important; }
-  .table-container table.mobile-stack tbody tr { display: block; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 12px; padding: 12px; background: var(--bg-card); box-shadow: var(--shadow-sm); }
-  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border: none; text-align: right; word-break: break-word; overflow-wrap: anywhere; font-size: 13px; min-width: 0; width: 100%; }
-  .table-container table.mobile-stack td > * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
-  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; text-align: left; margin-right: 12px; flex-shrink: 0; padding-top: 2px; }
+  .table-container table { min-width: 600px; }
+  .table-container table.mobile-stack { min-width: 100% !important; width: 100% !important; display: block; }
+  .table-container table.mobile-stack tbody { display: block; }
+  .table-container table.mobile-stack tbody tr { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 12px; padding: 12px; background: var(--bg-card); box-shadow: var(--shadow-sm); gap: 8px; }
+  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: flex-start; padding: 0; border: none; text-align: right; word-break: break-word; font-size: 13px; }
+  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; text-align: left; margin-right: 12px; flex-shrink: 0; padding-top: 2px; width: 90px; }
+  .table-container table.mobile-stack td > div { flex: 1; display: flex; flex-direction: column; align-items: flex-end; }
+  .table-container table.mobile-stack td:first-child { flex-direction: column; align-items: stretch; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 4px; }
+  .table-container table.mobile-stack td:first-child::before { display: none; }
+  .table-container table.mobile-stack td:first-child > div { align-items: flex-start; }
   .table-container table.mobile-stack thead { display: none; }
-  .table-container table.mobile-stack td[data-label="Product"],
-  .table-container table.mobile-stack td[data-label="Product Details"] { flex-direction: row; align-items: flex-start; }
 }
 
-/* 2E. Fix Modal Widths & Button Contrast */
-.modal, .modal-content { width: min(90vw, 640px); max-height: 90vh; overflow-y: auto; }
-.btn-secondary { background: var(--bg-hover); color: var(--text-primary) !important; border: 1px solid var(--border); }
+/* 2E. Fix Modal Widths */
+.modal-content, .modal { width: min(90vw, 640px); max-height: 90vh; overflow-y: auto; }
 @media (max-width: 767px) {
-  .modal, .modal-content { width: 95vw; max-height: 85vh; border-radius: var(--radius-lg); padding: 20px 16px; }
-  .modal-header { padding: 16px 16px 0; }
-  .modal-body { padding: 16px; }
-  .modal-footer { padding: 12px 16px 16px; flex-direction: column; gap: 8px; }
-  .modal-footer .btn { width: 100%; justify-content: center; min-height: 44px; }
+  .modal-content, .modal { width: 95vw; max-height: 85vh; border-radius: var(--radius-lg); padding: 20px 16px; display: flex; flex-direction: column; }
+  .modal-header { padding: 16px 16px 0; flex-shrink: 0; }
+  .modal-body { padding: 16px; overflow-y: auto; flex: 1; }
+  .modal-footer { padding: 12px 16px 16px; flex-direction: column; gap: 8px; flex-shrink: 0; }
+  .modal-footer .btn { width: 100%; justify-content: center; }
 }
 
 /* 2F. Fix Card Padding Consistency */
@@ -4486,16 +4487,14 @@ p {
   .page-title { font-size: var(--font-xl); }
 }
 
-/* 2H. Fix Filter Bar & Dropdown Positioning */
+/* 2H. Fix Filter Bar */
 .filter-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .filter-bar .search-bar { flex: 1; min-width: 200px; }
-.filter-dropdown-menu { max-width: calc(100vw - 32px) !important; }
 @media (max-width: 767px) {
   .filter-bar { flex-direction: column; align-items: stretch; gap: 8px; }
   .filter-bar .search-bar { min-width: unset; width: 100%; }
   .filter-bar select, .filter-bar input[type="date"] { width: 100%; }
   .filter-bar .btn { width: 100%; justify-content: center; }
-  .filter-dropdown-menu { right: 0 !important; left: auto !important; width: 100% !important; }
 }
 
 /* 2I. Fix Form Grids */

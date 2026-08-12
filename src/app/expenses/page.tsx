@@ -568,7 +568,7 @@ export default function ExpensesPage() {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <form onSubmit={handleSubmit} className="modal-layout-form">
               <div className="modal-body" style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
@@ -658,11 +658,11 @@ export default function ExpensesPage() {
                 </div>
               </div>
               
-              <div className="modal-footer" style={{ padding: '20px 24px', borderTop: '1px solid var(--border)', display: 'flex', gap: '12px', background: 'var(--bg-card)' }}>
-                <button type="button" className="btn btn-secondary" style={{ flex: 1, height: '44px', fontSize: '15px' }} onClick={() => setIsModalOpen(false)}>
+              <div className="modal-footer" style={{ padding: '24px 32px', borderTop: '1px solid var(--border)', display: 'flex', gap: '16px', background: '#FFFFFF', borderRadius: '0 0 24px 24px' }}>
+                <button type="button" className="btn btn-secondary" style={{ flex: 1, height: '48px', borderRadius: '12px', fontSize: '15px' }} onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1, height: '44px', fontSize: '15px' }} disabled={actionLoading}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, height: '48px', borderRadius: '12px', fontSize: '15px' }} disabled={actionLoading}>
                   {actionLoading ? 'Saving...' : (editId ? 'Save Changes' : 'Log Expense')}
                 </button>
               </div>
