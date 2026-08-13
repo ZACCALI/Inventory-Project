@@ -26,7 +26,7 @@ interface Product {
   stock: number;
   image: string | null;
   category: { name: string } | null;
-  uoms?: { id: string; name: string; barcode: string | null; multiplier: number; price: number; isBase: boolean }[];
+  uoms?: { id?: string; name: string; barcode: string | null; multiplier: number; price: number; isBase?: boolean }[];
   unit?: string;
 }
 
@@ -361,8 +361,7 @@ export default function CreateOrderPage() {
             stock: p.stock,
             image: p.image,
             category: p.categoryName ? { name: p.categoryName } : null,
-            uoms: p.uoms || [],
-            _count: { orderItems: 0, stockLogs: 0 }
+            uoms: p.uoms || []
           }));
           setProducts(prev => prev.length === 0 ? mappedProds : prev);
           const cats = Array.from(new Set(mappedProds.filter(p => p.category?.name).map(p => p.category?.name as string)));
