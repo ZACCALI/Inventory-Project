@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import useSWR from 'swr';
+import { fetcher } from '@/lib/fetcher';
 import { Search, Plus, Trash2, Save, ShoppingBag, User,  X, Truck, CheckCircle2, AlertCircle, Minus, Camera, ScanLine, Receipt, Printer, ShoppingCart,       AlertTriangle } from 'lucide-react';
 import { formatCurrency, broadcastDataChange } from '@/lib/constants';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -25,7 +27,7 @@ interface Product {
   image: string | null;
   category: { name: string } | null;
   uoms?: { id: string; name: string; barcode: string | null; multiplier: number; price: number; isBase: boolean }[];
-  unit: string;
+  unit?: string;
 }
 
 interface CartItem {
@@ -43,6 +45,27 @@ export default function CreateOrderPage() {
   const { data: session } = useSession();
   const userId = session?.user?.id || 'clv123mockuserid0001';
   const isAdmin = session?.user?.role?.toLowerCase() === 'admin';
+
+  // SWR hooks for background fetching & in-memory caching
+  const { data: swrProducts, mutate: mutateProducts } = useSWR('/api/products?limit=1000', fetcher, {
+    revalidateOnFocus: false,
+    dedupeInterval: 10000,
+    refreshInterval: 15000,
+  });
+  const { data: swrCustomers, mutate: mutateCustomers } = useSWR('/api/customers?limit=1000', fetcher, {
+    revalidateOnFocus: false,
+    dedupeInterval: 10000,
+    refreshInterval: 15000,
+  });
+  const { data: swrDrivers, mutate: mutateDrivers } = useSWR('/api/drivers?limit=1000', fetcher, {
+    revalidateOnFocus: false,
+    dedupeInterval: 10000,
+    refreshInterval: 15000,
+  });
+  const { data: swrSettings } = useSWR('/api/settings', fetcher, {
+    revalidateOnFocus: false,
+    dedupeInterval: 10000,
+  });
 
   // State
   const [products, setProducts] = useState<Product[]>([]);
@@ -313,95 +336,206 @@ export default function CreateOrderPage() {
     setPausedState(false);
   };
 
-  // Load Data
+  // 1. Immediate cold-start load from Dexie IndexedDB cache (loads items instantly in 0-10ms)
   useEffect(() => {
-    const loadData = async () => {
+    let isMounted = true;
+    const loadInitialCache = async () => {
       try {
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let fetchedProducts: any[] = [];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let fetchedCustomers: any[] = [];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let fetchedDrivers: any[] = [];
+        const [cachedProducts, cachedCustomers, cachedDrivers, cachedSettings] = await Promise.all([
+          db.products.toArray(),
+          db.customers.toArray(),
+          db.drivers.toArray(),
+          db.settings.get('current')
+        ]);
 
-        try {
-          const [prodRes, custRes, drivRes, setRes] = await Promise.all([
-            fetch('/api/products?limit=1000'),
-            fetch('/api/customers?limit=1000'),
-            fetch('/api/drivers?limit=1000'),
-            fetch('/api/settings')
-          ]);
+        if (!isMounted) return;
 
-          if (prodRes.ok) fetchedProducts = await prodRes.json();
-          if (custRes.ok) fetchedCustomers = await custRes.json();
-          if (drivRes.ok) fetchedDrivers = await drivRes.json();
-          
-          if (setRes.ok) {
-            const data = await setRes.json();
-            if (data && !data.error) {
-              setLockOrderDate(data.lockOrderDate ?? true);
-              if (data.companyName) setCompanyName(data.companyName);
-            }
-          }
-        } catch (e) {
-          console.warn('Network error during initial load, falling back to local cache', e);
-          // Fall back to Dexie local cache for products
+        if (cachedProducts && cachedProducts.length > 0) {
+          const mappedProds = cachedProducts.map(p => ({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            barcode: p.barcode,
+            price: p.price,
+            costPrice: p.costPrice,
+            stock: p.stock,
+            image: p.image,
+            category: p.categoryName ? { name: p.categoryName } : null,
+            uoms: p.uoms || [],
+            _count: { orderItems: 0, stockLogs: 0 }
+          }));
+          setProducts(prev => prev.length === 0 ? mappedProds : prev);
+          const cats = Array.from(new Set(mappedProds.filter(p => p.category?.name).map(p => p.category?.name as string)));
+          setCategories(['All', ...cats]);
+        }
+
+        if (cachedCustomers && cachedCustomers.length > 0) {
+          const mappedCusts = cachedCustomers.map(c => ({
+            id: c.id,
+            name: c.name,
+            phone: c.phone || undefined,
+            address: c.address || undefined,
+            customerType: 'wholesale',
+          }));
+          setCustomers(prev => prev.length === 0 ? mappedCusts : prev);
+        }
+
+        if (cachedDrivers && cachedDrivers.length > 0) {
+          const mappedDrivs = cachedDrivers.map(d => ({
+            id: d.id,
+            name: d.name,
+            phone: d.phone,
+            status: d.status,
+            vehicleInfo: d.vehicleInfo,
+            _count: { deliveries: 0 }
+          }));
+          setDrivers(prev => prev.length === 0 ? mappedDrivs : prev);
+        }
+
+        if (cachedSettings?.data) {
           try {
-            const cachedProducts = await db.products.toArray();
-            fetchedProducts = cachedProducts.map(p => ({
+            const raw = JSON.parse(cachedSettings.data);
+            setLockOrderDate(raw.lockOrderDate ?? true);
+            if (raw.companyName) setCompanyName(raw.companyName);
+          } catch {}
+        }
+      } catch (err) {
+        console.warn('Failed to load initial Dexie cache in POS', err);
+      }
+    };
+
+    loadInitialCache();
+    return () => { isMounted = false; };
+  }, []);
+
+  // 2. Process fresh data from SWR/network, update Dexie cache, and apply offline sync queue tasks
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncAndApply = async () => {
+      try {
+        let fetchedProducts = swrProducts;
+        let fetchedCustomers = swrCustomers;
+        let fetchedDrivers = swrDrivers;
+
+        // Persist fresh server data into Dexie IndexedDB cache asynchronously
+        if (Array.isArray(fetchedProducts) && fetchedProducts.length > 0) {
+          const now = Date.now();
+          await db.products.bulkPut(
+            fetchedProducts.map((p: any) => ({
               id: p.id,
               name: p.name,
               sku: p.sku,
-              barcode: p.barcode,
-              price: p.price,
-              costPrice: p.costPrice,
-              stock: p.stock,
-              image: p.image,
-              category: p.categoryName ? { name: p.categoryName } : null,
+              barcode: p.barcode || null,
+              price: p.price || 0,
+              costPrice: p.costPrice || 0,
+              stock: p.stock || 0,
+              image: p.image || null,
+              categoryName: p.category?.name || null,
               uoms: p.uoms || [],
-              _count: { orderItems: 0, stockLogs: 0 }
-            }));
-          } catch (cacheErr) { console.warn('No product cache', cacheErr); }
-
-          // Fall back to Dexie local cache for customers
-          try {
-            const cachedCustomers = await db.customers.toArray();
-            fetchedCustomers = cachedCustomers.map(c => ({
-              id: c.id,
-              name: c.name,
-              email: c.email,
-              phone: c.phone,
-              address: c.address,
-              customerType: 'wholesale',
-              _count: { orders: 0 }
-            }));
-          } catch (cacheErr) { console.warn('No customer cache', cacheErr); }
-
-          // Fall back to Dexie local cache for drivers
-          try {
-            const cachedDrivers = await db.drivers.toArray();
-            fetchedDrivers = cachedDrivers.map(d => ({
-              id: d.id,
-              name: d.name,
-              phone: d.phone,
-              status: d.status,
-              vehicleInfo: d.vehicleInfo,
-              _count: { deliveries: 0 }
-            }));
-          } catch (cacheErr) { console.warn('No driver cache', cacheErr); }
-
-          // Fall back to Dexie local cache for settings
-          try {
-            const cachedSettings = await db.settings.get('current');
-            if (cachedSettings?.data) {
-              const raw = JSON.parse(cachedSettings.data);
-              setLockOrderDate(raw.lockOrderDate ?? true);
-              if (raw.companyName) setCompanyName(raw.companyName);
-            }
-          } catch (cacheErr) { console.warn('No settings cache', cacheErr); }
+              lastSynced: now,
+            }))
+          ).catch(() => {});
         }
 
-        // Apply offline tasks
+        if (Array.isArray(fetchedCustomers) && fetchedCustomers.length > 0) {
+          const now = Date.now();
+          await db.customers.bulkPut(
+            fetchedCustomers.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              email: c.email || null,
+              phone: c.phone || null,
+              address: c.address || null,
+              lastSynced: now,
+            }))
+          ).catch(() => {});
+        }
+
+        if (Array.isArray(fetchedDrivers) && fetchedDrivers.length > 0) {
+          const now = Date.now();
+          await db.drivers.bulkPut(
+            fetchedDrivers.map((d: any) => ({
+              id: d.id,
+              name: d.name,
+              phone: d.phone || null,
+              status: d.status || 'active',
+              vehicleInfo: d.vehicleInfo || null,
+              lastSynced: now,
+            }))
+          ).catch(() => {});
+        }
+
+        if (swrSettings && !swrSettings.error) {
+          await db.settings.put({
+            key: 'current',
+            data: JSON.stringify(swrSettings),
+            lastSynced: Date.now()
+          }).catch(() => {});
+          if (isMounted) {
+            setLockOrderDate(swrSettings.lockOrderDate ?? true);
+            if (swrSettings.companyName) setCompanyName(swrSettings.companyName);
+          }
+        }
+
+        // Fall back to Dexie cache if SWR data is not yet loaded
+        if (!fetchedProducts) {
+          try {
+            const cached = await db.products.toArray();
+            if (cached.length > 0) {
+              fetchedProducts = cached.map(p => ({
+                id: p.id,
+                name: p.name,
+                sku: p.sku,
+                barcode: p.barcode,
+                price: p.price,
+                costPrice: p.costPrice,
+                stock: p.stock,
+                image: p.image,
+                category: p.categoryName ? { name: p.categoryName } : null,
+                uoms: p.uoms || [],
+                _count: { orderItems: 0, stockLogs: 0 }
+              }));
+            }
+          } catch {}
+        }
+
+        if (!fetchedCustomers) {
+          try {
+            const cached = await db.customers.toArray();
+            if (cached.length > 0) {
+              fetchedCustomers = cached.map(c => ({
+                id: c.id,
+                name: c.name,
+                phone: c.phone || undefined,
+                address: c.address || undefined,
+                customerType: 'wholesale',
+              }));
+            }
+          } catch {}
+        }
+
+        if (!fetchedDrivers) {
+          try {
+            const cached = await db.drivers.toArray();
+            if (cached.length > 0) {
+              fetchedDrivers = cached.map(d => ({
+                id: d.id,
+                name: d.name,
+                phone: d.phone,
+                status: d.status,
+                vehicleInfo: d.vehicleInfo,
+                _count: { deliveries: 0 }
+              }));
+            }
+          } catch {}
+        }
+
+        // Apply offline queue tasks on top of base data
+        let finalProducts = Array.isArray(fetchedProducts) ? [...fetchedProducts] : [];
+        let finalCustomers = Array.isArray(fetchedCustomers) ? [...fetchedCustomers] : [];
+        let finalDrivers = Array.isArray(fetchedDrivers) ? [...fetchedDrivers] : [];
+
         try {
           const pendingTasks = await db.syncQueue
             .where('syncStatus')
@@ -412,22 +546,22 @@ export default function CreateOrderPage() {
             try {
               const payload = JSON.parse(task.payload);
               if (task.type === 'product') {
-                if (task.action === 'DELETE') fetchedProducts = fetchedProducts.filter(p => p.id !== payload.id);
-                else if (task.action === 'UPDATE') fetchedProducts = fetchedProducts.map(p => p.id === payload.id ? { ...p, ...payload } : p);
+                if (task.action === 'DELETE') finalProducts = finalProducts.filter(p => p.id !== payload.id);
+                else if (task.action === 'UPDATE') finalProducts = finalProducts.map(p => p.id === payload.id ? { ...p, ...payload } : p);
                 else if (task.action === 'CREATE') {
-                  if (!fetchedProducts.find(p => p.id === payload.id)) fetchedProducts.unshift(payload);
+                  if (!finalProducts.find(p => p.id === payload.id)) finalProducts.unshift(payload);
                 }
               } else if (task.type === 'customer') {
-                if (task.action === 'DELETE') fetchedCustomers = fetchedCustomers.filter(c => c.id !== payload.id);
-                else if (task.action === 'UPDATE') fetchedCustomers = fetchedCustomers.map(c => c.id === payload.id ? { ...c, ...payload } : c);
+                if (task.action === 'DELETE') finalCustomers = finalCustomers.filter(c => c.id !== payload.id);
+                else if (task.action === 'UPDATE') finalCustomers = finalCustomers.map(c => c.id === payload.id ? { ...c, ...payload } : c);
                 else if (task.action === 'CREATE') {
-                  if (!fetchedCustomers.find(c => c.id === payload.id)) fetchedCustomers.unshift(payload);
+                  if (!finalCustomers.find(c => c.id === payload.id)) finalCustomers.unshift(payload);
                 }
               } else if (task.type === 'driver') {
-                if (task.action === 'DELETE') fetchedDrivers = fetchedDrivers.filter(d => d.id !== payload.id);
-                else if (task.action === 'UPDATE') fetchedDrivers = fetchedDrivers.map(d => d.id === payload.id ? { ...d, ...payload } : d);
+                if (task.action === 'DELETE') finalDrivers = finalDrivers.filter(d => d.id !== payload.id);
+                else if (task.action === 'UPDATE') finalDrivers = finalDrivers.map(d => d.id === payload.id ? { ...d, ...payload } : d);
                 else if (task.action === 'CREATE') {
-                  if (!fetchedDrivers.find(d => d.id === payload.id)) fetchedDrivers.unshift(payload);
+                  if (!finalDrivers.find(d => d.id === payload.id)) finalDrivers.unshift(payload);
                 }
               }
             } catch {}
@@ -436,28 +570,23 @@ export default function CreateOrderPage() {
           console.error('Failed to apply offline tasks to POS', err);
         }
 
-        if (Array.isArray(fetchedProducts)) {
-          setProducts(fetchedProducts);
-          const cats = Array.from(new Set(fetchedProducts.filter(p => p.category?.name).map(p => p.category?.name)));
-          setCategories(['All', ...cats]);
+        if (isMounted) {
+          if (finalProducts.length > 0 || products.length === 0) {
+            setProducts(finalProducts);
+            const cats = Array.from(new Set(finalProducts.filter(p => p.category?.name).map(p => p.category?.name as string)));
+            setCategories(['All', ...cats]);
+          }
+          if (finalCustomers.length > 0 || customers.length === 0) setCustomers(finalCustomers);
+          if (finalDrivers.length > 0 || drivers.length === 0) setDrivers(finalDrivers);
         }
-        if (Array.isArray(fetchedCustomers)) setCustomers(fetchedCustomers);
-        if (Array.isArray(fetchedDrivers)) setDrivers(fetchedDrivers);
-
       } catch (error) {
-        console.error('Failed to load POS data', error);
+        console.error('Failed to sync and process POS data', error);
       }
     };
 
-    loadData();
-    const interval = setInterval(() => {
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
-        loadData();
-      }
-    }, 15000); // Poll every 15 seconds (online only)
-    
-    return () => clearInterval(interval);
-  }, []);
+    syncAndApply();
+    return () => { isMounted = false; };
+  }, [swrProducts, swrCustomers, swrDrivers, swrSettings]);
 
   // Auto-fill customer details when a customer is selected
   useEffect(() => {
@@ -782,7 +911,7 @@ export default function CreateOrderPage() {
           Promise.all(validItems.map(async i => {
             const qtyToDeduct = (typeof i.qty === 'number' ? i.qty : 0) * (i.multiplier || 1);
             await db.products.where('id').equals(i.product.id).modify(p => { p.stock = Math.max(0, (p.stock || 0) - qtyToDeduct); });
-          })).catch(() => {});
+          })).then(() => mutateProducts()).catch(() => {});
 
           broadcastDataChange('order');
 
@@ -831,6 +960,7 @@ export default function CreateOrderPage() {
           const qtyToDeduct = (typeof i.qty === 'number' ? i.qty : 0) * (i.multiplier || 1);
           await db.products.where('id').equals(i.product.id).modify(p => { p.stock = Math.max(0, (p.stock || 0) - qtyToDeduct); });
         }));
+        mutateProducts();
 
         showToast('Action queued offline — will sync when connected', 'warning');
         
