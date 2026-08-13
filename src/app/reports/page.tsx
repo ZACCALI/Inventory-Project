@@ -564,9 +564,9 @@ export default function ReportsPage() {
                       )}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-sm)', marginBottom: '4px' }}>
-                        <span style={{ fontWeight: 600 }}>{item.product?.name || 'Unknown'}</span>
-                        <span style={{ color: 'var(--text-secondary)' }}>{item.totalQuantity} sold</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-sm)', marginBottom: '4px', gap: '8px' }}>
+                        <span style={{ fontWeight: 600, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.product?.name || 'Unknown'}</span>
+                        <span style={{ color: 'var(--text-secondary)', flexShrink: 0 }}>{item.totalQuantity} sold</span>
                       </div>
                       <div style={{ width: '100%', height: '8px', background: 'var(--bg-main)', borderRadius: '4px', overflow: 'hidden' }}>
                         <div style={{ width: `${percentage}%`, height: '100%', background: 'var(--primary)', borderRadius: '4px' }}></div>

@@ -373,7 +373,7 @@ export default function ExpensesPage() {
         </div>
       ) : (
       <div className="stats-grid-3" style={{ marginBottom: '24px' }}>
-        <div className="stat-card" style={{ borderLeft: '4px solid var(--primary)' }}>
+        <div className="stat-card" style={{ border: '1px solid var(--border)' }}>
           <div className="stat-icon blue"><Calendar size={24} /></div>
           <div className="stat-info">
             <div className="stat-label">Today&apos;s Expenses</div>
@@ -381,7 +381,7 @@ export default function ExpensesPage() {
             <div className="stat-change" style={{ color: 'var(--text-tertiary)', background: 'transparent', padding: 0, fontWeight: 500, marginTop: '4px' }}>{contextLabel}</div>
           </div>
         </div>
-        <div className="stat-card" style={{ borderLeft: '4px solid var(--warning)' }}>
+        <div className="stat-card" style={{ border: '1px solid var(--border)' }}>
           <div className="stat-icon orange"><TrendingDown size={24} /></div>
           <div className="stat-info">
             <div className="stat-label">This Month</div>

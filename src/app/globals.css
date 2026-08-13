@@ -3896,6 +3896,21 @@ p {
   .table.mobile-stack td[data-label="Product Details"] > div {
     text-align: left;
   }
+  .table.mobile-stack td[data-label="Actions"] > div {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-end !important;
+  }
+  .table.mobile-stack td[data-label="User"] > div {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-end !important;
+  }
+  .table.mobile-stack td[data-label="Details"] {
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
   
   /* Fix reference truncation to prevent overflow */
   .table.mobile-stack td .reference-cell-content {
@@ -4818,17 +4833,16 @@ p {
 /* 2W. Settings Tabs & Touch Target Ergonomics */
 @media (max-width: 900px) {
   .settings-layout > div:first-child > div {
-    flex-direction: row !important;
-    overflow-x: auto !important;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
+    flex-direction: column !important;
+    border-right: none !important;
     border-bottom: 1px solid var(--border-light);
   }
   .settings-layout > div:first-child button {
-    white-space: nowrap !important;
     padding: 12px 16px !important;
-    border-left: none !important;
-    border-bottom: 3px solid transparent !important;
+    border-left: 3px solid transparent !important;
+    border-bottom: none !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
   }
 }
 

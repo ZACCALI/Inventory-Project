@@ -368,7 +368,7 @@ export default function UsersPage() {
                             {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                           </div>
                         )}
-                        {user.name}
+                        <span style={{ color: 'var(--text-primary)' }}>{user.name}</span>
                       </div>
                     </td>
                     <td data-label="Email" style={{ color: 'var(--text-secondary)' }}>{user.email}</td>
