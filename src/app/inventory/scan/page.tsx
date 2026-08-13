@@ -665,7 +665,7 @@ export default function BarcodeScannerPage() {
                 <ScanBarcode size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
                   Barcode Scanner
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 500, color: 'var(--success)', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.2)' }} className="pulse-dot" /> Hardware Ready

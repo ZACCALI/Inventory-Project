@@ -864,7 +864,7 @@ export default function InventoryPage() {
                 filteredProducts.map((product) => (
                   <tr key={product.id} style={{ opacity: product.isArchived ? 0.6 : 1 }}>
                     <td data-label="Product">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%', minWidth: 0 }}>
                         <div style={{ width: '40px', height: '40px', borderRadius: '4px', overflow: 'hidden', background: 'var(--bg-hover)', border: '1px solid var(--border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           {product.image ? (
                             <Image width={400} height={400} src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}  />
@@ -872,9 +872,9 @@ export default function InventoryPage() {
                             <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>No Img</span>
                           )}
                         </div>
-                        <div style={{ textAlign: 'left' }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{product.name}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)' }}>{product.sku}</div>
+                        <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'normal', wordBreak: 'break-word' }}>{product.name}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{product.sku}</div>
                         </div>
                       </div>
                     </td>

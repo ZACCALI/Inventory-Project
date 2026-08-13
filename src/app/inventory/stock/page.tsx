@@ -944,11 +944,11 @@ export default function StockInOutPage() {
                   return (
                   <tr key={movement.id} style={{ opacity: movement.isVoided ? 0.6 : 1, background: movement.isVoided ? 'var(--bg-main)' : 'transparent' }}>
                     <td data-label="Product Details">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%', minWidth: 0 }}>
                         <div style={{
                           width: '40px', height: '40px', borderRadius: 'var(--radius-md)',
                           background: 'var(--bg-main)', border: '1px solid var(--border)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
                         }}>
                           {movement.image ? (
                             <Image width={400} height={400} src={movement.image} alt={movement.product} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: movement.isVoided ? 'grayscale(100%)' : 'none' }}  />
@@ -956,9 +956,9 @@ export default function StockInOutPage() {
                             <Package size={20} color="var(--text-tertiary)" />
                           )}
                         </div>
-                        <div style={{ textAlign: 'left' }}>
-                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>{movement.product}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)' }}>{movement.sku}</div>
+                        <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
+                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', whiteSpace: 'normal', wordBreak: 'break-word' }}>{movement.product}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{movement.sku}</div>
                         </div>
                       </div>
                     </td>

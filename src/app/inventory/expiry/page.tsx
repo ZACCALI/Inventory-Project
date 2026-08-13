@@ -535,11 +535,11 @@ export default function ExpiryTrackingPage() {
                 {filteredData.map((item) => (
                   <tr key={item.id} style={{ background: item.daysLeft < 0 ? 'var(--danger-light)' : 'transparent' }}>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%', minWidth: 0 }}>
                         <div style={{
                           width: '40px', height: '40px', borderRadius: 'var(--radius-md)',
                           background: 'var(--bg-main)', border: '1px solid var(--border)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
                         }}>
                           {item.product.image ? (
                             <Image width={400} height={400} src={item.product.image} alt={item.product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}  />
@@ -547,9 +547,9 @@ export default function ExpiryTrackingPage() {
                             <Package size={20} color="var(--text-tertiary)" />
                           )}
                         </div>
-                        <div style={{ textAlign: 'left' }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{item.product.name}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)' }}>{item.product.sku}</div>
+                        <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'normal', wordBreak: 'break-word' }}>{item.product.name}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{item.product.sku}</div>
                         </div>
                       </div>
                     </td>
