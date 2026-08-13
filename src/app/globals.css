@@ -642,6 +642,14 @@ p {
   background: var(--bg-main);
 }
 
+.table th:first-child {
+  border-top-left-radius: var(--radius-lg);
+}
+
+.table th:last-child {
+  border-top-right-radius: var(--radius-lg);
+}
+
 .table td {
   padding: 14px var(--space-md);
   font-size: var(--font-base);
@@ -4731,9 +4739,9 @@ p {
 }
 
 .stock-table th {
-  padding: 10px 12px;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 12px var(--space-md);
+  font-size: var(--font-sm);
+  font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -4750,11 +4758,15 @@ p {
 }
 
 @media (min-width: 768px) {
-  .stock-table td:last-child,
-  .stock-table th:last-child {
+  .stock-table td:last-child {
     position: static !important;
     box-shadow: none !important;
     background: transparent !important;
+  }
+  .stock-table th:last-child {
+    position: static !important;
+    box-shadow: none !important;
+    background: var(--bg-main) !important;
   }
 }
 

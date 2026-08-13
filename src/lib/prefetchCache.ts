@@ -175,6 +175,7 @@ async function runPrefetch() {
           data: JSON.stringify(settings),
           lastSynced: Date.now(),
         });
+        try { localStorage.setItem('amroding_settings_cache', JSON.stringify(settings)); } catch {}
       }
     }
 

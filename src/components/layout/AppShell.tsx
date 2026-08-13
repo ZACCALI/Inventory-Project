@@ -103,7 +103,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         // Read directly from Dexie cache when offline
         db.settings.get('current').then(cached => {
           if (cached?.data) {
-            setSettings(JSON.parse(cached.data));
+            const parsed = JSON.parse(cached.data);
+            setSettings(parsed);
+            try { localStorage.setItem('amroding_settings_cache', JSON.stringify(parsed)); } catch {}
           } else {
             setSettings({});
           }
@@ -116,13 +118,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           if (!res.ok) throw new Error('Settings fetch failed');
           return res.json();
         })
-        .then(data => setSettings(data))
+        .then(data => {
+          setSettings(data);
+          try { localStorage.setItem('amroding_settings_cache', JSON.stringify(data)); } catch {}
+        })
         .catch(async err => {
           console.error('Failed to fetch settings for permissions, checking local cache', err);
           try {
             const cached = await db.settings.get('current');
             if (cached?.data) {
-              setSettings(JSON.parse(cached.data));
+              const parsed = JSON.parse(cached.data);
+              setSettings(parsed);
+              try { localStorage.setItem('amroding_settings_cache', JSON.stringify(parsed)); } catch {}
               return;
             }
           } catch (dexieErr) {

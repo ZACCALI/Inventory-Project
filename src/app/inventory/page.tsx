@@ -48,6 +48,18 @@ interface Category {
 
 
 
+const SETTINGS_CACHE_KEY = 'amroding_settings_cache';
+
+const getCachedSettingsSync = () => {
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(SETTINGS_CACHE_KEY);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+  }
+  return null;
+};
+
 export default function InventoryPage() {
   const { data: session, status } = useSession();
   const isAdmin = session?.user?.role?.toLowerCase() === 'admin';
@@ -163,9 +175,10 @@ export default function InventoryPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [cleanupMode, setCleanupMode] = useState(false);
-  const [lockProductDelete, setLockProductDelete] = useState(true);
-  const [lockProductEdit, setLockProductEdit] = useState(false);
+  const initialSettings = getCachedSettingsSync();
+  const [cleanupMode, setCleanupMode] = useState<boolean>(initialSettings?.cleanupMode ?? false);
+  const [lockProductDelete, setLockProductDelete] = useState<boolean>(initialSettings?.lockProductDelete ?? true);
+  const [lockProductEdit, setLockProductEdit] = useState<boolean>(initialSettings?.lockProductEdit ?? false);
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -256,16 +269,40 @@ export default function InventoryPage() {
 
       setCategories(finalCats);
       setUnits(finalUnits);
-      if (settingsData && settingsData.cleanupMode) {
-        setCleanupMode(true);
-      } else {
-        setCleanupMode(false);
+      if (settingsData) {
+        try {
+          localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settingsData));
+        } catch {}
+        setCleanupMode(!!settingsData.cleanupMode);
+        setLockProductDelete(settingsData.lockProductDelete ?? true);
+        setLockProductEdit(settingsData.lockProductEdit ?? false);
       }
-      setLockProductDelete(settingsData?.lockProductDelete ?? true);
-      setLockProductEdit(settingsData?.lockProductEdit ?? false);
     } catch (error) {
       console.error('Failed to fetch dependencies', error);
     }
+  }, []);
+
+  useEffect(() => {
+    const syncCachedSettings = async () => {
+      try {
+        const cached = await db.settings.get('current');
+        if (cached?.data) {
+          const parsed = JSON.parse(cached.data);
+          try { localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(parsed)); } catch {}
+          setCleanupMode(!!parsed.cleanupMode);
+          setLockProductDelete(parsed.lockProductDelete ?? true);
+          setLockProductEdit(parsed.lockProductEdit ?? false);
+        }
+      } catch {}
+    };
+
+    syncCachedSettings();
+
+    const handleSettingsUpdated = () => {
+      syncCachedSettings();
+    };
+    window.addEventListener('settingsUpdated', handleSettingsUpdated);
+    return () => window.removeEventListener('settingsUpdated', handleSettingsUpdated);
   }, []);
 
   useEffect(() => {
