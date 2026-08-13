@@ -1035,6 +1035,10 @@ export default function InventoryPage() {
                                 <RefreshCw size={18} />
                               </button>
                             );
+                          } else if (isOnline && !swrProducts) {
+                            return (
+                              <div className="skeleton" style={{ width: '34px', height: '34px', borderRadius: '6px' }} />
+                            );
                           } else if (hasHistory || !cleanupMode) {
                             if ((lockProductEdit || lockProductDelete) && !isAdmin) return null;
                             return (

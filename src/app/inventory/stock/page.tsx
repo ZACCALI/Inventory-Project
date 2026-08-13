@@ -924,7 +924,32 @@ export default function StockInOutPage() {
 
         <div className="table-container">
           {loading ? (
-             <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>
+            <table className="table stock-table mobile-stack">
+              <thead>
+                <tr>
+                  <th style={{ width: '32%' }}>Product Details</th>
+                  <th style={{ width: '15%' }}>Date / Time</th>
+                  <th style={{ width: '10%' }}>Type</th>
+                  <th style={{ textAlign: 'right', width: '9%' }}>Quantity</th>
+                  <th style={{ width: '18%' }}>Reference</th>
+                  <th style={{ width: '9%' }}>User</th>
+                  {(isAdmin || !lockStockVoid) && <th style={{ textAlign: 'center', width: '7%' }}>Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {Array(5).fill(0).map((_, i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton" style={{ height: '32px', width: '80%' }} /></td>
+                    <td><div className="skeleton" style={{ height: '16px', width: '60%' }} /></td>
+                    <td><div className="skeleton" style={{ height: '20px', width: '50px', borderRadius: '100px' }} /></td>
+                    <td><div className="skeleton" style={{ height: '16px', width: '40%', marginLeft: 'auto' }} /></td>
+                    <td><div className="skeleton" style={{ height: '16px', width: '70%' }} /></td>
+                    <td><div className="skeleton" style={{ height: '16px', width: '60%' }} /></td>
+                    {(isAdmin || !lockStockVoid) && <td><div className="skeleton" style={{ height: '24px', width: '24px', borderRadius: '4px', margin: '0 auto' }} /></td>}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
             <table className="table stock-table mobile-stack">
               <thead>
@@ -946,19 +971,19 @@ export default function StockInOutPage() {
                     <td data-label="Product Details" style={{ minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%', minWidth: 0 }}>
                         <div style={{
-                          width: '40px', height: '40px', borderRadius: 'var(--radius-md)',
-                          background: 'var(--bg-main)', border: '1px solid var(--border)',
+                          width: '40px', height: '40px', borderRadius: '4px',
+                          background: 'var(--bg-hover)', border: '1px solid var(--border)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
                         }}>
                           {movement.image ? (
                             <Image width={400} height={400} src={movement.image} alt={movement.product} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: movement.isVoided ? 'grayscale(100%)' : 'none' }}  />
                           ) : (
-                            <Package size={18} color="var(--text-tertiary)" />
+                            <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>No Img</span>
                           )}
                         </div>
                         <div style={{ textAlign: 'left', minWidth: 0, flex: 1, overflow: 'hidden' }}>
-                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }} title={movement.product}>{movement.product}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }} title={movement.sku}>{movement.sku}</div>
+                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }} title={movement.product}>{movement.product}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }} title={movement.sku}>{movement.sku}</div>
                         </div>
                       </div>
                     </td>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
-import { Search, Plus, Trash2, Save, ShoppingBag, User,  X, Truck, CheckCircle2, AlertCircle, Minus, Camera, ScanLine, Receipt, Printer, ShoppingCart,       AlertTriangle } from 'lucide-react';
+import { Search, Plus, Trash2, Save, ShoppingBag, User, X, Truck, CheckCircle2, AlertCircle, Minus, Camera, ScanLine, Receipt, Printer, ShoppingCart, AlertTriangle, Package } from 'lucide-react';
 import { formatCurrency, broadcastDataChange } from '@/lib/constants';
 import { Html5Qrcode } from 'html5-qrcode';
 import { db } from '@/lib/db';
@@ -1478,7 +1478,25 @@ export default function CreateOrderPage() {
 
             {/* Product Grid */}
             <div className="walkin-product-grid product-grid" style={{ paddingBottom: '24px', display: 'grid', gap: '16px', alignContent: 'start', minWidth: 0, maxWidth: '100%' }}>
-              {filteredProducts.map(product => (
+              {filteredProducts.length === 0 ? (
+                (!swrProducts && isOnline) ? (
+                  <>
+                    {Array(8).fill(0).map((_, i) => (
+                      <div key={i} style={{ padding: '12px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                        <div className="skeleton" style={{ width: '100%', aspectRatio: '1', borderRadius: 'var(--radius-md)' }} />
+                        <div className="skeleton" style={{ width: '80%', height: '14px', marginTop: '12px' }} />
+                        <div className="skeleton" style={{ width: '60%', height: '12px', marginTop: '8px' }} />
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--bg-main)', borderRadius: 'var(--radius-lg)', gridColumn: '1 / -1' }}>
+                    <Package size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
+                    <div style={{ fontSize: '15px', fontWeight: 500 }}>No products found</div>
+                    <div style={{ fontSize: '13px', marginTop: '4px' }}>Try adjusting your search or filters</div>
+                  </div>
+                )
+              ) : filteredProducts.map(product => (
                 <div 
                   key={product.id}
                   className="walkin-product-card"
