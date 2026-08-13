@@ -1348,7 +1348,22 @@ export default function OrdersPage() {
                           {isStrictlyLocked ? <Eye size={16} /> : <Edit size={16} />}
                         </button>
                         
-                        <button onClick={() => setReceiptOrder(order)} className="btn btn-icon btn-ghost" title="Print & Preview Receipt"><Printer size={16} /></button>
+                        <button 
+                          onClick={() => setReceiptOrder(order)} 
+                          className="btn btn-icon" 
+                          style={{ 
+                            width: '32px', height: '32px', padding: 0,
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'var(--bg-main)',
+                            border: '1px solid var(--border)',
+                            color: 'var(--text-secondary)',
+                            borderRadius: '6px',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                          }}
+                          data-tooltip="Print & Preview Receipt"
+                        >
+                          <Printer size={16} />
+                        </button>
 
                         <div className="action-dropdown-container" style={{ position: 'relative' }}>
                           <button

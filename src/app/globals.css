@@ -1123,6 +1123,8 @@ p {
   display: flex;
   align-items: center;
   gap: var(--space-md);
+  flex: 1;
+  min-width: 0;
 }
 
 .navbar-right {
@@ -4437,7 +4439,7 @@ p {
 .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
 
 @media (max-width: 639px) {
-  .table-container { overflow-x: hidden; width: 100%; }
+  .table-container { overflow: visible !important; width: 100%; }
   .table-container table { min-width: 100% !important; }
   .table-container table.mobile-stack { min-width: 100% !important; width: 100% !important; display: block; }
   .table-container table.mobile-stack thead { display: none !important; }
@@ -4728,13 +4730,19 @@ p {
     align-items: center !important;
     justify-content: center !important;
     padding: 12px !important;
+    height: 100vh !important;
+    position: fixed !important;
+    inset: 0 !important;
   }
   .modal {
     max-width: calc(100vw - 24px) !important;
-    max-height: 95vh !important;
+    max-height: calc(100% - 24px) !important;
     width: 100% !important;
     border-radius: var(--radius-lg) !important;
     margin: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
   }
   .modal-body {
     overflow-y: auto;
