@@ -141,6 +141,7 @@ export default function Sidebar({ collapsed, onToggle, userRole, isOpen, onNavig
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={true}
                     className={`nav-item ${isActive ? 'active' : ''}`}
                     data-tooltip={collapsed ? item.name : undefined}
                     onClick={() => onNavigate?.()}

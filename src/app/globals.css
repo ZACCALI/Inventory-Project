@@ -729,7 +729,7 @@ p {
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  padding: var(--space-md);
+  padding: 16px;
   margin: 0;
   animation: overlayFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity;
@@ -3124,8 +3124,8 @@ p {
   }
 
   .modal {
-    max-width: 100%;
-    margin: var(--space-md);
+    max-width: calc(100vw - 32px);
+    margin: auto;
     border-radius: var(--radius-lg);
   }
 
@@ -3273,6 +3273,28 @@ p {
     justify-content: flex-end;
   }
 
+  /* Product column: always left-align image + name cell on mobile */
+  .table td[data-label="Product"] {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    text-align: left;
+    padding-top: var(--space-sm);
+    padding-bottom: var(--space-md);
+  }
+
+  .table td[data-label="Product"]::before {
+    display: none;
+  }
+
+  .table td[data-label="Product"] > div {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    width: 100%;
+  }
+
   .table td:last-child {
     border-bottom: none;
     flex-direction: row;
@@ -3335,6 +3357,42 @@ p {
   .btn {
     padding: 10px 16px;
     font-size: var(--font-sm);
+  }
+
+  /* Keep modals centered and large on small screens - NO bottom sheet */
+  .modal-overlay {
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+  }
+
+  .modal {
+    max-width: calc(100vw - 24px);
+    width: 100%;
+    max-height: 95vh;
+    border-radius: var(--radius-lg);
+    margin: auto;
+  }
+
+  .modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-header {
+    padding: 16px;
+    position: sticky;
+    top: 0;
+    background: var(--bg-card);
+    z-index: 2;
+  }
+
+  .modal-footer {
+    padding: 12px 16px;
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-card);
+    z-index: 2;
   }
 }
 
@@ -4596,9 +4654,65 @@ p {
 .reports-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
 @media (max-width: 767px) { .reports-grid { grid-template-columns: 1fr; gap: 16px; } }
 
-/* 2S. Scrollable bottom sheet on mobile for modals */
-@media (max-width: 480px) {
-  .modal-overlay { align-items: flex-end; padding-bottom: 0; }
-  .modal-content { width: 100%; max-width: 100%; border-radius: var(--radius-xl) var(--radius-xl) 0 0; max-height: 92vh; }
+/* 2S. Scanner page responsive layout */
+@media (max-width: 1023px) {
+  .scanner-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* 2T. Mobile scanner results drawer improvements */
+@media (max-width: 767px) {
+  .scanner-drawer-header {
+    padding: 16px 16px 12px !important;
+  }
+  .scanner-drawer-body {
+    padding: 0 4px;
+  }
+  /* Product image left-aligned override for all mobile card views */
+  .table td[data-label="Product"] > div,
+  .table td:first-child > div {
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    text-align: left !important;
+  }
+}
+
+/* 2U. Fix all modal sizes for consistent responsive behavior */
+@media (max-width: 639px) {
+  .modal-overlay {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 12px !important;
+  }
+  .modal {
+    max-width: calc(100vw - 24px) !important;
+    max-height: 95vh !important;
+    width: 100% !important;
+    border-radius: var(--radius-lg) !important;
+    margin: auto !important;
+  }
+  .modal-body {
+    overflow-y: auto;
+    flex: 1;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-split-layout {
+    flex-direction: column;
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .modal-footer {
+    flex-direction: column-reverse;
+    padding: 12px 16px;
+  }
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
