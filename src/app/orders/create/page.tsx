@@ -1220,10 +1220,10 @@ export default function CreateOrderPage() {
 
   return (
     <>
-      <div className="pos-layout" style={{ height: 'calc(100vh - 64px)', overflow: 'hidden', background: 'var(--bg-main)', margin: '-24px' }}>
+      <div className="pos-layout" style={{ height: 'calc(100vh - 64px)', maxWidth: '100%', width: '100%', overflowX: 'hidden', overflowY: 'hidden', background: 'var(--bg-main)', margin: '0', boxSizing: 'border-box' }}>
         
         {/* LEFT PANEL: Order Details & Product Grid */}
-        <div className="walkin-left-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        <div className="walkin-left-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
           
           <div style={{ padding: '24px', paddingBottom: '0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
@@ -1235,19 +1235,19 @@ export default function CreateOrderPage() {
             </div>
 
             {/* Order Details Surface Card */}
-            <div className="card" style={{ marginBottom: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <div className="card" style={{ marginBottom: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', minWidth: 0, maxWidth: '100%' }}>
               <div className="card-header" style={{ borderBottom: '1px solid var(--border-light)', padding: '16px 20px' }}>
                 <h3 className="card-title" style={{ fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Truck size={18} color="var(--primary)" /> 
                   Order Details
                 </h3>
               </div>
-              <div className="card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px', padding: '20px' }}>
+              <div className="card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px', padding: '20px', minWidth: 0, maxWidth: '100%' }}>
                 
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <div className="form-group" style={{ gridColumn: '1 / -1', minWidth: 0, maxWidth: '100%' }}>
                   <div className="form-label">Order Type</div>
                   {/* Segmented Controls */}
-                  <div style={{ display: 'flex', width: '100%', background: 'var(--bg-main)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border)', gap: '4px' }}>
+                  <div style={{ display: 'flex', width: '100%', background: 'var(--bg-main)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border)', gap: '4px', minWidth: 0, maxWidth: '100%' }}>
                     <button
                       onClick={() => { setFulfillmentMode('delivery'); setSelectedCustomerId(''); }}
                       style={{
@@ -1274,10 +1274,10 @@ export default function CreateOrderPage() {
                 </div>
 
                 {fulfillmentMode === 'delivery' && (
-                  <div className="form-group">
+                  <div className="form-group" style={{ minWidth: 0, maxWidth: '100%' }}>
                     <label htmlFor="create-order-customer" className="form-label">Customer <span style={{ color: 'var(--danger)' }}>*</span></label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <select id="create-order-customer" name="customerId" className="form-select" style={{ flex: 1, borderColor: !selectedCustomerId ? 'var(--danger-light)' : 'var(--border)' }} value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
+                    <div style={{ display: 'flex', gap: '8px', minWidth: 0, maxWidth: '100%' }}>
+                      <select id="create-order-customer" name="customerId" className="form-select" style={{ flex: 1, borderColor: !selectedCustomerId ? 'var(--danger-light)' : 'var(--border)', minWidth: 0, maxWidth: '100%' }} value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                         <option value="">-- Select Wholesale Customer --</option>
                         {customers
                           .filter(c => c.customerType === 'wholesale' || !c.customerType)
@@ -1292,10 +1292,10 @@ export default function CreateOrderPage() {
 
                 {fulfillmentMode === 'walkin' && (
                   <>
-                    <div className="form-group">
+                    <div className="form-group" style={{ minWidth: 0, maxWidth: '100%' }}>
                       <label htmlFor="create-order-walkin-customer" className="form-label">Select Customer (Optional)</label>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <select id="create-order-walkin-customer" className="form-select" style={{ flex: 1 }} value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
+                      <div style={{ display: 'flex', gap: '8px', minWidth: 0, maxWidth: '100%' }}>
+                        <select id="create-order-walkin-customer" className="form-select" style={{ flex: 1, minWidth: 0, maxWidth: '100%' }} value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                           <option value="">-- Select Customer --</option>
                           {customers
                             .filter(c => c.customerType === 'wholesale' || !c.customerType)
@@ -1305,7 +1305,7 @@ export default function CreateOrderPage() {
                         </select>
                       </div>
                     </div>
-                    <div className="form-group">
+                    <div className="form-group" style={{ minWidth: 0, maxWidth: '100%' }}>
                       <label htmlFor="create-order-walkin-name" className="form-label">Walk-in Customer Name (Optional)</label>
                       <input 
                         id="create-order-walkin-name" 
@@ -1314,12 +1314,13 @@ export default function CreateOrderPage() {
                         placeholder="e.g. Juan Dela Cruz (Default: BAIE)" 
                         value={manualCustomerName} 
                         onChange={e => setManualCustomerName(e.target.value)} 
+                        style={{ minWidth: 0, maxWidth: '100%' }}
                       />
                     </div>
                   </>
                 )}
 
-                <div className="form-group">
+                <div className="form-group" style={{ minWidth: 0, maxWidth: '100%' }}>
                   <label htmlFor="create-order-status" className="form-label">Order Status</label>
                   <select 
                     id="create-order-status"
@@ -1327,6 +1328,7 @@ export default function CreateOrderPage() {
                     className="form-select" 
                     value={orderStatus} 
                     onChange={e => setOrderStatus(e.target.value)}
+                    style={{ minWidth: 0, maxWidth: '100%' }}
                   >
                     <option value="pending">Pending (Not yet ready)</option>
                     <option value="confirmed">Confirmed (Packed & Ready)</option>
@@ -1336,20 +1338,20 @@ export default function CreateOrderPage() {
                 
                 {fulfillmentMode === 'delivery' && (
                   <>
-                    <div className="form-group">
+                    <div className="form-group" style={{ minWidth: 0, maxWidth: '100%' }}>
                       <label htmlFor="create-order-driver" className="form-label">Assign Delivery Driver <span style={{ color: 'var(--danger)' }}>*</span></label>
                       <select id="create-order-driver" name="deliveryDriverId" className="form-select" value={deliveryDriverId} onChange={e => {
                         setDeliveryDriverId(e.target.value);
                         setDeliveryDriverName(drivers.find(d => d.id === e.target.value)?.name || '');
-                      }} style={{ borderColor: !deliveryDriverId ? 'var(--danger-light)' : 'var(--border)' }}>
+                      }} style={{ borderColor: !deliveryDriverId ? 'var(--danger-light)' : 'var(--border)', minWidth: 0, maxWidth: '100%' }}>
                         <option value="">-- Select Driver --</option>
 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {drivers.filter((d: any) => d.status === 'active').map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
                       </select>
                     </div>
-                    <div className="form-group">
+                    <div className="form-group" style={{ minWidth: 0, maxWidth: '100%' }}>
                       <label htmlFor="create-order-delivery-date" className="form-label">Scheduled Delivery Date <span style={{ color: 'var(--danger)' }}>*</span></label>
-                      <input id="create-order-delivery-date" name="deliveryDate" type="date" className="form-input" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} disabled={lockOrderDate && !isAdmin} style={{ borderColor: !deliveryDate ? 'var(--danger-light)' : 'var(--border)' }} />
+                      <input id="create-order-delivery-date" name="deliveryDate" type="date" className="form-input" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} disabled={lockOrderDate && !isAdmin} style={{ borderColor: !deliveryDate ? 'var(--danger-light)' : 'var(--border)', minWidth: 0, maxWidth: '100%' }} />
                     </div>
                   </>
                 )}
@@ -1358,9 +1360,9 @@ export default function CreateOrderPage() {
           </div>
 
           {/* Product Selection Area */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '0 24px' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '0 24px', minWidth: 0, maxWidth: '100%' }}>
             {/* Search & Categories */}
-            <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, maxWidth: '100%' }}>
               <div style={{ 
                 flex: 1, 
                 display: 'flex', 
@@ -1370,9 +1372,11 @@ export default function CreateOrderPage() {
                 borderRadius: 'var(--radius-lg)', 
                 padding: '10px 16px', 
                 transition: 'all 0.2s ease',
-                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' 
+                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)',
+                minWidth: 0,
+                maxWidth: '100%'
               }}>
-                <Search size={20} color="var(--text-tertiary)" style={{ marginRight: '12px' }} />
+                <Search size={20} color="var(--text-tertiary)" style={{ marginRight: '12px', flexShrink: 0 }} />
                 <input 
                   id="create-order-product-search"
                   name="productSearch"
@@ -1385,7 +1389,8 @@ export default function CreateOrderPage() {
                     fontSize: '15px', 
                     color: 'var(--text-primary)', 
                     outline: 'none',
-                    width: '100%'
+                    width: '100%',
+                    minWidth: 0
                   }} 
                   placeholder="Search products by name, SKU, or scan barcode..." 
                   value={search}
@@ -1393,7 +1398,7 @@ export default function CreateOrderPage() {
                 />
                 
                 {/* Integrated Toolbar Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: '12px', borderLeft: '1px solid var(--border)', paddingLeft: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: '12px', borderLeft: '1px solid var(--border)', paddingLeft: '12px', flexShrink: 0 }}>
                   {isHardwareScannerReady ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 600, fontSize: '13px' }} data-tooltip="USB Scanner Ready">
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--primary)', boxShadow: '0 0 6px var(--primary)' }}></div>
@@ -1422,7 +1427,7 @@ export default function CreateOrderPage() {
               </div>
 
               {isScanning && (
-                <div style={{ position: 'relative', padding: '16px', background: '#000', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.3)' }}>
+                <div style={{ position: 'relative', padding: '16px', background: '#000', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.3)', minWidth: 0, maxWidth: '100%' }}>
                   <div id="pos-reader" style={{ width: '100%', maxWidth: '400px', margin: '0 auto', background: '#fff', borderRadius: '8px', overflow: 'hidden' }}></div>
                   
                   {isPaused && (
@@ -1452,13 +1457,13 @@ export default function CreateOrderPage() {
                 </div>
               )}
               
-              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%', minWidth: 0, paddingBottom: '8px' }}>
                 {categories.map(cat => (
                   <button 
                     key={cat}
                     onClick={() => setCategoryFilter(cat)}
                     style={{
-                      padding: '8px 16px', borderRadius: '100px', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap',
+                      padding: '8px 16px', borderRadius: '100px', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
                       border: 'none', cursor: 'pointer', transition: 'all 0.2s',
                       background: categoryFilter === cat ? 'var(--primary)' : 'var(--bg-card)',
                       color: categoryFilter === cat ? 'white' : 'var(--text-secondary)',
@@ -1472,7 +1477,7 @@ export default function CreateOrderPage() {
             </div>
 
             {/* Product Grid */}
-            <div className="walkin-product-grid product-grid" style={{ paddingBottom: '24px', display: 'grid', gap: '16px', alignContent: 'start' }}>
+            <div className="walkin-product-grid product-grid" style={{ paddingBottom: '24px', display: 'grid', gap: '16px', alignContent: 'start', minWidth: 0, maxWidth: '100%' }}>
               {filteredProducts.map(product => (
                 <div 
                   key={product.id}
@@ -1490,7 +1495,9 @@ export default function CreateOrderPage() {
                     background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)',
                     padding: '16px', cursor: product.stock > 0 ? 'pointer' : 'not-allowed', transition: 'transform 0.1s, box-shadow 0.2s',
                     display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative',
-                    opacity: product.stock <= 0 ? 0.6 : 1
+                    opacity: product.stock <= 0 ? 0.6 : 1,
+                    minWidth: 0,
+                    maxWidth: '100%'
                   }}
                   onMouseEnter={e => { if(product.stock > 0) e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.06)' }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
@@ -1563,7 +1570,7 @@ export default function CreateOrderPage() {
         </div>
 
         {/* RIGHT PANEL: Cart & Payment */}
-        <div className={`walkin-right-panel ${isMobileCartOpen ? 'mobile-open' : ''}`} style={{ display: 'flex', flexDirection: 'column', background: '#FFFFFF', borderLeft: '1px solid var(--border)', boxShadow: '-4px 0 25px rgba(0,0,0,0.03)', zIndex: 10, borderRadius: '16px 16px 0 0' }}>
+        <div className={`walkin-right-panel ${isMobileCartOpen ? 'mobile-open' : ''}`} style={{ display: 'flex', flexDirection: 'column', background: '#FFFFFF', borderLeft: '1px solid var(--border)', boxShadow: '-4px 0 25px rgba(0,0,0,0.03)', zIndex: 10, borderRadius: '16px 16px 0 0', minWidth: 0, maxWidth: '100%', overflowX: 'hidden' }}>
           <div className="mobile-drag-handle" style={{ width: '40px', height: '4px', background: 'var(--border)', borderRadius: '2px', margin: '12px auto 0 auto' }}></div>
           <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>

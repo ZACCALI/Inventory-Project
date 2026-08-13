@@ -4641,10 +4641,10 @@ p {
 @media (max-width: 767px) { .page-content { padding: 72px 12px 24px; } }
 
 /* 2O. Fix Order Create POS Layout */
-.pos-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
-@media (max-width: 1200px) { .pos-layout { grid-template-columns: 1fr 320px; } }
-@media (max-width: 1023px) { .pos-layout { grid-template-columns: 1fr; } }
-@media (max-width: 767px) { .pos-layout { gap: 12px; } }
+.pos-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; max-width: 100%; width: 100%; overflow-x: hidden; box-sizing: border-box; }
+@media (max-width: 1200px) { .pos-layout { grid-template-columns: minmax(0, 1fr) 320px; } }
+@media (max-width: 1023px) { .pos-layout { grid-template-columns: minmax(0, 1fr); margin: 0 !important; } }
+@media (max-width: 767px) { .pos-layout { gap: 12px; margin: 0 !important; } }
 
 /* 2P. Fix Badge & Pill Overflow on Mobile */
 @media (max-width: 767px) {

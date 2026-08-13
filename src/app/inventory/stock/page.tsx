@@ -784,7 +784,7 @@ export default function StockInOutPage() {
       )}
 
       <div className="card">
-        <div className="card-header filter-bar" style={{ paddingTop: '24px', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="card-header filter-bar" style={{ paddingTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center' }}>
           
           <div className="search-bar" style={{ flex: 1, maxWidth: '400px' }}>
             <Search size={18} className="search-icon" />
@@ -929,13 +929,13 @@ export default function StockInOutPage() {
             <table className="table stock-table mobile-stack">
               <thead>
                 <tr>
-                  <th style={{ width: '23%' }}>Product Details</th>
-                  <th style={{ width: '15%' }}>Date / Time</th>
-                  <th style={{ width: '10%' }}>Type</th>
-                  <th style={{ width: '9%', textAlign: 'right' }}>Quantity</th>
-                  <th style={{ width: '23%' }}>Reference</th>
-                  <th style={{ width: '12%' }}>User</th>
-                  {(isAdmin || !lockStockVoid) && <th style={{ width: '8%', textAlign: 'center' }}>Actions</th>}
+                  <th>Product Details</th>
+                  <th>Date / Time</th>
+                  <th>Type</th>
+                  <th style={{ textAlign: 'right' }}>Quantity</th>
+                  <th>Reference</th>
+                  <th>User</th>
+                  {(isAdmin || !lockStockVoid) && <th style={{ textAlign: 'center' }}>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -944,9 +944,9 @@ export default function StockInOutPage() {
                   return (
                   <tr key={movement.id} style={{ opacity: movement.isVoided ? 0.6 : 1, background: movement.isVoided ? 'var(--bg-main)' : 'transparent' }}>
                     <td data-label="Product Details" style={{ minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-start', textAlign: 'left', width: '100%', minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%', minWidth: 0 }}>
                         <div style={{
-                          width: '36px', height: '36px', borderRadius: 'var(--radius-md)',
+                          width: '40px', height: '40px', borderRadius: 'var(--radius-md)',
                           background: 'var(--bg-main)', border: '1px solid var(--border)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
                         }}>
@@ -957,8 +957,8 @@ export default function StockInOutPage() {
                           )}
                         </div>
                         <div style={{ textAlign: 'left', minWidth: 0, flex: 1, overflow: 'hidden' }}>
-                          <div style={{ fontWeight: 600, fontSize: '13px', color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={movement.product}>{movement.product}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={movement.sku}>{movement.sku}</div>
+                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={movement.product}>{movement.product}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={movement.sku}>{movement.sku}</div>
                         </div>
                       </div>
                     </td>
