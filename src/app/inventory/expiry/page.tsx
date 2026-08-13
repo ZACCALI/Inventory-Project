@@ -518,7 +518,7 @@ export default function ExpiryTrackingPage() {
           {loading ? (
              <div style={{ padding: '40px', textAlign: 'center' }}>Loading expiration data...</div>
           ) : (
-            <table className="table">
+            <table className="table mobile-stack">
               <thead>
                 <tr>
                   <th>Product Details</th>

@@ -335,7 +335,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </h2>
         </div>
         <div className="table-container" style={{ border: 'none', boxShadow: 'none' }}>
-          <table className="table">
+          <table className="table mobile-stack">
             <thead>
               <tr>
                 <th>Product</th>
