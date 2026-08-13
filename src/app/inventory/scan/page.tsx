@@ -658,8 +658,8 @@ export default function BarcodeScannerPage() {
       <div className="scanner-layout">
         
         {/* Left Column: Scanner Interface */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-          <div className="card" style={{ minHeight: '450px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)', height: '100%' }}>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--border-light)', padding: '16px 20px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ScanBarcode size={20} />
@@ -841,9 +841,9 @@ export default function BarcodeScannerPage() {
         </div>
 
         {/* Right Column: Scan Results */}
-        <div className="card" style={{ minHeight: '450px', display: 'flex', flexDirection: 'column' }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           {/* Sticky Header Toolbar */}
-          <div className="scanner-drawer-header" style={{ flexShrink: 0, paddingBottom: '16px', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="scanner-drawer-header" style={{ flexShrink: 0, padding: '16px 20px', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center' }}>
                 {auditMode ? 'Audit Mode' : 'Scan Results'}
@@ -886,7 +886,7 @@ export default function BarcodeScannerPage() {
             </div>
           </div>
           {/* Scrollable Body */}
-          <div className="scanner-drawer-body" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+          <div className="scanner-drawer-body" style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '20px' }}>
           
           {notFoundCode && (
             <div style={{ padding: 'var(--space-xl)', textAlign: 'center', background: 'var(--danger-light)', borderRadius: 'var(--radius-md)', marginTop: 'var(--space-lg)' }}>
@@ -1098,7 +1098,7 @@ export default function BarcodeScannerPage() {
               </div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--text-tertiary)', padding: 'var(--space-2xl)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', flex: 1, color: 'var(--text-tertiary)', padding: 'var(--space-2xl)' }}>
               <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg-main)', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-lg)' }}>
                 <ScanBarcode size={32} color="var(--text-tertiary)" />
               </div>
@@ -1110,7 +1110,7 @@ export default function BarcodeScannerPage() {
 
           {/* Sticky Footer — Save & Apply Audit */}
           {auditMode && auditItems.length > 0 && (
-            <div className="scanner-drawer-footer" style={{ padding: '16px', borderTop: '1px solid var(--border-light)', background: 'var(--bg-main)' }}>
+            <div className="scanner-drawer-footer" style={{ padding: '16px 20px', borderTop: '1px solid var(--border-light)', background: 'var(--bg-main)', borderBottomLeftRadius: 'var(--radius-lg)', borderBottomRightRadius: 'var(--radius-lg)' }}>
               <button 
                 className="btn btn-primary" 
                 onClick={saveAudit} 
