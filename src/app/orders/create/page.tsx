@@ -363,7 +363,7 @@ export default function CreateOrderPage() {
             category: p.categoryName ? { name: p.categoryName } : null,
             uoms: p.uoms || [],
             _count: { orderItems: 0, stockLogs: 0 }
-          }));
+          })) as unknown as Product[];
           setProducts(prev => prev.length === 0 ? mappedProds : prev);
           const cats = Array.from(new Set(mappedProds.filter(p => p.category?.name).map(p => p.category?.name as string)));
           setCategories(['All', ...cats]);
