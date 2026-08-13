@@ -51,24 +51,31 @@ export default function CreateOrderPage() {
     revalidateOnFocus: false,
     dedupeInterval: 10000,
     refreshInterval: 15000,
+    keepPreviousData: true,
   });
   const { data: swrCustomers, mutate: mutateCustomers } = useSWR('/api/customers?limit=1000', fetcher, {
     revalidateOnFocus: false,
     dedupeInterval: 10000,
     refreshInterval: 15000,
+    keepPreviousData: true,
   });
   const { data: swrDrivers, mutate: mutateDrivers } = useSWR('/api/drivers?limit=1000', fetcher, {
     revalidateOnFocus: false,
     dedupeInterval: 10000,
     refreshInterval: 15000,
+    keepPreviousData: true,
   });
   const { data: swrSettings } = useSWR('/api/settings', fetcher, {
     revalidateOnFocus: false,
     dedupeInterval: 10000,
+    keepPreviousData: true,
   });
 
   // State
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(() => {
+    if (Array.isArray(swrProducts) && swrProducts.length > 0) return swrProducts;
+    return [];
+  });
   const [idempotencyKey, setIdempotencyKey] = useState<string>('');
 
   const [isOnline, setIsOnline] = useState(true);
@@ -113,9 +120,21 @@ export default function CreateOrderPage() {
   }, []);
 
   const resetIdempotencyKey = () => setIdempotencyKey(`${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
-  const [categories, setCategories] = useState<string[]>(['All']);
-  const [customers, setCustomers] = useState<{id: string, name: string, phone?: string, address?: string, customerType?: string}[]>([]);
-  const [drivers, setDrivers] = useState<{id: string, name: string}[]>([]);
+  const [categories, setCategories] = useState<string[]>(() => {
+    if (Array.isArray(swrProducts) && swrProducts.length > 0) {
+      const cats = Array.from(new Set(swrProducts.filter((p: any) => p.category?.name).map((p: any) => p.category?.name as string)));
+      return ['All', ...cats];
+    }
+    return ['All'];
+  });
+  const [customers, setCustomers] = useState<{id: string, name: string, phone?: string, address?: string, customerType?: string}[]>(() => {
+    if (Array.isArray(swrCustomers) && swrCustomers.length > 0) return swrCustomers;
+    return [];
+  });
+  const [drivers, setDrivers] = useState<{id: string, name: string}[]>(() => {
+    if (Array.isArray(swrDrivers) && swrDrivers.length > 0) return swrDrivers;
+    return [];
+  });
   const [showConfirmCheckout, setShowConfirmCheckout] = useState(false);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [lockOrderDate, setLockOrderDate] = useState(true);
@@ -339,18 +358,11 @@ export default function CreateOrderPage() {
   // 1. Immediate cold-start load from Dexie IndexedDB cache (loads items instantly in 0-10ms)
   useEffect(() => {
     let isMounted = true;
-    const loadInitialCache = async () => {
-      try {
-        const [cachedProducts, cachedCustomers, cachedDrivers, cachedSettings] = await Promise.all([
-          db.products.toArray(),
-          db.customers.toArray(),
-          db.drivers.toArray(),
-          db.settings.get('current')
-        ]);
 
-        if (!isMounted) return;
-
-        if (cachedProducts && cachedProducts.length > 0) {
+    db.products.toArray().then(cachedProducts => {
+      if (isMounted && cachedProducts && cachedProducts.length > 0) {
+        setProducts(prev => {
+          if (prev.length > 0) return prev;
           const mappedProds = cachedProducts.map(p => ({
             id: p.id,
             name: p.name,
@@ -363,24 +375,33 @@ export default function CreateOrderPage() {
             category: p.categoryName ? { name: p.categoryName } : null,
             uoms: p.uoms || []
           }));
-          setProducts(prev => prev.length === 0 ? mappedProds : prev);
           const cats = Array.from(new Set(mappedProds.filter(p => p.category?.name).map(p => p.category?.name as string)));
           setCategories(['All', ...cats]);
-        }
+          return mappedProds;
+        });
+      }
+    }).catch(() => {});
 
-        if (cachedCustomers && cachedCustomers.length > 0) {
-          const mappedCusts = cachedCustomers.map(c => ({
+    db.customers.toArray().then(cachedCustomers => {
+      if (isMounted && cachedCustomers && cachedCustomers.length > 0) {
+        setCustomers(prev => {
+          if (prev.length > 0) return prev;
+          return cachedCustomers.map(c => ({
             id: c.id,
             name: c.name,
             phone: c.phone || undefined,
             address: c.address || undefined,
             customerType: 'wholesale',
           }));
-          setCustomers(prev => prev.length === 0 ? mappedCusts : prev);
-        }
+        });
+      }
+    }).catch(() => {});
 
-        if (cachedDrivers && cachedDrivers.length > 0) {
-          const mappedDrivs = cachedDrivers.map(d => ({
+    db.drivers.toArray().then(cachedDrivers => {
+      if (isMounted && cachedDrivers && cachedDrivers.length > 0) {
+        setDrivers(prev => {
+          if (prev.length > 0) return prev;
+          return cachedDrivers.map(d => ({
             id: d.id,
             name: d.name,
             phone: d.phone,
@@ -388,26 +409,24 @@ export default function CreateOrderPage() {
             vehicleInfo: d.vehicleInfo,
             _count: { deliveries: 0 }
           }));
-          setDrivers(prev => prev.length === 0 ? mappedDrivs : prev);
-        }
-
-        if (cachedSettings?.data) {
-          try {
-            const raw = JSON.parse(cachedSettings.data);
-            setLockOrderDate(raw.lockOrderDate ?? true);
-            if (raw.companyName) setCompanyName(raw.companyName);
-          } catch {}
-        }
-      } catch (err) {
-        console.warn('Failed to load initial Dexie cache in POS', err);
+        });
       }
-    };
+    }).catch(() => {});
 
-    loadInitialCache();
+    db.settings.get('current').then(cachedSettings => {
+      if (isMounted && cachedSettings?.data) {
+        try {
+          const raw = JSON.parse(cachedSettings.data);
+          setLockOrderDate(raw.lockOrderDate ?? true);
+          if (raw.companyName) setCompanyName(raw.companyName);
+        } catch {}
+      }
+    }).catch(() => {});
+
     return () => { isMounted = false; };
   }, []);
 
-  // 2. Process fresh data from SWR/network, update Dexie cache, and apply offline sync queue tasks
+  // 2. Process fresh data from SWR/network, update state immediately, and persist to Dexie asynchronously in background
   useEffect(() => {
     let isMounted = true;
 
@@ -416,66 +435,6 @@ export default function CreateOrderPage() {
         let fetchedProducts = swrProducts;
         let fetchedCustomers = swrCustomers;
         let fetchedDrivers = swrDrivers;
-
-        // Persist fresh server data into Dexie IndexedDB cache asynchronously
-        if (Array.isArray(fetchedProducts) && fetchedProducts.length > 0) {
-          const now = Date.now();
-          await db.products.bulkPut(
-            fetchedProducts.map((p: any) => ({
-              id: p.id,
-              name: p.name,
-              sku: p.sku,
-              barcode: p.barcode || null,
-              price: p.price || 0,
-              costPrice: p.costPrice || 0,
-              stock: p.stock || 0,
-              image: p.image || null,
-              categoryName: p.category?.name || null,
-              uoms: p.uoms || [],
-              lastSynced: now,
-            }))
-          ).catch(() => {});
-        }
-
-        if (Array.isArray(fetchedCustomers) && fetchedCustomers.length > 0) {
-          const now = Date.now();
-          await db.customers.bulkPut(
-            fetchedCustomers.map((c: any) => ({
-              id: c.id,
-              name: c.name,
-              email: c.email || null,
-              phone: c.phone || null,
-              address: c.address || null,
-              lastSynced: now,
-            }))
-          ).catch(() => {});
-        }
-
-        if (Array.isArray(fetchedDrivers) && fetchedDrivers.length > 0) {
-          const now = Date.now();
-          await db.drivers.bulkPut(
-            fetchedDrivers.map((d: any) => ({
-              id: d.id,
-              name: d.name,
-              phone: d.phone || null,
-              status: d.status || 'active',
-              vehicleInfo: d.vehicleInfo || null,
-              lastSynced: now,
-            }))
-          ).catch(() => {});
-        }
-
-        if (swrSettings && !swrSettings.error) {
-          await db.settings.put({
-            key: 'current',
-            data: JSON.stringify(swrSettings),
-            lastSynced: Date.now()
-          }).catch(() => {});
-          if (isMounted) {
-            setLockOrderDate(swrSettings.lockOrderDate ?? true);
-            if (swrSettings.companyName) setCompanyName(swrSettings.companyName);
-          }
-        }
 
         // Fall back to Dexie cache if SWR data is not yet loaded
         if (!fetchedProducts) {
@@ -569,15 +528,77 @@ export default function CreateOrderPage() {
           console.error('Failed to apply offline tasks to POS', err);
         }
 
+        // UPDATE UI STATE IMMEDIATELY WITHOUT WAITING FOR DEXIE BULK PUT
         if (isMounted) {
-          if (finalProducts.length > 0 || products.length === 0) {
+          if (finalProducts.length > 0) {
             setProducts(finalProducts);
             const cats = Array.from(new Set(finalProducts.filter(p => p.category?.name).map(p => p.category?.name as string)));
             setCategories(['All', ...cats]);
           }
-          if (finalCustomers.length > 0 || customers.length === 0) setCustomers(finalCustomers);
-          if (finalDrivers.length > 0 || drivers.length === 0) setDrivers(finalDrivers);
+          if (finalCustomers.length > 0) setCustomers(finalCustomers);
+          if (finalDrivers.length > 0) setDrivers(finalDrivers);
+          if (swrSettings && !swrSettings.error) {
+            setLockOrderDate(swrSettings.lockOrderDate ?? true);
+            if (swrSettings.companyName) setCompanyName(swrSettings.companyName);
+          }
         }
+
+        // Persist fresh server data into Dexie IndexedDB cache in background without blocking UI
+        if (Array.isArray(swrProducts) && swrProducts.length > 0) {
+          const now = Date.now();
+          db.products.bulkPut(
+            swrProducts.map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              sku: p.sku,
+              barcode: p.barcode || null,
+              price: p.price || 0,
+              costPrice: p.costPrice || 0,
+              stock: p.stock || 0,
+              image: p.image || null,
+              categoryName: p.category?.name || null,
+              uoms: p.uoms || [],
+              lastSynced: now,
+            }))
+          ).catch(() => {});
+        }
+
+        if (Array.isArray(swrCustomers) && swrCustomers.length > 0) {
+          const now = Date.now();
+          db.customers.bulkPut(
+            swrCustomers.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              email: c.email || null,
+              phone: c.phone || null,
+              address: c.address || null,
+              lastSynced: now,
+            }))
+          ).catch(() => {});
+        }
+
+        if (Array.isArray(swrDrivers) && swrDrivers.length > 0) {
+          const now = Date.now();
+          db.drivers.bulkPut(
+            swrDrivers.map((d: any) => ({
+              id: d.id,
+              name: d.name,
+              phone: d.phone || null,
+              status: d.status || 'active',
+              vehicleInfo: d.vehicleInfo || null,
+              lastSynced: now,
+            }))
+          ).catch(() => {});
+        }
+
+        if (swrSettings && !swrSettings.error) {
+          db.settings.put({
+            key: 'current',
+            data: JSON.stringify(swrSettings),
+            lastSynced: Date.now()
+          }).catch(() => {});
+        }
+
       } catch (error) {
         console.error('Failed to sync and process POS data', error);
       }

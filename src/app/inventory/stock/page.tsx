@@ -926,16 +926,16 @@ export default function StockInOutPage() {
           {loading ? (
              <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>
           ) : (
-            <table className="table mobile-stack">
+            <table className="table stock-table mobile-stack">
               <thead>
                 <tr>
-                  <th>Product Details</th>
-                  <th>Date / Time</th>
-                  <th>Type</th>
-                  <th style={{ textAlign: 'right' }}>Quantity</th>
-                  <th>Reference</th>
-                  <th>User</th>
-                  {(isAdmin || !lockStockVoid) && <th style={{ width: '50px' }}></th>}
+                  <th style={{ width: '23%' }}>Product Details</th>
+                  <th style={{ width: '15%' }}>Date / Time</th>
+                  <th style={{ width: '10%' }}>Type</th>
+                  <th style={{ width: '9%', textAlign: 'right' }}>Quantity</th>
+                  <th style={{ width: '23%' }}>Reference</th>
+                  <th style={{ width: '12%' }}>User</th>
+                  {(isAdmin || !lockStockVoid) && <th style={{ width: '8%', textAlign: 'center' }}>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -943,36 +943,36 @@ export default function StockInOutPage() {
                   const isProtected = ['WALK_IN_HOME', 'WALK_IN_STORE', 'DELIVERY'].includes(movement.source);
                   return (
                   <tr key={movement.id} style={{ opacity: movement.isVoided ? 0.6 : 1, background: movement.isVoided ? 'var(--bg-main)' : 'transparent' }}>
-                    <td data-label="Product Details">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%', minWidth: 0 }}>
+                    <td data-label="Product Details" style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-start', textAlign: 'left', width: '100%', minWidth: 0 }}>
                         <div style={{
-                          width: '40px', height: '40px', borderRadius: 'var(--radius-md)',
+                          width: '36px', height: '36px', borderRadius: 'var(--radius-md)',
                           background: 'var(--bg-main)', border: '1px solid var(--border)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
                         }}>
                           {movement.image ? (
                             <Image width={400} height={400} src={movement.image} alt={movement.product} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: movement.isVoided ? 'grayscale(100%)' : 'none' }}  />
                           ) : (
-                            <Package size={20} color="var(--text-tertiary)" />
+                            <Package size={18} color="var(--text-tertiary)" />
                           )}
                         </div>
-                        <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
-                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={movement.product}>{movement.product}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={movement.sku}>{movement.sku}</div>
+                        <div style={{ textAlign: 'left', minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                          <div style={{ fontWeight: 600, fontSize: '13px', color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={movement.product}>{movement.product}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={movement.sku}>{movement.sku}</div>
                         </div>
                       </div>
                     </td>
-                    <td data-label="Date / Time" style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{new Date(movement.date).toLocaleString()}</td>
+                    <td data-label="Date / Time" style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontSize: '12px' }}>{new Date(movement.date).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                     <td data-label="Type" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {movement.type === 'IN' ? (
-                        <span className="badge badge-success" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>IN (Receive)</span>
+                        <span className="badge badge-success" style={{ whiteSpace: 'nowrap', flexShrink: 0, fontSize: '11px', padding: '3px 8px' }}>IN (Receive)</span>
                       ) : (
-                        <span className="badge badge-danger" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>OUT (Issue)</span>
+                        <span className="badge badge-danger" style={{ whiteSpace: 'nowrap', flexShrink: 0, fontSize: '11px', padding: '3px 8px' }}>OUT (Issue)</span>
                       )}
                     </td>
                     <td data-label="Quantity" style={{ textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                        <span style={{ color: movement.type === 'IN' ? 'var(--success-dark)' : 'var(--danger-dark)', textDecoration: movement.isVoided ? 'line-through' : 'none' }}>
+                        <span style={{ color: movement.type === 'IN' ? 'var(--success-dark)' : 'var(--danger-dark)', textDecoration: movement.isVoided ? 'line-through' : 'none', fontSize: '13px' }}>
                           {movement.type === 'IN' ? '+' : '-'}{movement.quantity}
                         </span>
                         {movement.isVoided && (
@@ -980,28 +980,37 @@ export default function StockInOutPage() {
                         )}
                       </div>
                     </td>
-                    <td data-label="Reference">
-                      <div className="reference-cell-content">
-                        <span style={{ 
-                          color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-link)', 
-                          fontWeight: 500,
-                          whiteSpace: 'normal',
-                          wordBreak: 'break-word',
-                          lineHeight: '1.2'
-                        }}>
+                    <td data-label="Reference" style={{ minWidth: 0 }}>
+                      <div className="reference-cell-content" style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+                        <span 
+                          title={movement.reference}
+                          style={{ 
+                            color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-link)', 
+                            fontWeight: 500,
+                            fontSize: '12px',
+                            lineHeight: '1.3',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            wordBreak: 'break-word',
+                            maxWidth: '100%'
+                          }}
+                        >
                           {movement.reference}
                         </span>
                         
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                           {(() => {
                             const widgetStyle = (bg: string, text: string) => ({
                               backgroundColor: bg,
                               color: text,
-                              padding: '2px 8px',
+                              padding: '1px 6px',
                               borderRadius: '9999px',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              fontSize: '11px',
+                              fontSize: '10px',
                               fontWeight: 600,
                               letterSpacing: '0.2px',
                               boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
@@ -1019,7 +1028,22 @@ export default function StockInOutPage() {
                         </div>
                       </div>
                     </td>
-                    <td data-label="User">{movement.user}</td>
+                    <td data-label="User" style={{ minWidth: 0 }}>
+                      <span 
+                        title={movement.user}
+                        style={{ 
+                          display: 'block', 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis', 
+                          whiteSpace: 'nowrap',
+                          fontSize: '13px',
+                          color: 'var(--text-primary)',
+                          fontWeight: 500
+                        }}
+                      >
+                        {movement.user}
+                      </span>
+                    </td>
                     {(isAdmin || !lockStockVoid) && (
                       <td data-label="Actions" style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
@@ -1120,7 +1144,7 @@ export default function StockInOutPage() {
                   </tr>
                 )})}
                 {filteredLogs.length === 0 && (
-                  <tr><td colSpan={isAdmin ? 7 : 6} style={{textAlign: 'center', padding: '20px'}}>No logs found</td></tr>
+                  <tr><td colSpan={(isAdmin || !lockStockVoid) ? 7 : 6} style={{textAlign: 'center', padding: '20px'}}>No logs found</td></tr>
                 )}
               </tbody>
             </table>
