@@ -869,12 +869,12 @@ export default function InventoryPage() {
           <table className="table mobile-stack">
             <thead>
               <tr>
-                <th>Product Details</th>
-                <th>Category</th>
-                <th style={{ textAlign: 'right' }}>Price</th>
-                <th style={{ textAlign: 'right' }}>Stock</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
+                <th style={{ width: '32%' }}>Product Details</th>
+                <th style={{ width: '18%' }}>Category</th>
+                <th style={{ textAlign: 'right', width: '14%' }}>Price</th>
+                <th style={{ textAlign: 'right', width: '14%' }}>Stock</th>
+                <th style={{ width: '12%' }}>Status</th>
+                <th style={{ textAlign: 'right', width: '10%' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -909,9 +909,9 @@ export default function InventoryPage() {
                             <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>No Img</span>
                           )}
                         </div>
-                        <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={product.name}>{product.name}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={product.sku}>{product.sku}</div>
+                        <div style={{ textAlign: 'left', minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }} title={product.name}>{product.name}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }} title={product.sku}>{product.sku}</div>
                         </div>
                       </div>
                     </td>

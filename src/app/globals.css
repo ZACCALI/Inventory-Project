@@ -3016,14 +3016,16 @@ p {
     grid-template-columns: 1fr;
   }
   
-  .page-header-actions {
-    flex-direction: column;
-    width: 100%;
-  }
+  @media (max-width: 639px) {
+    .page-header-actions {
+      flex-direction: column;
+      width: 100%;
+    }
 
-  .page-header-actions .btn {
-    width: 100%;
-    justify-content: center;
+    .page-header-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
 }
 
@@ -4514,7 +4516,7 @@ p {
   .stats-grid, .stats-grid-3, .stats-grid-4 { grid-template-columns: 1fr; }
 }
 
-/* 2D. Fix Table Responsiveness */
+/* 2D. Fix Table Responsiveness & Mobile Cards */
 .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
 @media (max-width: 767px) {
   .table-container { overflow-x: hidden; width: 100%; }
@@ -4522,12 +4524,12 @@ p {
   .table-container table.mobile-stack { min-width: 100% !important; width: 100% !important; display: block; }
   .table-container table.mobile-stack tbody { display: block; }
   .table-container table.mobile-stack tbody tr { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 12px; padding: 12px; background: var(--bg-card); box-shadow: var(--shadow-sm); gap: 8px; }
-  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: flex-start; padding: 0; border: none; text-align: right; word-break: break-word; font-size: 13px; }
-  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; text-align: left; margin-right: 12px; flex-shrink: 0; padding-top: 2px; width: 90px; }
-  .table-container table.mobile-stack td > div { flex: 1; display: flex; flex-direction: column; align-items: flex-end; }
-  .table-container table.mobile-stack td:first-child { flex-direction: column; align-items: stretch; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 4px; }
+  .table-container table.mobile-stack td { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border: none; text-align: right; word-break: break-word; font-size: 13px; min-width: 0; width: 100%; }
+  .table-container table.mobile-stack td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; text-align: left; margin-right: 12px; flex-shrink: 0; padding-top: 0; width: 100px; }
+  .table-container table.mobile-stack td > div { flex: 1; display: flex; flex-direction: column; align-items: flex-end; min-width: 0; overflow: hidden; font-size: 13px; }
+  .table-container table.mobile-stack td:first-child { flex-direction: row; align-items: center; justify-content: flex-start; border-bottom: 1px solid var(--border-light); padding-bottom: 10px; margin-bottom: 4px; width: 100%; min-width: 0; }
   .table-container table.mobile-stack td:first-child::before { display: none; }
-  .table-container table.mobile-stack td:first-child > div { align-items: flex-start; }
+  .table-container table.mobile-stack td:first-child > div { align-items: flex-start; width: 100%; min-width: 0; }
   .table-container table.mobile-stack thead { display: none; }
 }
 
@@ -4554,10 +4556,15 @@ p {
 /* 2G. Fix Page Header (title + action button row) */
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
 .page-title { font-size: var(--font-2xl); font-weight: 700; }
-@media (max-width: 767px) {
+@media (max-width: 639px) {
   .page-header { flex-direction: column; align-items: flex-start; margin-bottom: 16px; }
   .page-header .btn { width: 100%; justify-content: center; }
   .page-title { font-size: var(--font-xl); }
+}
+@media (min-width: 640px) {
+  .page-header { flex-direction: row !important; align-items: center !important; justify-content: space-between !important; }
+  .page-header-actions { flex-direction: row !important; width: auto !important; gap: 12px !important; align-items: center !important; }
+  .page-header-actions .btn, .page-header-actions button, .page-header .btn { width: auto !important; flex: none !important; display: inline-flex !important; }
 }
 
 /* 2H. Fix Filter Bar */
@@ -4755,6 +4762,24 @@ p {
   font-size: 13px;
   vertical-align: middle;
   border-bottom: 1px solid var(--border-light);
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .stock-table th,
+  .table th {
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+  }
+  .stock-table td,
+  .table td {
+    padding: 8px 8px !important;
+    font-size: 12px !important;
+  }
+  .stock-table td .badge,
+  .table td .badge {
+    font-size: 11px !important;
+    padding: 2px 6px !important;
+  }
 }
 
 @media (min-width: 768px) {

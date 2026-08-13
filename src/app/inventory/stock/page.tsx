@@ -929,13 +929,13 @@ export default function StockInOutPage() {
             <table className="table stock-table mobile-stack">
               <thead>
                 <tr>
-                  <th>Product Details</th>
-                  <th>Date / Time</th>
-                  <th>Type</th>
-                  <th style={{ textAlign: 'right' }}>Quantity</th>
-                  <th>Reference</th>
-                  <th>User</th>
-                  {(isAdmin || !lockStockVoid) && <th style={{ textAlign: 'center' }}>Actions</th>}
+                  <th style={{ width: '32%' }}>Product Details</th>
+                  <th style={{ width: '15%' }}>Date / Time</th>
+                  <th style={{ width: '10%' }}>Type</th>
+                  <th style={{ textAlign: 'right', width: '9%' }}>Quantity</th>
+                  <th style={{ width: '18%' }}>Reference</th>
+                  <th style={{ width: '9%' }}>User</th>
+                  {(isAdmin || !lockStockVoid) && <th style={{ textAlign: 'center', width: '7%' }}>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -957,8 +957,8 @@ export default function StockInOutPage() {
                           )}
                         </div>
                         <div style={{ textAlign: 'left', minWidth: 0, flex: 1, overflow: 'hidden' }}>
-                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={movement.product}>{movement.product}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={movement.sku}>{movement.sku}</div>
+                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }} title={movement.product}>{movement.product}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }} title={movement.sku}>{movement.sku}</div>
                         </div>
                       </div>
                     </td>
