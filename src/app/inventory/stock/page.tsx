@@ -957,17 +957,17 @@ export default function StockInOutPage() {
                           )}
                         </div>
                         <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
-                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', whiteSpace: 'normal', wordBreak: 'break-word' }}>{movement.product}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{movement.sku}</div>
+                          <div style={{ fontWeight: 600, color: movement.isVoided ? 'var(--text-tertiary)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={movement.product}>{movement.product}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={movement.sku}>{movement.sku}</div>
                         </div>
                       </div>
                     </td>
                     <td data-label="Date / Time" style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{new Date(movement.date).toLocaleString()}</td>
-                    <td data-label="Type" style={{ whiteSpace: 'nowrap' }}>
+                    <td data-label="Type" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {movement.type === 'IN' ? (
-                        <span className="badge badge-success">IN (Receive)</span>
+                        <span className="badge badge-success" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>IN (Receive)</span>
                       ) : (
-                          <span className="badge badge-danger">OUT (Issue)</span>
+                        <span className="badge badge-danger" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>OUT (Issue)</span>
                       )}
                     </td>
                     <td data-label="Quantity" style={{ textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
@@ -1240,10 +1240,10 @@ export default function StockInOutPage() {
                                 )}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{p.name}</div>
-                                <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', display: 'flex', gap: '8px' }}>
-                                  <span>SKU: {p.sku}</span>
-                                  {p.category && <span style={{ color: 'var(--primary)' }}>• {p.category.name}</span>}
+                                <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', display: 'flex', gap: '8px', overflow: 'hidden' }}>
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }} title={p.sku}>SKU: {p.sku}</span>
+                                  {p.category && <span style={{ color: 'var(--primary)', flexShrink: 0 }}>• {p.category.name}</span>}
                                 </div>
                               </div>
                             </div>
@@ -1261,8 +1261,8 @@ export default function StockInOutPage() {
                           <Package size={28} color="var(--text-tertiary)" />
                         )}
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{selectedProduct.name} <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: '12px' }}>({selectedProduct.sku})</span></div>
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{selectedProduct.name} <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: '12px', wordBreak: 'break-all' }}>({selectedProduct.sku})</span></div>
                         <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Category: {selectedProduct.category?.name || 'Uncategorized'}</div>
                         <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
                           <span style={{ color: 'var(--text-secondary)' }}>Unit: <strong style={{ color: 'var(--text-primary)' }}>{selectedProduct.unit || 'pcs'}</strong></span>

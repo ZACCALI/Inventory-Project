@@ -363,7 +363,7 @@ export default function CreateOrderPage() {
             category: p.categoryName ? { name: p.categoryName } : null,
             uoms: p.uoms || [],
             _count: { orderItems: 0, stockLogs: 0 }
-          })) as unknown as Product[];
+          }));
           setProducts(prev => prev.length === 0 ? mappedProds : prev);
           const cats = Array.from(new Set(mappedProds.filter(p => p.category?.name).map(p => p.category?.name as string)));
           setCategories(['All', ...cats]);
@@ -1597,7 +1597,7 @@ export default function CreateOrderPage() {
                       </div>
                       
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '10px' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{item.product.sku}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }} title={item.product.sku}>{item.product.sku}</div>
                         {item.uomName ? (
                           <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 700 }}>
                             {item.uomName} ×{item.multiplier}
@@ -1832,7 +1832,7 @@ export default function CreateOrderPage() {
                           {item.product.name}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                          <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{item.product.sku}</span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={item.product.sku}>{item.product.sku}</span>
                           {item.uomName ? (
                             <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '100px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }}>
                               {item.uomName} (A-{item.multiplier})

@@ -660,17 +660,19 @@ export default function BarcodeScannerPage() {
         {/* Left Column: Scanner Interface */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)', height: '100%' }}>
           <div className="card" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--border-light)', padding: '16px 20px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--border-light)', padding: '16px 20px', flexWrap: 'wrap' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <ScanBarcode size={20} />
               </div>
-              <div>
-                <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
-                  Barcode Scanner
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 500, color: 'var(--success)', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '2px' }}>
+                  <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>
+                    Barcode Scanner
+                  </h2>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 500, color: 'var(--success)', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '12px', whiteSpace: 'nowrap', flexShrink: 0 }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.2)' }} className="pulse-dot" /> Hardware Ready
                   </span>
-                </h2>
+                </div>
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>Scan using hardware or camera</p>
               </div>
             </div>
@@ -805,11 +807,11 @@ export default function BarcodeScannerPage() {
                               <ImageIcon size={20} color="var(--text-tertiary)" />
                             )}
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{product.name}</div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                              <span>SKU: {product.sku}</span>
-                              <span style={{ color: product.stock > 0 ? 'var(--success-dark)' : 'var(--danger)' }}>Stock: {product.stock} {product.unit || 'pcs'}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', marginTop: '2px', gap: '8px' }}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }} title={product.sku}>SKU: {product.sku}</span>
+                              <span style={{ color: product.stock > 0 ? 'var(--success-dark)' : 'var(--danger)', flexShrink: 0 }}>Stock: {product.stock} {product.unit || 'pcs'}</span>
                             </div>
                           </div>
                         </div>
@@ -935,7 +937,7 @@ export default function BarcodeScannerPage() {
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</h3>
-                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>SKU: {item.sku}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={item.sku}>SKU: {item.sku}</div>
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0, background: 'var(--bg-main)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
                             <div style={{ fontSize: '10px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.5px', marginBottom: '2px' }}>Expected Stock</div>
@@ -1037,7 +1039,7 @@ export default function BarcodeScannerPage() {
                         {lastScanned.name}
                       </h3>
                     </div>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px', margin: '4px 0 0 0' }}>SKU: {lastScanned.sku}</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px', margin: '4px 0 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={lastScanned.sku}>SKU: {lastScanned.sku}</p>
                   </div>
                 </div>
 

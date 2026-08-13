@@ -704,6 +704,13 @@ p {
   font-size: var(--font-xs);
   font-weight: 600;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.table td[data-label="Status"],
+.table th[data-label="Status"] {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .badge-primary { background: var(--primary-light); color: var(--primary); }

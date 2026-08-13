@@ -1578,9 +1578,9 @@ export default function OrdersPage() {
                                   <ShoppingBag size={14} color="var(--text-tertiary)" />
                                 )}
                               </div>
-                              <div>
-                                <div style={{ fontWeight: 500, fontSize: '13px' }}>{product.name}</div>
-                                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{product.sku} | Stock: {product.stock}</div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 500, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }} title={`${product.sku} | Stock: ${product.stock}`}>{product.sku} | Stock: {product.stock}</div>
                               </div>
                             </div>
                             <div style={{ fontWeight: 600, color: 'var(--primary)', fontSize: '13px' }}>{formatCurrency(product.price)}</div>
@@ -1614,12 +1614,12 @@ export default function OrdersPage() {
                                 )}
                               </div>
                             </td>
-                            <td data-label="Product Details" style={{ padding: '12px 16px' }}>
-                              <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '14px' }}>
+                            <td data-label="Product Details" style={{ padding: '12px 16px', minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={item.product?.name}>
                                 {item.product?.name} 
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                                <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{item.product?.sku}</span>
+                                <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }} title={item.product?.sku}>{item.product?.sku}</span>
                                 {item.uomName ? (
                                   <span style={{ background: 'var(--primary-light)', color: 'var(--primary-dark)', padding: '2px 8px', borderRadius: '100px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' }}>
                                     {item.uomName} (×{item.multiplier || 1} pcs)

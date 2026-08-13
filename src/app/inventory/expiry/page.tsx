@@ -534,7 +534,7 @@ export default function ExpiryTrackingPage() {
               <tbody>
                 {filteredData.map((item) => (
                   <tr key={item.id} style={{ background: item.daysLeft < 0 ? 'var(--danger-light)' : 'transparent' }}>
-                    <td>
+                    <td data-label="Product">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%', minWidth: 0 }}>
                         <div style={{
                           width: '40px', height: '40px', borderRadius: 'var(--radius-md)',
@@ -548,8 +548,8 @@ export default function ExpiryTrackingPage() {
                           )}
                         </div>
                         <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'normal', wordBreak: 'break-word' }}>{item.product.name}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{item.product.sku}</div>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={item.product.name}>{item.product.name}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={item.product.sku}>{item.product.sku}</div>
                         </div>
                       </div>
                     </td>
@@ -606,7 +606,7 @@ export default function ExpiryTrackingPage() {
                         })()}
                       </div>
                     </td>
-                    <td data-label="Status">{getStatusBadge(item.daysLeft)}</td>
+                    <td data-label="Status" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>{getStatusBadge(item.daysLeft)}</td>
                     <td data-label="Actions" style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                       {(!lockProductEdit || isAdmin) && (
                         <>

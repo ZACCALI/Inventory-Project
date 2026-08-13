@@ -348,7 +348,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               {order.items.map((item) => (
                 <tr key={item.id}>
                   <td data-label="Product" style={{ padding: '12px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                       <div style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--border)' }}>
                         {item.product.image ? (
                           <Image width={400} height={400} src={item.product.image} alt={item.product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}  />
@@ -356,9 +356,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                           <Package size={16} color="var(--text-tertiary)" opacity={0.4} />
                         )}
                       </div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '14px' }}>{item.product.name}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>SKU: {item.product.sku} · {item.product.unit}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={item.product.name}>{item.product.name}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={`SKU: ${item.product.sku} · ${item.product.unit}`}>SKU: {item.product.sku} · {item.product.unit}</div>
                       </div>
                     </div>
                   </td>

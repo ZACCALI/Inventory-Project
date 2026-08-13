@@ -873,8 +873,8 @@ export default function InventoryPage() {
                           )}
                         </div>
                         <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'normal', wordBreak: 'break-word' }}>{product.name}</div>
-                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{product.sku}</div>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={product.name}>{product.name}</div>
+                          <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }} title={product.sku}>{product.sku}</div>
                         </div>
                       </div>
                     </td>
@@ -940,15 +940,15 @@ export default function InventoryPage() {
                         })()}
                       </div>
                     </td>
-                    <td data-label="Status" style={{ whiteSpace: 'nowrap' }}>
+                    <td data-label="Status" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {product.isArchived ? (
-                        <span className="badge badge-neutral">Archived</span>
+                        <span className="badge badge-neutral" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>Archived</span>
                       ) : product.stock === 0 ? (
-                        <span className="badge badge-danger">Out of Stock</span>
+                        <span className="badge badge-danger" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>Out of Stock</span>
                       ) : product.stock <= product.minStock ? (
-                        <span className="badge badge-warning">Low Stock</span>
+                        <span className="badge badge-warning" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>Low Stock</span>
                       ) : (
-                        <span className="badge badge-success">In Stock</span>
+                        <span className="badge badge-success" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>In Stock</span>
                       )}
                     </td>
                     <td data-label="Actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
