@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
 import { useSession } from 'next-auth/react';
-import { Search, Plus, Trash2, X, DollarSign, TrendingDown, Calendar, Edit, Filter } from 'lucide-react';
+import { Search, Plus, Trash2, X, DollarSign, TrendingDown, Calendar, Edit, Filter, Save } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -560,17 +560,17 @@ export default function ExpensesPage() {
 
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '800px', borderRadius: '24px', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-            <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{editId ? 'Edit Expense' : 'Log New Expense'}</h2>
-              <button type="button" className="btn btn-icon btn-ghost" onClick={() => setIsModalOpen(false)} style={{ background: 'var(--bg-main)' }}>
+          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '550px' }}>
+            <div className="modal-header">
+              <h2 className="modal-title">{editId ? 'Edit Expense' : 'Log New Expense'}</h2>
+              <button type="button" className="btn btn-icon btn-ghost" onClick={() => setIsModalOpen(false)}>
                 <X size={20} />
               </button>
             </div>
             
             <form onSubmit={handleSubmit} className="modal-layout-form">
-              <div className="modal-body" style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
-                <div className="form-grid-2" style={{ gap: '16px' }}>
+              <div className="modal-body">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label htmlFor="expense-date" className="form-label">Date <span style={{ color: 'var(--danger)' }}>*</span></label>
                     <input 
@@ -579,7 +579,6 @@ export default function ExpensesPage() {
                       type="date" 
                       required 
                       className="form-input"
-                      style={{ height: '48px', borderRadius: '12px' }}
                       value={formData.date}
                       onChange={e => setFormData({...formData, date: e.target.value})}
                     />
@@ -593,14 +592,14 @@ export default function ExpensesPage() {
                         name="category"
                         className="form-select"
                         required
-                        style={{ height: '48px', borderRadius: '12px', flex: 1 }}
+                        style={{ flex: 1 }}
                         value={formData.category}
                         onChange={e => setFormData({...formData, category: e.target.value})}
                       >
                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                       {isAdmin && (
-                        <button type="button" onClick={() => setIsCategoryManageOpen(true)} className="btn btn-outline" style={{ height: '48px', borderRadius: '12px', padding: '0 12px', whiteSpace: 'nowrap', fontSize: '12px' }}>
+                        <button type="button" onClick={() => setIsCategoryManageOpen(true)} className="btn btn-outline" style={{ padding: '0 12px', whiteSpace: 'nowrap', fontSize: '12px' }}>
                           <Edit size={14} /> Manage
                         </button>
                       )}
@@ -610,7 +609,7 @@ export default function ExpensesPage() {
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label htmlFor="expense-amount" className="form-label">Amount <span style={{ color: 'var(--danger)' }}>*</span></label>
                     <div style={{ position: 'relative' }}>
-                      <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', fontWeight: 700 }}>₱</span>
+                      <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', fontWeight: 700 }}>₱</span>
                       <input 
                         id="expense-amount"
                         name="amount"
@@ -619,7 +618,7 @@ export default function ExpensesPage() {
                         min="0.01"
                         required 
                         className="form-input"
-                        style={{ paddingLeft: '32px', height: '48px', borderRadius: '12px', fontWeight: 600 }}
+                        style={{ paddingLeft: '32px', fontWeight: 600 }}
                         value={formData.amount}
                         onChange={e => setFormData({...formData, amount: e.target.value})}
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
@@ -636,13 +635,12 @@ export default function ExpensesPage() {
                       required 
                       placeholder="e.g. June Electricity Bill"
                       className="form-input"
-                      style={{ height: '48px', borderRadius: '12px' }}
                       value={formData.description}
                       onChange={e => setFormData({...formData, description: e.target.value})}
                     />
                   </div>
 
-                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label htmlFor="expense-ref" className="form-label">Reference (Optional)</label>
                     <input 
                       id="expense-ref"
@@ -650,7 +648,6 @@ export default function ExpensesPage() {
                       type="text" 
                       placeholder="Receipt No / Invoice No"
                       className="form-input"
-                      style={{ height: '48px', borderRadius: '12px' }}
                       value={formData.reference}
                       onChange={e => setFormData({...formData, reference: e.target.value})}
                     />
@@ -658,11 +655,12 @@ export default function ExpensesPage() {
                 </div>
               </div>
               
-              <div className="modal-footer" style={{ padding: '24px 32px', borderTop: '1px solid var(--border)', display: 'flex', gap: '16px', background: '#FFFFFF', borderRadius: '0 0 24px 24px' }}>
-                <button type="button" className="btn btn-secondary" style={{ flex: 1, height: '48px', borderRadius: '12px', fontSize: '15px' }} onClick={() => setIsModalOpen(false)}>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)} disabled={actionLoading}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1, height: '48px', borderRadius: '12px', fontSize: '15px' }} disabled={actionLoading}>
+                <button type="submit" className="btn btn-primary" disabled={actionLoading}>
+                  <Save size={18} style={{ marginRight: '8px' }} />
                   {actionLoading ? 'Saving...' : (editId ? 'Save Changes' : 'Log Expense')}
                 </button>
               </div>

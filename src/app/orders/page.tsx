@@ -237,7 +237,11 @@ export default function OrdersPage() {
       setActiveDropdown(null);
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -1365,7 +1369,7 @@ export default function OrdersPage() {
                           <Printer size={16} />
                         </button>
 
-                        <div className="action-dropdown-container" style={{ position: 'relative' }}>
+                        <div className="action-dropdown-container" style={{ position: 'relative', zIndex: activeDropdown === order.id ? 100 : 1 }}>
                           <button
                             onClick={() => setActiveDropdown(activeDropdown === order.id ? null : order.id)}
                             className="btn btn-icon"
@@ -1389,7 +1393,7 @@ export default function OrdersPage() {
                                 position: 'absolute', top: '100%', right: 0, marginTop: '4px',
                                 background: 'var(--bg-card)', border: '1px solid var(--border)',
                                 borderRadius: 'var(--radius-md)', padding: '4px',
-                                boxShadow: 'var(--shadow-lg)', zIndex: 50,
+                                boxShadow: 'var(--shadow-lg)', zIndex: 100,
                                 minWidth: '160px', display: 'flex', flexDirection: 'column', gap: '2px'
                               }}
                               onClick={(e) => e.stopPropagation()}

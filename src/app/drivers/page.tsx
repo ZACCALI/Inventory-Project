@@ -484,7 +484,7 @@ export default function DriversPage() {
 
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '800px', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '650px' }}>
             <div className="modal-header">
               <h2 className="modal-title">{editingDriver ? 'Manage Driver' : 'Add New Driver'}</h2>
               <button className="btn btn-icon btn-ghost" onClick={closeModal}><X size={20} /></button>
@@ -504,11 +504,11 @@ export default function DriversPage() {
               
               {activeTab === 'PROFILE' ? (
                 <form id="driverForm" onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <div className="form-grid-2">
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label htmlFor="driver-name" className="form-label">Full Name *</label>
-                      <input id="driver-name" name="name" autoComplete="name" type="text" className="form-input" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                    </div>
+                  <div className="form-group">
+                    <label htmlFor="driver-name" className="form-label">Full Name *</label>
+                    <input id="driver-name" name="name" autoComplete="name" type="text" className="form-input" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                  </div>
+                  <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="driver-phone" className="form-label">Phone Number</label>
                       <input 
@@ -531,16 +531,16 @@ export default function DriversPage() {
                       <label htmlFor="driver-vehicle" className="form-label">Vehicle Info</label>
                       <input id="driver-vehicle" name="vehicleInfo" autoComplete="off" type="text" className="form-input" placeholder="e.g., Motorcycle, Van" value={formData.vehicleInfo} onChange={e => setFormData({...formData, vehicleInfo: e.target.value})} />
                     </div>
-                    {editingDriver && (
-                      <div className="form-group">
-                        <label htmlFor="driver-status" className="form-label">Status</label>
-                        <select id="driver-status" name="status" className="form-select" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                          <option value="active">Active</option>
-                          <option value="inactive">Inactive</option>
-                        </select>
-                      </div>
-                    )}
                   </div>
+                  {editingDriver && (
+                    <div className="form-group">
+                      <label htmlFor="driver-status" className="form-label">Status</label>
+                      <select id="driver-status" name="status" className="form-select" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                  )}
                 </form>
               ) : (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '250px' }}>

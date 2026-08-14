@@ -1180,7 +1180,7 @@ export default function StockInOutPage() {
       {/* Stock In/Out Modal */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '800px' }}>
+          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '650px' }}>
             <div className="modal-header">
               <h2 className="modal-title">
                 {modalType === 'IN' ? 'Receive Stock (In)' : 'Issue Stock (Out)'}
@@ -1192,237 +1192,224 @@ export default function StockInOutPage() {
             
             <form onSubmit={handleSubmit} className="modal-layout-form">
               <div className="modal-body">
-                <div className="form-grid-2" style={{ gap: '16px' }}>
-                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label htmlFor="stock-modal-category" className="form-label">Category Filter</label>
-                    <select 
-                      id="stock-modal-category"
-                      name="modalCategory"
-                      className="form-select"
-                      value={categoryFilter}
-                      onChange={(e) => {
-                        setCategoryFilter(e.target.value);
-                        setIsDropdownOpen(true);
-                        if (dropdownRef.current) {
-                          const input = dropdownRef.current.querySelector('input');
-                          if (input) input.focus();
-                        }
+                
+                <div className="form-group">
+                  <label htmlFor="stock-modal-category" className="form-label">Category Filter</label>
+                  <select 
+                    id="stock-modal-category"
+                    name="modalCategory"
+                    className="form-select"
+                    value={categoryFilter}
+                    onChange={(e) => {
+                      setCategoryFilter(e.target.value);
+                      setIsDropdownOpen(true);
+                      if (dropdownRef.current) {
+                        const input = dropdownRef.current.querySelector('input');
+                        if (input) input.focus();
+                      }
+                    }}
+                  >
+                    <option value="ALL">All Categories</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="stock-modal-product-search" className="form-label">Select Product *</label>
+                  <div ref={dropdownRef} style={{ position: 'relative' }}>
+                    <div 
+                      style={{ 
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+                        padding: '0 12px', background: 'var(--bg-card)',
+                        cursor: 'text'
                       }}
+                      onClick={() => setIsDropdownOpen(true)}
                     >
-                      <option value="ALL">All Categories</option>
-                      {categories.map(c => (
-                        <option key={c.id} value={c.name}>{c.name}</option>
+                      <Search size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                      <input 
+                        id="stock-modal-product-search"
+                        name="modalProductSearch"
+                        aria-label="Search product"
+                        type="text" 
+                        className="form-input" 
+                        style={{ border: 'none', padding: '10px 0', boxShadow: 'none' }}
+                        placeholder="Search product name, SKU, or barcode..."
+                        value={productSearch}
+                        onKeyDown={handleKeyDown}
+                        onChange={e => {
+                          setProductSearch(e.target.value);
+                          setIsDropdownOpen(true);
+                          if (selectedProduct && e.target.value !== selectedProduct.name) {
+                            setSelectedProduct(null);
+                            setFormData({ ...formData, sku: '' });
+                          }
+                        }}
+                        onFocus={() => setIsDropdownOpen(true)}
+                      />
+                      <ChevronDown size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                    </div>
+
+                    {isDropdownOpen && (
+                      <div style={{
+                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                        background: 'var(--bg-card)', border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)',
+                        maxHeight: '220px', overflowY: 'auto', marginTop: '4px'
+                      }}>
+                        {filteredProductList.length === 0 ? (
+                          <div style={{ padding: '12px 16px', color: 'var(--text-tertiary)', fontSize: '13px' }}>
+                            {products.length === 0 ? 'Loading products...' : 'No products found matching your search.'}
+                          </div>
+                        ) : (
+                          filteredProductList.map((product, idx) => (
+                            <div 
+                              key={product.id}
+                              style={{ 
+                                padding: '10px 16px', 
+                                borderBottom: '1px solid var(--border-light)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                background: highlightedIndex === idx ? 'var(--bg-hover)' : 'transparent',
+                                transition: 'background 0.1s ease'
+                              }}
+                              onMouseEnter={() => setHighlightedIndex(idx)}
+                              onClick={() => selectProduct(product)}
+                            >
+                              <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-main)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                                {product.image ? (
+                                  <Image width={400} height={400} src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}  />
+                                ) : (
+                                  <Package size={18} color="var(--text-tertiary)" />
+                                )}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {product.name}
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                                  <span>SKU: {product.sku}</span>
+                                  <span>•</span>
+                                  <span style={{ color: (product.stock || 0) <= 0 ? 'var(--danger)' : 'var(--success-dark)', fontWeight: 600 }}>Stock: {product.stock ?? 0} {product.unit || 'pcs'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {selectedProduct && selectedProduct.uoms && selectedProduct.uoms.length > 0 && (
+                  <div className="form-group">
+                    <label htmlFor="stock-modal-uom" className="form-label">{modalType === 'IN' ? 'Receive By *' : 'Issue By *'}</label>
+                    <select 
+                      id="stock-modal-uom"
+                      name="modalUom"
+                      className="form-select"
+                      value={selectedUomId}
+                      onChange={(e) => setSelectedUomId(e.target.value)}
+                    >
+                      <option value="BASE">{selectedProduct.unit || 'pcs'} (Base Unit)</option>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {selectedProduct.uoms.map((uom: any) => (
+                        <option key={uom.id || uom.name} value={uom.id || uom.name}>
+                          {uom.name} ({uom.multiplier} {selectedProduct.unit || 'pcs'})
+                        </option>
                       ))}
                     </select>
                   </div>
+                )}
 
-                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label htmlFor="stock-modal-product-search" className="form-label">Select Product *</label>
-                    <div ref={dropdownRef} style={{ position: 'relative' }}>
-                      <div 
-                        style={{ 
-                          display: 'flex', alignItems: 'center', gap: '8px',
-                          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-                          padding: '0 12px', background: 'var(--bg-card)',
-                          cursor: 'text'
-                        }}
-                        onClick={() => setIsDropdownOpen(true)}
-                      >
-                        <Search size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
-                        <input 
-                          id="stock-modal-product-search"
-                          name="modalProductSearch"
-                          aria-label="Search product"
-                          type="text" 
-                          className="form-input" 
-                          style={{ border: 'none', padding: '10px 0', boxShadow: 'none' }}
-                          placeholder="Search product name, SKU, or barcode..."
-                          value={productSearch}
-                          onKeyDown={handleKeyDown}
-                          onChange={e => {
-                            setProductSearch(e.target.value);
-                            setIsDropdownOpen(true);
-                            if (selectedProduct && e.target.value !== selectedProduct.name) {
-                              setSelectedProduct(null);
-                              setFormData({ ...formData, sku: '' });
-                            }
-                          }}
-                          onFocus={() => setIsDropdownOpen(true)}
-                        />
-                        <ChevronDown size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
-                      </div>
-
-                      {isDropdownOpen && (
-                        <div style={{
-                          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
-                          background: 'var(--bg-card)', border: '1px solid var(--border)',
-                          borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)',
-                          maxHeight: '220px', overflowY: 'auto', marginTop: '4px'
-                        }}>
-                          {filteredProductList.length === 0 ? (
-                            <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '14px' }}>
-                              No products found in this category
-                            </div>
-                          ) : (
-                            filteredProductList.map((p, index) => (
-                              <div 
-                                key={p.id}
-                                onClick={() => selectProduct(p)}
-                                style={{
-                                  display: 'flex', alignItems: 'center', gap: '12px',
-                                  padding: '10px 16px', cursor: 'pointer',
-                                  background: highlightedIndex === index || selectedProduct?.id === p.id ? 'var(--primary-light)' : 'transparent',
-                                  transition: 'background 0.15s',
-                                }}
-                                onMouseEnter={() => setHighlightedIndex(index)}
-                              >
-                                <div style={{
-                                  width: '36px', height: '36px', borderRadius: 'var(--radius-md)',
-                                  background: 'var(--bg-main)', color: 'var(--text-tertiary)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                                  border: '1px solid var(--border)', overflow: 'hidden'
-                                }}>
-                                  {p.image ? (
-                                    <Image width={400} height={400} src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}  />
-                                  ) : (
-                                    <Package size={18} />
-                                  )}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                                  <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', display: 'flex', gap: '8px', overflow: 'hidden' }}>
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }} title={p.sku}>SKU: {p.sku}</span>
-                                    {p.category && <span style={{ color: 'var(--primary)', flexShrink: 0 }}>• {p.category.name}</span>}
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {selectedProduct && (
-                      <div style={{ marginTop: '12px', padding: '16px', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', gap: '16px', alignItems: 'center' }}>
-                        <div style={{ width: '64px', height: '64px', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                          {selectedProduct.image ? (
-                            <Image width={400} height={400} src={selectedProduct.image} alt={selectedProduct.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}  />
-                          ) : (
-                            <Package size={28} color="var(--text-tertiary)" />
-                          )}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{selectedProduct.name} <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: '12px', wordBreak: 'break-all' }}>({selectedProduct.sku})</span></div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Category: {selectedProduct.category?.name || 'Uncategorized'}</div>
-                          <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
-                            <span style={{ color: 'var(--text-secondary)' }}>Unit: <strong style={{ color: 'var(--text-primary)' }}>{selectedProduct.unit || 'pcs'}</strong></span>
-                            <span style={{ color: 'var(--text-secondary)' }}>Available Stock: <strong style={{ color: (selectedProduct.stock || 0) <= 0 ? 'var(--danger)' : 'var(--success-dark)' }}>{selectedProduct.stock ?? 'N/A'}</strong></span>
-                          </div>
-                        </div>
-                      </div>
+                <div className="form-group">
+                  <label htmlFor="stock-modal-qty" className="form-label">
+                    Quantity * {selectedProduct && selectedUomId !== 'BASE' && (
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      <span style={{ fontWeight: 400, fontSize: '12px', color: 'var(--text-tertiary)' }}>({selectedProduct.uoms?.find((u: any) => (u.id || u.name) === selectedUomId)?.name})</span>
                     )}
-                  </div>
-                  
-                  <div className="form-group">
-                    {selectedProduct && selectedProduct.uoms && selectedProduct.uoms.length > 0 && (
-                      <div style={{ marginBottom: '16px' }}>
-                        <label htmlFor="stock-modal-uom" className="form-label">{modalType === 'IN' ? 'Receive By *' : 'Issue By *'}</label>
-                        <select 
-                          id="stock-modal-uom"
-                          name="modalUom"
-                          className="form-select"
-                          value={selectedUomId}
-                          onChange={(e) => setSelectedUomId(e.target.value)}
-                        >
-                          <option value="BASE">{selectedProduct.unit || 'pcs'} (Base Unit)</option>
-  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {selectedProduct.uoms.map((uom: any) => (
-                            <option key={uom.id || uom.name} value={uom.id || uom.name}>
-                              {uom.name} ({uom.multiplier} {selectedProduct.unit || 'pcs'})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    <label htmlFor="stock-modal-quantity" className="form-label">Quantity * <span style={{ fontWeight: 400, fontSize: '12px', color: 'var(--text-tertiary)' }}>({selectedUomId === 'BASE' ? (selectedProduct?.unit || 'pcs') : (selectedProduct?.uoms?.find((u: { id?: string, name: string }) => (u.id || u.name) === selectedUomId)?.name || '')})</span></label>
-                    <input 
-                      id="stock-modal-quantity"
-                      name="modalQuantity"
-                      type="number" 
-                      required
-                      min="1"
-                      className="form-input" 
-                      value={formData.quantity || ''}
-                      onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
-                      onWheel={(e) => (e.target as HTMLElement).blur()}
-                    />
-                    {selectedProduct && selectedUomId !== 'BASE' && (
-                      <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--success-light)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--success)', color: 'var(--success-dark)', fontSize: '12px', fontWeight: 500 }}>
-  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        Total {modalType === 'IN' ? 'Added to' : 'Subtracted from'} Stocks: <strong>{formData.quantity * (selectedProduct.uoms?.find((u: any) => (u.id || u.name) === selectedUomId)?.multiplier || 1)} {selectedProduct.unit || 'pcs'}</strong>
-                      </div>
-                    )}
-  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {modalType === 'OUT' && selectedProduct && (selectedProduct.stock !== undefined) && (formData.quantity * (selectedUomId === 'BASE' ? 1 : (selectedProduct.uoms?.find((u: any) => (u.id || u.name) === selectedUomId)?.multiplier || 1))) > selectedProduct.stock && (
-                      <p style={{ marginTop: '6px', fontSize: '12px', color: 'var(--danger)', fontWeight: 500 }}><AlertTriangle size={14} style={{ display: 'inline', marginBottom: '-2px', marginRight: '4px' }} /> Warning: Total quantity exceeds available base stock ({selectedProduct.stock} {selectedProduct.unit || 'pcs'} available)</p>
-                    )}
-                  </div>
-                  
-                  {modalType === 'IN' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label htmlFor="stock-modal-expiry" className="form-label">Expiry Date *</label>
-                        <input 
-                          id="stock-modal-expiry"
-                          name="modalExpiry"
-                          type="date" 
-                          required
-                          className="form-input" 
-                          value={formData.expiryDate}
-                          onChange={e => setFormData({...formData, expiryDate: e.target.value})}
-                        />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label htmlFor="stock-modal-batch" className="form-label">Batch / Lot Number</label>
-                        <input 
-                          id="stock-modal-batch"
-                          name="modalBatch"
-                          type="text" 
-                          className="form-input" 
-                          placeholder="e.g. BATCH-2023-A"
-                          value={formData.batchNumber} 
-                          onChange={(e) => setFormData({...formData, batchNumber: e.target.value})} 
-                        />
-                      </div>
+                  </label>
+                  <input 
+                    id="stock-modal-qty"
+                    name="modalQuantity"
+                    type="number" 
+                    required
+                    min="1"
+                    className="form-input" 
+                    value={formData.quantity || ''}
+                    onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
+                    onWheel={(e) => (e.target as HTMLElement).blur()}
+                  />
+                  {selectedProduct && selectedUomId !== 'BASE' && (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--success-light)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--success)', color: 'var(--success-dark)', fontSize: '12px', fontWeight: 500 }}>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      Total {modalType === 'IN' ? 'Added to' : 'Subtracted from'} Stocks: <strong>{formData.quantity * (selectedProduct.uoms?.find((u: any) => (u.id || u.name) === selectedUomId)?.multiplier || 1)} {selectedProduct.unit || 'pcs'}</strong>
                     </div>
                   )}
-
-                  <div className="form-group" style={{ gridColumn: modalType === 'OUT' ? 'auto' : '1 / -1' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <label htmlFor="stock-modal-reason" className="form-label" style={{ marginBottom: 0 }}>Reference *</label>
-                      {isAdmin && (
-                        <button type="button" onClick={() => setManageReasonType(modalType)} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: 'var(--font-xs)', fontWeight: 600, cursor: 'pointer' }}>
-                          Edit Reference
-                        </button>
-                      )}
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {modalType === 'OUT' && selectedProduct && (selectedProduct.stock !== undefined) && (formData.quantity * (selectedUomId === 'BASE' ? 1 : (selectedProduct.uoms?.find((u: any) => (u.id || u.name) === selectedUomId)?.multiplier || 1))) > selectedProduct.stock && (
+                    <p style={{ marginTop: '6px', fontSize: '12px', color: 'var(--danger)', fontWeight: 500 }}><AlertTriangle size={14} style={{ display: 'inline', marginBottom: '-2px', marginRight: '4px' }} /> Warning: Total quantity exceeds available base stock ({selectedProduct.stock} {selectedProduct.unit || 'pcs'} available)</p>
+                  )}
+                </div>
+                
+                {modalType === 'IN' && (
+                  <div className="form-grid-2" style={{ gap: '16px', marginBottom: '16px' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label htmlFor="stock-modal-expiry" className="form-label">Expiry Date *</label>
+                      <input 
+                        id="stock-modal-expiry"
+                        name="modalExpiry"
+                        type="date" 
+                        required
+                        className="form-input" 
+                        value={formData.expiryDate}
+                        onChange={e => setFormData({...formData, expiryDate: e.target.value})}
+                      />
                     </div>
-                    <select 
-                      id="stock-modal-reason"
-                      name="modalReason"
-                      aria-label="Reference"
-                      className="form-select"
-                      required
-                      value={formData.reason}
-                      onChange={e => setFormData({...formData, reason: e.target.value})}
-                    >
-                      {currentReasons.map(r => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label htmlFor="stock-modal-batch" className="form-label">Batch / Lot Number</label>
+                      <input 
+                        id="stock-modal-batch"
+                        name="modalBatch"
+                        type="text" 
+                        className="form-input" 
+                        placeholder="e.g. BATCH-2023-A"
+                        value={formData.batchNumber} 
+                        onChange={(e) => setFormData({...formData, batchNumber: e.target.value})} 
+                      />
+                    </div>
                   </div>
+                )}
+
+                <div className="form-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label htmlFor="stock-modal-reason" className="form-label" style={{ marginBottom: 0 }}>Reference *</label>
+                    {isAdmin && (
+                      <button type="button" onClick={() => setManageReasonType(modalType)} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: 'var(--font-xs)', fontWeight: 600, cursor: 'pointer' }}>
+                        Edit Reference
+                      </button>
+                    )}
+                  </div>
+                  <select 
+                    id="stock-modal-reason"
+                    name="modalReason"
+                    aria-label="Reference"
+                    className="form-select"
+                    required
+                    value={formData.reason}
+                    onChange={e => setFormData({...formData, reason: e.target.value})}
+                  >
+                    {currentReasons.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
                 </div>
               </div>
               
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)} disabled={actionLoading}>
                   Cancel
                 </button>
                 <button 
@@ -1430,6 +1417,7 @@ export default function StockInOutPage() {
                   disabled={actionLoading || !selectedProduct}
                   className={modalType === 'IN' ? 'btn btn-success' : 'btn btn-danger'}
                 >
+                  <Save size={18} style={{ marginRight: '8px' }} />
                   {actionLoading ? 'Processing...' : `Confirm ${modalType === 'IN' ? 'Receive' : 'Issue'}`}
                 </button>
               </div>

@@ -627,82 +627,6 @@ export default function BarcodeScannerPage() {
         @media (max-width: 1023px) {
           .scanner-layout {
             grid-template-columns: 1fr;
-            display: flex;
-            flex-direction: column;
-            height: calc(100vh - 120px);
-          }
-          .scanner-layout > div:first-child {
-            flex: 1;
-            min-height: 0;
-            overflow-y: auto;
-          }
-          
-          .mobile-fab-container {
-            display: block !important;
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 90;
-            width: calc(100% - 48px);
-            max-width: 400px;
-          }
-          .mobile-fab {
-            width: 100%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-full);
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-            cursor: pointer;
-            transition: transform 0.2s;
-          }
-          .mobile-fab:active {
-            transform: translateX(-50%) scale(0.98);
-          }
-
-          .scanner-results-container {
-            position: fixed;
-            top: 100vh;
-            left: 0;
-            right: 0;
-            height: 85vh;
-            background: var(--bg-main);
-            z-index: 100;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 24px 24px 0 0;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
-            padding-bottom: env(safe-area-inset-bottom);
-          }
-          .scanner-results-container.open {
-            transform: translateY(-85vh);
-          }
-          .scanner-results-container > .card {
-            border: none;
-            border-radius: 24px 24px 0 0;
-            box-shadow: none;
-            height: 100%;
-          }
-          .mobile-drawer-close {
-            display: flex !important;
-          }
-          
-          .scanner-drawer-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 95;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-          }
-          .scanner-drawer-overlay.open {
-            opacity: 1;
-            pointer-events: auto;
           }
         }
         
@@ -731,7 +655,6 @@ export default function BarcodeScannerPage() {
           animation: pulse-green 2s infinite;
         }
       `}</style>
-      <div className={`scanner-drawer-overlay ${isMobileDrawerOpen ? 'open' : ''}`} onClick={() => setIsMobileDrawerOpen(false)}></div>
       <div className="scanner-layout">
         
         {/* Left Column: Scanner Interface */}
@@ -921,21 +844,21 @@ export default function BarcodeScannerPage() {
           </div>
         </div>
 
+        {/* Mobile Drawer Overlay */}
+        {isMobileDrawerOpen && (
+          <div className="mobile-drawer-overlay" onClick={() => setIsMobileDrawerOpen(false)} />
+        )}
+
         {/* Right Column: Scan Results */}
-        <div className={`scanner-results-container ${isMobileDrawerOpen ? 'open' : ''}`}>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className={`card scanner-right-panel ${isMobileDrawerOpen ? 'mobile-open' : ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div className="mobile-drag-handle"></div>
           {/* Sticky Header Toolbar */}
           <div className="scanner-drawer-header" style={{ flexShrink: 0, padding: '16px 20px', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <button className="mobile-drawer-close btn btn-icon btn-ghost" onClick={() => setIsMobileDrawerOpen(false)} style={{ display: 'none', background: 'var(--bg-main)' }}>
-                  <X size={20} />
-                </button>
-                <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center' }}>
-                  {auditMode ? 'Audit Mode' : 'Scan Results'}
-                  {auditMode && auditItems.length > 0 && <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-tertiary)', marginLeft: '8px' }}>({auditItems.length})</span>}
-                </h2>
-              </div>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center' }}>
+                {auditMode ? 'Audit Mode' : 'Scan Results'}
+                {auditMode && auditItems.length > 0 && <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-tertiary)', marginLeft: '8px' }}>({auditItems.length})</span>}
+              </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button 
                   onClick={() => {
@@ -969,6 +892,15 @@ export default function BarcodeScannerPage() {
                   </button>
                 )}
 
+                {/* Close Button only visible on Mobile Drawer */}
+                <button 
+                  onClick={() => setIsMobileDrawerOpen(false)} 
+                  className="btn btn-icon btn-ghost mobile-only-close" 
+                  style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}
+                  aria-label="Close Drawer"
+                >
+                  <X size={20} />
+                </button>
               </div>
             </div>
           </div>
@@ -1243,29 +1175,30 @@ export default function BarcodeScannerPage() {
                 </div>
               </div>
             </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Mobile Floating Drawer Button (Hidden via CSS if standard stack is used, but keeping for logic safety) */}
-      <div className="mobile-fab-container" style={{ display: 'none' }}>
+      {/* Mobile Floating Drawer Button (View Cart style) */}
+      <div className="mobile-fab-container">
         <button className="mobile-fab" onClick={() => setIsMobileDrawerOpen(true)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ position: 'relative' }}>
-              <ClipboardList size={24} />
-              {(lastScanned || auditItems.length > 0) && (
+              <ScanBarcode size={24} />
+              {(auditMode ? auditItems.length > 0 : !!lastScanned) && (
                 <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: 'var(--danger)', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '100px', border: '2px solid var(--primary)' }}>
-                  {auditMode ? auditItems.length : (lastScanned ? 1 : 0)}
+                  {auditMode ? auditItems.length : 1}
                 </span>
               )}
             </div>
             <span style={{ fontSize: '16px', fontWeight: 700 }}>
-              {auditMode ? 'View Audit List' : 'View Scan Results'}
+              {auditMode ? `Audit List (${auditItems.length})` : (lastScanned ? 'View Scanned Item' : 'Scan Results')}
             </span>
           </div>
-          <div style={{ fontSize: '14px', fontWeight: 800 }}>
-            Open Drawer
+          <div style={{ fontSize: '14px', fontWeight: 700, opacity: 0.9 }}>
+            {auditMode && auditItems.length > 0
+              ? `${auditItems.reduce((acc, i) => acc + i.scannedQty, 0)} Counted`
+              : (lastScanned ? formatCurrency(lastScanned.price) : 'View')}
           </div>
         </button>
       </div>

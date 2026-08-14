@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
 import { useSession } from 'next-auth/react';
-import { Search, Plus, Phone, MapPin, Edit, Trash2, X,  FileText, ShoppingCart,   ChevronDown, ChevronUp, Users, UserCheck } from 'lucide-react';
+import { Search, Plus, Phone, MapPin, Edit, Trash2, X,  FileText, ShoppingCart,   ChevronDown, ChevronUp, Users, UserCheck, Save } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
 import { formatCurrency, broadcastDataChange } from '@/lib/constants';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -522,7 +522,7 @@ export default function CustomersPage() {
 
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '800px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '650px' }}>
             <div className="modal-header">
               <h2 className="modal-title">
                 {modalMode === 'ADD' ? 'Add New Customer' : 'Manage Customer'}
@@ -546,69 +546,70 @@ export default function CustomersPage() {
                 )}
 
                 {activeTab === 'PROFILE' ? (
-                  <div className="form-grid-2">
+                  <>
                     <div className="form-group">
-                      <label htmlFor="customer-name" className="form-label">Store / Business Name *</label>
-                      <input 
-                        id="customer-name"
-                        name="name"
-                        autoComplete="organization"
-                        type="text" 
-                        required 
-                        disabled={modalMode === 'VIEW'}
-                        className="form-input"
-                        value={currentCustomer.name || ''}
-                        onChange={e => setCurrentCustomer({...currentCustomer, name: e.target.value})}
-                      />
-                    </div>
-                    
-                    <div className="form-group">
-                      <label htmlFor="customer-contact" className="form-label">Contact Person</label>
-                      <input 
-                        id="customer-contact"
-                        name="contactPerson"
-                        autoComplete="name"
-                        type="text" 
-                        disabled={modalMode === 'VIEW'}
-                        className="form-input"
-                        value={currentCustomer.contactPerson || ''}
-                        onChange={e => setCurrentCustomer({...currentCustomer, contactPerson: e.target.value})}
-                      />
-                    </div>
+                  <label htmlFor="customer-name" className="form-label">Store / Business Name *</label>
+                  <input 
+                    id="customer-name"
+                    name="name"
+                    autoComplete="organization"
+                    type="text" 
+                    required 
+                    disabled={modalMode === 'VIEW'}
+                    className="form-input"
+                    value={currentCustomer.name || ''}
+                    onChange={e => setCurrentCustomer({...currentCustomer, name: e.target.value})}
+                  />
+                </div>
+                
+                <div style={{ display: 'none' }}></div>
+                
+                <div className="form-group">
+                  <label htmlFor="customer-contact" className="form-label">Contact Person</label>
+                  <input 
+                    id="customer-contact"
+                    name="contactPerson"
+                    autoComplete="name"
+                    type="text" 
+                    disabled={modalMode === 'VIEW'}
+                    className="form-input"
+                    value={currentCustomer.contactPerson || ''}
+                    onChange={e => setCurrentCustomer({...currentCustomer, contactPerson: e.target.value})}
+                  />
+                </div>
 
-
-                    <div className="form-group">
-                      <label htmlFor="customer-phone" className="form-label">Phone Number</label>
-                      <input 
-                        id="customer-phone"
-                        name="phone"
-                        autoComplete="tel"
-                        type="text" 
-                        maxLength={11}
-                        disabled={modalMode === 'VIEW'}
-                        className="form-input"
-                        value={currentCustomer.phone || ''}
-                        onChange={e => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          setCurrentCustomer({...currentCustomer, phone: val});
-                        }}
-                      />
+                <div className="form-group">
+                  <label htmlFor="customer-phone" className="form-label">Phone Number</label>
+                  <input 
+                    id="customer-phone"
+                    name="phone"
+                    autoComplete="tel"
+                    type="text" 
+                    maxLength={11}
+                    disabled={modalMode === 'VIEW'}
+                    className="form-input"
+                    value={currentCustomer.phone || ''}
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      setCurrentCustomer({...currentCustomer, phone: val});
+                    }}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="customer-address" className="form-label">Physical Address</label>
+                  <textarea 
+                    id="customer-address"
+                    name="address"
+                    autoComplete="street-address"
+                    rows={3}
+                    disabled={modalMode === 'VIEW'}
+                    className="form-input"
+                    value={currentCustomer.address || ''}
+                    onChange={e => setCurrentCustomer({...currentCustomer, address: e.target.value})}
+                  />
                     </div>
-                    
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label htmlFor="customer-address" className="form-label">Physical Address</label>
-                      <textarea 
-                        id="customer-address"
-                        name="address"
-                        autoComplete="street-address"
-                        rows={3}
-                        disabled={modalMode === 'VIEW'}
-                        className="form-input"
-                        value={currentCustomer.address || ''}
-                        onChange={e => setCurrentCustomer({...currentCustomer, address: e.target.value})}
-                      />
-                    </div>
-                  </div>
+                  </>
                 ) : (
                   <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                     {historyLoading ? (
@@ -692,6 +693,7 @@ export default function CustomersPage() {
                         Cancel
                       </button>
                       <button type="submit" className="btn btn-primary" disabled={actionLoading}>
+                        <Save size={18} style={{ marginRight: '8px' }} />
                         {actionLoading ? 'Saving...' : 'Save Customer'}
                       </button>
                     </>
