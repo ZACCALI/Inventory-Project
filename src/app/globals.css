@@ -4497,6 +4497,9 @@ p {
     font-size: 13px;
     font-weight: 500;
   }
+  .table-container table.mobile-stack td[data-label="Actions"] > div {
+    overflow: visible !important;
+  }
   .table-container table.mobile-stack td:first-child {
     flex-direction: row;
     align-items: center;

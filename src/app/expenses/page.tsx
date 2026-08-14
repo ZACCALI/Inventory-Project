@@ -560,7 +560,7 @@ export default function ExpensesPage() {
 
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '440px', borderRadius: '24px', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '800px', borderRadius: '24px', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
             <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{editId ? 'Edit Expense' : 'Log New Expense'}</h2>
               <button type="button" className="btn btn-icon btn-ghost" onClick={() => setIsModalOpen(false)} style={{ background: 'var(--bg-main)' }}>
@@ -570,7 +570,7 @@ export default function ExpensesPage() {
             
             <form onSubmit={handleSubmit} className="modal-layout-form">
               <div className="modal-body" style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-grid-2" style={{ gap: '16px' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label htmlFor="expense-date" className="form-label">Date <span style={{ color: 'var(--danger)' }}>*</span></label>
                     <input 
@@ -642,7 +642,7 @@ export default function ExpensesPage() {
                     />
                   </div>
 
-                  <div className="form-group" style={{ marginBottom: 0 }}>
+                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
                     <label htmlFor="expense-ref" className="form-label">Reference (Optional)</label>
                     <input 
                       id="expense-ref"
