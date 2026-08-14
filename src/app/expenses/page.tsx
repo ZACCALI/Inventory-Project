@@ -491,7 +491,7 @@ export default function ExpensesPage() {
                     <td data-label="Date">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}>
                         <Calendar size={14} />
-                        {new Date(expense.date).toLocaleDateString()}
+                        {new Date(expense.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
                       </div>
                     </td>
                     <td data-label="Category">

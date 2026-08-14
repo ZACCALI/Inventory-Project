@@ -560,7 +560,7 @@ export default function ExpiryTrackingPage() {
                     </td>
                     <td data-label="Category">{item.product.category?.name || '-'}</td>
                     <td data-label="Expiry Date" style={{ fontWeight: 500 }}>
-                      {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : 'N/A'}
+                      {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                     </td>
                     <td data-label="Days Left">
                       <span style={{ 

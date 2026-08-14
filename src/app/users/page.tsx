@@ -382,7 +382,7 @@ export default function UsersPage() {
                         {user.role}
                       </span>
                     </td>
-                    <td data-label="Date Added" style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                    <td data-label="Created" style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
                       {new Date(user.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </td>
                     <td data-label="Actions" style={{ textAlign: 'right' }}>

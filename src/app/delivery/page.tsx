@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import { Truck, MapPin, Calendar, Search, X, Filter, CheckCircle2, Clock, Image as Phone } from 'lucide-react';
+import { Truck, MapPin, Calendar, Search, X, Filter, CheckCircle2, Clock, Phone } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
 import { addSyncTask } from '@/lib/offlineSync';

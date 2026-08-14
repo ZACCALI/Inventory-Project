@@ -401,8 +401,10 @@ export default function HistoryPage() {
                   return (
                     <tr key={log.id}>
                       <td data-label="Date & Time" style={{ color: 'var(--text-secondary)', fontSize: '12px', whiteSpace: 'nowrap' }}>
-                        <div>{dateStr}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{timeStr}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{dateStr}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{timeStr}</div>
+                        </div>
                       </td>
                       <td data-label="User">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500, fontSize: '13px' }}>

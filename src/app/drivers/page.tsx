@@ -573,7 +573,7 @@ export default function DriversPage() {
                           {driverTransactions.map((delivery) => (
                             <tr key={delivery.id} style={{ borderBottom: '1px solid var(--border)', background: '#FFFFFF' }}>
                               <td data-label="Date" style={{ padding: '12px 24px', color: 'var(--text-secondary)' }}>
-                                {new Date(delivery.createdAt).toLocaleDateString()}
+                                {new Date(delivery.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
                               </td>
                               <td data-label="Order No." style={{ padding: '12px 24px', fontWeight: 600, color: 'var(--primary)' }}>
                                 {delivery.order?.orderNumber}

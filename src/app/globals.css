@@ -4434,12 +4434,20 @@ p {
 .stats-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stats-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
-@media (min-width: 640px) and (max-width: 1024px) {
+@media (min-width: 860px) and (max-width: 1024px) {
   .stats-grid-3 {
     grid-template-columns: repeat(3, 1fr) !important;
+    gap: 14px;
   }
   .stats-grid, .stats-grid-4 {
     grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 859px) {
+  .stats-grid, .stats-grid-3, .stats-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 12px;
   }
 }
@@ -4523,7 +4531,14 @@ p {
     overflow: visible !important;
     position: relative !important;
   }
-  .table-container table.mobile-stack td:first-child {
+  /* Primary Entity / Card Header styling ONLY for primary item title columns */
+  .table-container table.mobile-stack td[data-label="Product"],
+  .table-container table.mobile-stack td[data-label="Product Details"],
+  .table-container table.mobile-stack td[data-label="Store / Business Name"],
+  .table-container table.mobile-stack td[data-label="Customer & Address"],
+  .table-container table.mobile-stack td[data-label="Order # & Customer"],
+  .table-container table.mobile-stack td[data-label="Order Ref"],
+  .table-container table.mobile-stack td[data-label="Order Number"] {
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
@@ -4533,10 +4548,22 @@ p {
     width: 100%;
     min-width: 0;
   }
-  .table-container table.mobile-stack td:first-child::before {
+  .table-container table.mobile-stack td[data-label="Product"]::before,
+  .table-container table.mobile-stack td[data-label="Product Details"]::before,
+  .table-container table.mobile-stack td[data-label="Store / Business Name"]::before,
+  .table-container table.mobile-stack td[data-label="Customer & Address"]::before,
+  .table-container table.mobile-stack td[data-label="Order # & Customer"]::before,
+  .table-container table.mobile-stack td[data-label="Order Ref"]::before,
+  .table-container table.mobile-stack td[data-label="Order Number"]::before {
     display: none;
   }
-  .table-container table.mobile-stack td:first-child > div {
+  .table-container table.mobile-stack td[data-label="Product"] > div,
+  .table-container table.mobile-stack td[data-label="Product Details"] > div,
+  .table-container table.mobile-stack td[data-label="Store / Business Name"] > div,
+  .table-container table.mobile-stack td[data-label="Customer & Address"] > div,
+  .table-container table.mobile-stack td[data-label="Order # & Customer"] > div,
+  .table-container table.mobile-stack td[data-label="Order Ref"] > div,
+  .table-container table.mobile-stack td[data-label="Order Number"] > div {
     align-items: flex-start;
     width: 100%;
     min-width: 0;
@@ -4662,9 +4689,7 @@ p {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(15, 23, 42, 0.5);
     z-index: 999;
   }
 
