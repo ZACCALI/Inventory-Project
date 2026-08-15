@@ -472,7 +472,7 @@ export default function ReportsPage() {
           <AlertTriangle size={16} color="#92400e" />
           <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>
             {isOffline 
-              ? `⚠️ You are offline — showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. Charts and downloads may be unavailable.` 
+              ? `You are offline — showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. Charts and downloads may be unavailable.` 
               : `Data may be outdated. Showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. Check your connection.`}
           </span>
         </div>

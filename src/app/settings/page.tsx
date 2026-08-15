@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
 import { useSession} from 'next-auth/react';
-import { Save, Shield, Settings as Building, Lock, User, Info, Printer } from 'lucide-react';
+import { Save, Shield, Settings as Building, Lock, User, Info, Printer, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
 import { db } from '@/lib/db';
 import { addSyncTask } from '@/lib/offlineSync';
@@ -429,7 +429,7 @@ export default function SettingsPage() {
       {/* Offline Banner */}
       {(isOffline || swrError) && (
         <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '20px' }}>⚠️</span>
+          <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>
             {isOffline
               ? 'You are offline — settings shown are from the last sync. Changes (save, profile update, password change) will be blocked until you reconnect.'
@@ -867,12 +867,12 @@ export default function SettingsPage() {
                 <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                   <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>What is QZ Tray?</strong>
                   QZ Tray is a free background app that lets your browser send raw ESC/POS commands directly to your thermal printer — giving you:
-                  <ul style={{ marginTop: '8px', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <li>✅ Zero white lines — perfect print quality</li>
-                    <li>✅ No print dialog — instant silent printing</li>
-                    <li>✅ Automatic paper cut after each receipt</li>
-                    <li>✅ Works on all thermal printers (58mm, 80mm)</li>
-                    <li>✅ No driver paper size configuration needed</li>
+                  <ul style={{ marginTop: '8px', paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={15} color="var(--success)" style={{ flexShrink: 0 }} /> Zero white lines — perfect print quality</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={15} color="var(--success)" style={{ flexShrink: 0 }} /> No print dialog — instant silent printing</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={15} color="var(--success)" style={{ flexShrink: 0 }} /> Automatic paper cut after each receipt</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={15} color="var(--success)" style={{ flexShrink: 0 }} /> Works on all thermal printers (58mm, 80mm)</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle2 size={15} color="var(--success)" style={{ flexShrink: 0 }} /> No driver paper size configuration needed</li>
                   </ul>
                 </div>
 

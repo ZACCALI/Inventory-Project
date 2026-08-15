@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 export default function Error({
   error,
@@ -26,7 +27,9 @@ export default function Error({
       padding: '2rem',
       textAlign: 'center',
     }}>
-      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+        <AlertTriangle size={56} color="#ef4444" />
+      </div>
       <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem', color: '#f87171' }}>
         Something went wrong
       </h1>

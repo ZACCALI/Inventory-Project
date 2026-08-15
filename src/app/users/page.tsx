@@ -255,8 +255,8 @@ export default function UsersPage() {
           <AlertTriangle size={16} color="#92400e" />
           <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>
             {isPageOffline
-              ? `⚠️ You are offline — showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. User changes (create, edit, delete) require an internet connection.`
-              : `⚠️ Could not load recent user data. Showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. Check your connection.`}
+              ? `You are offline — showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. User changes (create, edit, delete) require an internet connection.`
+              : `Could not load recent user data. Showing cached data ${lastUpdated ? `(Last updated: ${new Date(lastUpdated).toLocaleString()})` : ''}. Check your connection.`}
           </span>
         </div>
       )}

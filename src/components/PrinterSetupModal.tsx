@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Printer, Wifi, WifiOff, CheckCircle, XCircle, RefreshCw, X, Settings } from 'lucide-react';
+import { Printer, Wifi, WifiOff, CheckCircle, CheckCircle2, XCircle, RefreshCw, X, Settings } from 'lucide-react';
 import {
   connectQZ,
   isQZConnected,
@@ -203,12 +203,15 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
             <div style={{ marginTop: '8px' }}>
               {trustResult === 'success' ? (
                 <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '6px', padding: '10px 12px', fontSize: '12px', color: '#166534', lineHeight: 1.6 }}>
-                  <strong>✅ Setup file downloaded!</strong><br/>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <CheckCircle2 size={16} color="#16a34a" />
+                    <strong>Setup file downloaded!</strong>
+                  </div>
                   1. Open your <strong>Downloads</strong> folder<br/>
                   2. Double-click <strong>distritrack-qz-setup.bat</strong><br/>
                   3. Click <strong>&quot;Run anyway&quot;</strong> if Windows SmartScreen appears<br/>
                   4. After it finishes, press <strong>Ctrl+R</strong> to refresh this page<br/>
-                  The &quot;Action Required&quot; popup will never appear again! 🎉
+                  The &quot;Action Required&quot; popup will never appear again.
                 </div>
               ) : (
                 <button

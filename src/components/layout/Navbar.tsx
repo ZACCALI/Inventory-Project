@@ -90,7 +90,6 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       const detail = (e as CustomEvent).detail;
       toast.error(detail?.message || 'Your session has expired. Please log in again to sync offline transactions.', {
         duration: 8000,
-        icon: '⚠️',
       });
     };
     window.addEventListener('amroding:session-expired', handleSessionExpired);

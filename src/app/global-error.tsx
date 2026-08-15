@@ -1,5 +1,7 @@
 'use client';
 
+import { AlertTriangle } from 'lucide-react';
+
 export default function GlobalError({
   error,
   reset,
@@ -21,7 +23,9 @@ export default function GlobalError({
           textAlign: 'center',
           padding: '2rem',
         }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚨</div>
+          <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+            <AlertTriangle size={56} color="#ef4444" />
+          </div>
           <h1 style={{ color: '#f87171', marginBottom: '1rem' }}>Critical Application Error</h1>
           <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>Please refresh the page.</p>
           <button onClick={reset} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', padding: '0.75rem 2rem', fontSize: '1rem', cursor: 'pointer' }}>

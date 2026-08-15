@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { ScanBarcode, Camera, CheckCircle2, AlertCircle, Plus, Minus, X, ClipboardList, Save, Search, Loader2, Image as ImageIcon, Trash2, Info } from 'lucide-react';
+import { ScanBarcode, Camera, CheckCircle2, AlertCircle, Plus, Minus, X, ClipboardList, Save, Search, Loader2, Image as ImageIcon, Trash2, Info, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useAlert } from '@/components/AlertModal';
@@ -614,7 +614,10 @@ export default function BarcodeScannerPage() {
 
       {!isOnline && (
         <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>⚠️ Offline Mode — Showing local data. Changes will sync when reconnected.</span>
+          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0 }} />
+            Offline Mode — Showing local data. Changes will sync when reconnected.
+          </span>
         </div>
       )}
 

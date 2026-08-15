@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Package, TrendingUp, AlertTriangle, ClipboardList,
-  Truck, DollarSign, ArrowUpRight, ArrowDownRight, CheckCircle2
+  Truck, DollarSign, ArrowUpRight, ArrowDownRight, CheckCircle2, WifiOff
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import ExpiryAlertWidget from '@/components/ExpiryAlertWidget';
@@ -191,7 +191,9 @@ export default function DashboardPage() {
   if (!data) {
     return (
       <div className="loading-page" style={{ textAlign: 'center', padding: '40px 20px' }}>
-        <p style={{ marginBottom: '12px', color: 'var(--text-muted)' }}>{isOfflineMode ? '📡 You are offline.' : 'Failed to load dashboard data.'}</p>
+        <p style={{ marginBottom: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          {isOfflineMode ? <><WifiOff size={16} /> You are offline.</> : 'Failed to load dashboard data.'}
+        </p>
         <button
           className="btn btn-outline"
           onClick={() => { mutateDash(); mutateSales(); }}
@@ -233,7 +235,10 @@ export default function DashboardPage() {
       {/* Offline Banner */}
       {(isOfflineMode || dashError) && (
         <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500 }}>⚠️ Offline Mode — Showing last cached data</span>
+          <span style={{ fontSize: '14px', color: '#92400e', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0 }} />
+            Offline Mode — Showing last cached data
+          </span>
           <button onClick={() => { mutateDash(); mutateSales(); }} className="btn btn-outline" style={{ fontSize: '12px', padding: '4px 12px' }}>Retry</button>
         </div>
       )}
