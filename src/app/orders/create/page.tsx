@@ -1228,20 +1228,19 @@ export default function CreateOrderPage() {
 
   return (
     <>
-      <div className="pos-layout" style={{ height: 'calc(100vh - 64px)', maxWidth: '100%', width: '100%', overflowX: 'hidden', overflowY: 'hidden', background: 'var(--bg-main)', margin: '0', boxSizing: 'border-box' }}>
+      <div className="page-header mobile-col" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 className="page-title">Walk-in Home Order</h1>
+          <p className="page-subtitle">Process a new wholesale delivery or walk-in pickup</p>
+        </div>
+      </div>
+
+      <div className="pos-layout" style={{ maxWidth: '100%', width: '100%', overflowX: 'hidden', minWidth: 0, boxSizing: 'border-box' }}>
         
         {/* LEFT PANEL: Order Details & Product Grid */}
         <div className="walkin-left-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
           
-          <div style={{ padding: '24px', paddingBottom: '0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
-
-              <div style={{ width: '100%', textAlign: 'left' }}>
-                <h1 className="page-title" style={{ margin: 0 }}>Walk-in Home Order</h1>
-                <p className="page-subtitle" style={{ margin: 0 }}>Process a new wholesale delivery or walk-in pickup.</p>
-              </div>
-            </div>
-
+          <div>
             {/* Order Details Surface Card */}
             <div className="card" style={{ marginBottom: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', minWidth: 0, maxWidth: '100%' }}>
               <div className="card-header" style={{ borderBottom: '1px solid var(--border-light)', padding: '16px 20px' }}>
@@ -1368,69 +1367,96 @@ export default function CreateOrderPage() {
           </div>
 
           {/* Product Selection Area */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '0 24px', minWidth: 0, maxWidth: '100%' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, maxWidth: '100%' }}>
             {/* Search & Categories */}
-            <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, maxWidth: '100%' }}>
-              <div style={{ 
-                flex: 1, 
-                display: 'flex', 
-                alignItems: 'center', 
-                background: 'var(--bg-card)', 
-                border: '1px solid var(--border)', 
-                borderRadius: 'var(--radius-lg)', 
-                padding: '10px 16px', 
-                transition: 'all 0.2s ease',
-                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)',
-                minWidth: 0,
-                maxWidth: '100%'
-              }}>
-                <Search size={20} color="var(--text-tertiary)" style={{ marginRight: '12px', flexShrink: 0 }} />
-                <input 
-                  id="create-order-product-search"
-                  name="productSearch"
-                  aria-label="Search products by name, SKU, or scan barcode"
-                  type="text" 
-                  style={{ 
-                    flex: 1, 
-                    border: 'none', 
-                    background: 'transparent', 
-                    fontSize: '15px', 
-                    color: 'var(--text-primary)', 
-                    outline: 'none',
-                    width: '100%',
-                    minWidth: 0
-                  }} 
-                  placeholder="Search products by name, SKU, or scan barcode..." 
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
-                
-                {/* Integrated Toolbar Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: '12px', borderLeft: '1px solid var(--border)', paddingLeft: '12px', flexShrink: 0 }}>
-                  {isHardwareScannerReady ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 600, fontSize: '13px' }} data-tooltip="USB Scanner Ready">
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--primary)', boxShadow: '0 0 6px var(--primary)' }}></div>
-                      <ScanLine size={20} color="var(--primary)" />
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', color: 'var(--text-tertiary)' }} data-tooltip="USB Scanner Not Detected">
-                      <ScanLine size={20} />
-                    </div>
-                  )}
-
-                  <button 
-                    onClick={startScanner} 
-                    data-tooltip="Use Device Camera"
+            <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0, maxWidth: '100%' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' }}>
+                <div style={{ 
+                  flex: 1, 
+                  minWidth: '220px',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  background: 'var(--bg-card)', 
+                  border: '1px solid var(--border)', 
+                  borderRadius: 'var(--radius-lg)', 
+                  padding: '10px 16px', 
+                  transition: 'all 0.2s ease',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)',
+                  maxWidth: '100%'
+                }}>
+                  <Search size={20} color="var(--text-tertiary)" style={{ marginRight: '12px', flexShrink: 0 }} />
+                  <input 
+                    id="create-order-product-search"
+                    name="productSearch"
+                    aria-label="Search products by name, SKU, or scan barcode"
+                    type="text" 
                     style={{ 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: isScanning ? 'var(--danger-light)' : 'transparent',
-                      color: isScanning ? 'var(--danger)' : 'var(--text-secondary)',
-                      border: 'none', borderRadius: 'var(--radius-md)', padding: '6px', cursor: 'pointer',
-                      transition: 'all 0.2s ease'
+                      flex: 1, 
+                      border: 'none', 
+                      background: 'transparent', 
+                      fontSize: '15px', 
+                      color: 'var(--text-primary)', 
+                      outline: 'none',
+                      width: '100%',
+                      minWidth: 0
+                    }} 
+                    placeholder="Search products by name, SKU, or scan barcode..." 
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                  
+                  {/* Integrated Toolbar Actions */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: '12px', borderLeft: '1px solid var(--border)', paddingLeft: '12px', flexShrink: 0 }}>
+                    {isHardwareScannerReady ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 600, fontSize: '13px' }} data-tooltip="USB Scanner Ready">
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--primary)', boxShadow: '0 0 6px var(--primary)' }}></div>
+                        <ScanLine size={20} color="var(--primary)" />
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', color: 'var(--text-tertiary)' }} data-tooltip="USB Scanner Not Detected">
+                        <ScanLine size={20} />
+                      </div>
+                    )}
+
+                    <button 
+                      onClick={startScanner} 
+                      data-tooltip="Use Device Camera"
+                      style={{ 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: isScanning ? 'var(--danger-light)' : 'transparent',
+                        color: isScanning ? 'var(--danger)' : 'var(--text-secondary)',
+                        border: 'none', borderRadius: 'var(--radius-md)', padding: '6px', cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Camera size={20} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Category Dropdown Filter */}
+                <div style={{ minWidth: '160px', flexShrink: 0 }}>
+                  <select 
+                    id="create-order-category-select"
+                    aria-label="Filter by Category"
+                    className="form-select"
+                    value={categoryFilter}
+                    onChange={e => setCategoryFilter(e.target.value)}
+                    style={{ 
+                      height: '46px',
+                      borderRadius: 'var(--radius-lg)', 
+                      fontSize: '14px', 
+                      fontWeight: 600,
+                      background: 'var(--bg-card)',
+                      borderColor: 'var(--border)',
+                      minWidth: '150px'
                     }}
                   >
-                    <Camera size={20} />
-                  </button>
+                    <option value="All">All Categories</option>
+                    {categories.filter(c => c !== 'All').map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -1466,14 +1492,15 @@ export default function CreateOrderPage() {
                 </div>
               )}
               
-              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%', minWidth: 0, paddingBottom: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%', minWidth: 0, paddingBottom: '4px' }}>
                 {categories.map(cat => (
                   <button 
                     key={cat}
                     onClick={() => setCategoryFilter(cat)}
                     style={{
                       padding: '8px 16px', borderRadius: '100px', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
-                      border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                      border: '1px solid ' + (categoryFilter === cat ? 'var(--primary)' : 'var(--border)'),
+                      cursor: 'pointer', transition: 'all 0.2s',
                       background: categoryFilter === cat ? 'var(--primary)' : 'var(--bg-card)',
                       color: categoryFilter === cat ? 'white' : 'var(--text-secondary)',
                       boxShadow: categoryFilter === cat ? '0 4px 10px rgba(0, 97, 255, 0.3)' : 'var(--shadow-sm)'
@@ -2157,7 +2184,7 @@ export default function CreateOrderPage() {
           }
           .mobile-cart-overlay {
             display: block; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); z-index: 900;
+            background: rgba(0, 0, 0, 0.4); z-index: 900;
           }
           .mobile-fab {
             width: 100%; background: var(--primary); color: #fff; border: none; border-radius: 100px;

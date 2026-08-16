@@ -909,7 +909,7 @@ export default function BarcodeScannerPage() {
           {/* Scrollable Body */}
           <div className="scanner-drawer-body" style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '20px' }}>
           
-          {notFoundCode && (
+          {notFoundCode ? (
             <div style={{ padding: 'var(--space-xl)', textAlign: 'center', background: 'var(--danger-light)', borderRadius: 'var(--radius-md)', marginTop: 'var(--space-lg)' }}>
               <AlertCircle size={48} color="var(--danger)" style={{ margin: '0 auto var(--space-md)' }} />
               <h3 style={{ fontSize: 'var(--font-lg)', fontWeight: 600, color: 'var(--danger-dark)', marginBottom: '8px' }}>Barcode Not Found</h3>
@@ -922,9 +922,7 @@ export default function BarcodeScannerPage() {
                 <Plus size={18} style={{ marginRight: '8px' }} /> Register New Product
               </button>
             </div>
-          )}
-
-          {!notFoundCode && auditMode ? (
+          ) : auditMode ? (
             <div style={{ marginTop: 'var(--space-md)' }}>
               {auditItems.length === 0 ? (
                 <p style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: 'var(--space-xl) 0' }}>Start scanning to count inventory...</p>
@@ -1033,10 +1031,25 @@ export default function BarcodeScannerPage() {
                       </div>
                     );
                   })}
+
+                  {/* If auditItems.length <= 2, render button directly under items */}
+                  {auditItems.length <= 2 && (
+                    <div style={{ marginTop: '16px' }}>
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={saveAudit} 
+                        disabled={actionLoading}
+                        style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px' }}
+                      >
+                        {actionLoading ? <Loader2 size={18} className="spin" /> : <Save size={18} />}
+                        {actionLoading ? 'Saving...' : 'Save & Apply Adjustments'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          ) : !notFoundCode && lastScanned ? (
+          ) : lastScanned ? (
             <div style={{ padding: 'var(--space-md) 0', animation: 'fadeIn var(--transition-base)' }}>
               <div style={{ 
                 background: 'var(--bg-card)', 
@@ -1129,8 +1142,8 @@ export default function BarcodeScannerPage() {
           )}
           </div>{/* end scanner-drawer-body */}
 
-          {/* Sticky Footer — Save & Apply Audit */}
-          {auditMode && auditItems.length > 0 && (
+          {/* Sticky Footer — Save & Apply Audit (When auditItems > 2) */}
+          {auditMode && auditItems.length > 2 && (
             <div className="scanner-drawer-footer" style={{ padding: '16px 20px', borderTop: '1px solid var(--border-light)', background: 'var(--bg-main)', borderBottomLeftRadius: 'var(--radius-lg)', borderBottomRightRadius: 'var(--radius-lg)' }}>
               <button 
                 className="btn btn-primary" 

@@ -714,14 +714,14 @@ export default function StockInOutPage() {
 
         <div className="table-container">
           {loading ? (
-            <table className="table">
+            <table className="table stock-table mobile-stack">
               <thead>
                 <tr>
                   <th style={{ width: '28%' }}>Product</th>
-                  <th style={{ width: '16%', minWidth: '135px' }}>Date &amp; Time</th>
+                  <th style={{ width: '16%' }}>Date &amp; Time</th>
                   <th style={{ width: '11%' }}>Type</th>
                   <th style={{ width: '11%', textAlign: 'right' }}>Quantity</th>
-                  <th style={{ width: '22%', minWidth: '180px' }}>Reference</th>
+                  <th style={{ width: '22%' }}>Reference</th>
                   <th style={{ width: '12%', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
@@ -739,14 +739,14 @@ export default function StockInOutPage() {
               </tbody>
             </table>
           ) : (
-            <table className="table mobile-stack">
+            <table className="table stock-table mobile-stack">
               <thead>
                 <tr>
                   <th style={{ width: '28%' }}>Product</th>
-                  <th style={{ width: '16%', minWidth: '135px' }}>Date &amp; Time</th>
+                  <th style={{ width: '16%' }}>Date &amp; Time</th>
                   <th style={{ width: '11%' }}>Type</th>
                   <th style={{ width: '11%', textAlign: 'right' }}>Quantity</th>
-                  <th style={{ width: '22%', minWidth: '180px' }}>Reference</th>
+                  <th style={{ width: '22%' }}>Reference</th>
                   <th style={{ width: '12%', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
@@ -780,7 +780,7 @@ export default function StockInOutPage() {
                             </div>
                           </div>
                         </td>
-                        <td data-label="Date &amp; Time" style={{ width: '16%', minWidth: '135px' }}>
+                        <td data-label="Date &amp; Time" style={{ width: '16%' }}>
                           <div>
                             <div suppressHydrationWarning style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                               {new Date(log.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -798,7 +798,7 @@ export default function StockInOutPage() {
                         <td data-label="Quantity" style={{ width: '11%', textAlign: 'right', fontWeight: 600, color: log.type === 'IN' ? 'var(--success-dark)' : 'var(--danger-dark)', whiteSpace: 'nowrap' }}>
                           {log.type === 'IN' ? `+${log.quantity}` : `-${log.quantity}`} {matchedProduct?.unit || 'Base'}
                         </td>
-                        <td data-label="Reference" style={{ width: '22%', minWidth: '180px' }}>
+                        <td data-label="Reference" style={{ width: '22%' }}>
                           <div style={{ color: 'var(--text-secondary)', fontSize: '13px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', lineHeight: '1.4' }} title={log.reference || '-'}>
                             {log.reference || '-'}
                           </div>

@@ -537,7 +537,7 @@ export default function ReportsPage() {
           <div className="card-header">
             <h2 className="card-title">Top Selling Products</h2>
           </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {bestsellers.length === 0 ? (
               <p style={{ color: 'var(--text-tertiary)', textAlign: 'center', marginTop: '40px' }}>No sales data yet</p>
             ) : (
@@ -545,9 +545,9 @@ export default function ReportsPage() {
                 const maxQuantity = Math.max(...bestsellers.map(b => b.totalQuantity));
                 const percentage = Math.max(10, (item.totalQuantity / maxQuantity) * 100);
                 return (
-                  <div key={i} style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'center' }}>
+                  <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <div style={{
-                      width: '40px', height: '40px', borderRadius: 'var(--radius-md)',
+                      width: '40px', height: '40px', borderRadius: '8px',
                       background: 'var(--bg-main)', border: '1px solid var(--border)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
                     }}>
@@ -557,13 +557,17 @@ export default function ReportsPage() {
                         <Package size={20} color="var(--text-tertiary)" />
                       )}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-sm)', marginBottom: '4px', gap: '8px' }}>
-                        <span style={{ fontWeight: 600, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.product?.name || 'Unknown'}</span>
-                        <span style={{ color: 'var(--text-secondary)', flexShrink: 0 }}>{item.totalQuantity} sold</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', gap: '8px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', wordBreak: 'break-word', lineHeight: '1.3', minWidth: 0, flex: 1 }}>
+                          {item.product?.name || 'Unknown'}
+                        </span>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '100px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                          {item.totalQuantity} sold
+                        </span>
                       </div>
-                      <div style={{ width: '100%', height: '8px', background: 'var(--bg-main)', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ width: `${percentage}%`, height: '100%', background: 'var(--primary)', borderRadius: '4px' }}></div>
+                      <div style={{ width: '100%', height: '6px', background: 'var(--bg-main)', borderRadius: '3px', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+                        <div style={{ width: `${percentage}%`, height: '100%', background: 'var(--primary)', borderRadius: '3px', transition: 'width 0.3s ease' }}></div>
                       </div>
                     </div>
                   </div>
