@@ -123,52 +123,103 @@ export async function syncNotificationsForUser(
   // ── Collect new notifications ─────────────────────────────────
   const toCreate: NewNotification[] = [];
 
-  // Low Stock alerts
-  for (const product of lowStockProducts) {
-    const key = `low_stock::${product.id}`;
+  // Low Stock alerts (Hybrid Smart Rollup: <=3 itemized, >3 summary)
+  if (lowStockProducts.length > 0 && lowStockProducts.length <= 3) {
+    for (const product of lowStockProducts) {
+      const key = `low_stock::${product.id}`;
+      if (!existingKeys.has(key)) {
+        toCreate.push({
+          userId,
+          type: 'low_stock',
+          title: 'Low Stock Alert',
+          message: `${product.name} (${product.sku}) is running low! Only ${product.stock} left.`,
+          link: `/inventory?search=${product.sku}`,
+          referenceId: product.id
+        });
+      }
+    }
+  } else if (lowStockProducts.length > 3) {
+    const key = 'low_stock::summary';
     if (!existingKeys.has(key)) {
+      const sample = lowStockProducts.slice(0, 2);
+      const sampleNames = sample.map(p => p.name).join(', ');
+      const remainingCount = lowStockProducts.length - sample.length;
       toCreate.push({
         userId,
         type: 'low_stock',
-        title: 'Low Stock Alert',
-        message: `${product.name} (${product.sku}) is running low! Only ${product.stock} left.`,
-        link: `/inventory?search=${product.sku}`,
-        referenceId: product.id
+        title: `⚠️ ${lowStockProducts.length} Products Low on Stock`,
+        message: `${lowStockProducts.length} products (including ${sampleNames}${remainingCount > 0 ? `, and ${remainingCount} others` : ''}) have fallen below minimum threshold.`,
+        link: '/inventory?filter=low_stock',
+        referenceId: 'summary'
       });
     }
   }
 
-  // Expiry alerts
-  for (const batch of expiringBatches) {
-    if (!batch.expiryDate) continue;
-    const daysLeft = Math.ceil((batch.expiryDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
-    const key = `expiry::${batch.id}`;
+  // Expiry alerts (Hybrid Smart Rollup: <=3 itemized, >3 summary)
+  if (expiringBatches.length > 0 && expiringBatches.length <= 3) {
+    for (const batch of expiringBatches) {
+      if (!batch.expiryDate) continue;
+      const daysLeft = Math.ceil((new Date(batch.expiryDate).getTime() - today.getTime()) / (1000 * 3600 * 24));
+      const key = `expiry::${batch.id}`;
+      if (!existingKeys.has(key)) {
+        const isExpired = daysLeft <= 0;
+        toCreate.push({
+          userId,
+          type: 'expiry',
+          title: isExpired ? 'Expired Product Alert' : 'Expiry Warning',
+          message: isExpired
+            ? `Batch ${batch.batchNumber} of ${batch.product.name} expired ${Math.abs(daysLeft)} day(s) ago! ${batch.stock} units remaining.`
+            : `Batch ${batch.batchNumber} of ${batch.product.name} expires in ${daysLeft} day(s).`,
+          link: `/inventory?search=${batch.product.sku}`,
+          referenceId: batch.id
+        });
+      }
+    }
+  } else if (expiringBatches.length > 3) {
+    const key = 'expiry::summary';
     if (!existingKeys.has(key)) {
-      const isExpired = daysLeft <= 0;
+      const sample = expiringBatches.slice(0, 2);
+      const sampleBatches = sample.map(b => b.product?.name || b.batchNumber).join(', ');
+      const remainingCount = expiringBatches.length - sample.length;
       toCreate.push({
         userId,
         type: 'expiry',
-        title: isExpired ? 'Expired Product Alert' : 'Expiry Warning',
-        message: isExpired
-          ? `Batch ${batch.batchNumber} of ${batch.product.name} expired ${Math.abs(daysLeft)} day(s) ago! ${batch.stock} units remaining.`
-          : `Batch ${batch.batchNumber} of ${batch.product.name} expires in ${daysLeft} day(s).`,
-        link: `/inventory?search=${batch.product.sku}`,
-        referenceId: batch.id
+        title: `📅 ${expiringBatches.length} Batches Expiring Soon`,
+        message: `${expiringBatches.length} batches (including ${sampleBatches}${remainingCount > 0 ? `, and ${remainingCount} others` : ''}) are expiring within the next ${settings.expiryWarningDays} days.`,
+        link: '/inventory/expiry',
+        referenceId: 'summary'
       });
     }
   }
 
-  // Pending Delivery alerts
-  for (const delivery of pendingDeliveries) {
-    const key = `delivery::${delivery.id}`;
+  // Pending Delivery alerts (Hybrid Smart Rollup: <=5 itemized, >5 summary)
+  if (pendingDeliveries.length > 0 && pendingDeliveries.length <= 5) {
+    for (const delivery of pendingDeliveries) {
+      const key = `delivery::${delivery.id}`;
+      if (!existingKeys.has(key)) {
+        toCreate.push({
+          userId,
+          type: 'delivery',
+          title: 'Pending Delivery',
+          message: `Order #${delivery.order?.orderNumber || delivery.orderNumber} is pending delivery.`,
+          link: `/orders`,
+          referenceId: delivery.id
+        });
+      }
+    }
+  } else if (pendingDeliveries.length > 5) {
+    const key = 'delivery::summary';
     if (!existingKeys.has(key)) {
+      const sample = pendingDeliveries.slice(0, 2);
+      const sampleOrders = sample.map(d => d.order?.orderNumber || d.orderNumber || d.id).join(', #');
+      const remainingCount = pendingDeliveries.length - sample.length;
       toCreate.push({
         userId,
         type: 'delivery',
-        title: 'Pending Delivery',
-        message: `Order #${delivery.order.orderNumber} is pending delivery.`,
+        title: `🚚 ${pendingDeliveries.length} Orders Pending Delivery`,
+        message: `${pendingDeliveries.length} orders (including #${sampleOrders}${remainingCount > 0 ? `, and ${remainingCount} others` : ''}) are pending dispatch and delivery.`,
         link: `/orders`,
-        referenceId: delivery.id
+        referenceId: 'summary'
       });
     }
   }
@@ -186,9 +237,28 @@ export async function syncNotificationsForUser(
     if (!n.referenceId) return false;
     // Only check types this role cares about
     if (!allowedTypes.includes(n.type)) return false;
-    if (n.type === 'low_stock' && !activeProductIds.has(n.referenceId)) return true;
-    if (n.type === 'expiry' && !activeBatchIds.has(n.referenceId)) return true;
-    if (n.type === 'delivery' && !activeDeliveryIds.has(n.referenceId)) return true;
+
+    if (n.type === 'low_stock') {
+      if (n.referenceId === 'summary') {
+        return lowStockProducts.length <= 3;
+      }
+      return !activeProductIds.has(n.referenceId) || lowStockProducts.length > 3;
+    }
+
+    if (n.type === 'expiry') {
+      if (n.referenceId === 'summary') {
+        return expiringBatches.length <= 3;
+      }
+      return !activeBatchIds.has(n.referenceId) || expiringBatches.length > 3;
+    }
+
+    if (n.type === 'delivery') {
+      if (n.referenceId === 'summary') {
+        return pendingDeliveries.length <= 5;
+      }
+      return !activeDeliveryIds.has(n.referenceId) || pendingDeliveries.length > 5;
+    }
+
     return false;
   });
 
@@ -197,10 +267,9 @@ export async function syncNotificationsForUser(
     .filter(n => n.isDismissed)
     .map(n => n.id);
 
-  const staleActiveReferenceIds = staleNotifications
+  const staleActiveIds = staleNotifications
     .filter(n => !n.isDismissed)
-    .map(n => n.referenceId)
-    .filter((id): id is string => id !== null);
+    .map(n => n.id);
 
   // ── Execute DB writes in a single transaction ─────────────────
   await prisma.$transaction(async (tx) => {
@@ -211,11 +280,10 @@ export async function syncNotificationsForUser(
     }
 
     // Dismiss stale active notifications
-    if (staleActiveReferenceIds.length > 0) {
+    if (staleActiveIds.length > 0) {
       const dismissed = await tx.notification.updateMany({
         where: {
-          userId,
-          referenceId: { in: staleActiveReferenceIds },
+          id: { in: staleActiveIds },
           isDismissed: false
         },
         data: { isDismissed: true }
@@ -232,16 +300,65 @@ export async function syncNotificationsForUser(
     }
   });
 
-  // ── Send push notifications (fire-and-forget) ────────────────
+  // ── Send push notifications (fire-and-forget, throttled to max 1 per type) ──
   if (sendPush && toCreate.length > 0) {
     try {
+      const notificationsByType = new Map<string, NewNotification[]>();
+      for (const notif of toCreate) {
+        const list = notificationsByType.get(notif.type) || [];
+        list.push(notif);
+        notificationsByType.set(notif.type, list);
+      }
+
+      const pushesToSend = Array.from(notificationsByType.values()).map(notifs => {
+        if (notifs.length === 1) {
+          return {
+            title: notifs[0].title,
+            message: notifs[0].message,
+            link: notifs[0].link,
+            type: notifs[0].type
+          };
+        }
+        const first = notifs[0];
+        if (first.type === 'low_stock') {
+          return {
+            title: `⚠️ ${notifs.length} Products Low on Stock`,
+            message: `${notifs.length} products have fallen below minimum threshold.`,
+            link: '/inventory?filter=low_stock',
+            type: first.type
+          };
+        }
+        if (first.type === 'expiry') {
+          return {
+            title: `📅 ${notifs.length} Batches Expiring Soon`,
+            message: `${notifs.length} batches are expiring within the next ${settings.expiryWarningDays} days.`,
+            link: '/inventory/expiry',
+            type: first.type
+          };
+        }
+        if (first.type === 'delivery') {
+          return {
+            title: `🚚 ${notifs.length} Orders Pending Delivery`,
+            message: `${notifs.length} orders are pending dispatch and delivery.`,
+            link: '/orders',
+            type: first.type
+          };
+        }
+        return {
+          title: first.title,
+          message: `${first.message} (+${notifs.length - 1} more)`,
+          link: first.link,
+          type: first.type
+        };
+      });
+
       const pushResults = await Promise.allSettled(
-        toCreate.map(notif =>
+        pushesToSend.map(push =>
           sendPushToUser(userId, {
-            title: notif.title,
-            message: notif.message,
-            link: notif.link,
-            type: notif.type
+            title: push.title,
+            message: push.message,
+            link: push.link,
+            type: push.type
           })
         )
       );
