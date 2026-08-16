@@ -1370,8 +1370,8 @@ export default function CreateOrderPage() {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, maxWidth: '100%' }}>
             {/* Search & Categories */}
             <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0, maxWidth: '100%' }}>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' }}>
-                <div style={{ 
+              <div className="pos-search-filter-row" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' }}>
+                <div className="pos-search-input-wrapper" style={{ 
                   flex: 1, 
                   minWidth: '220px',
                   display: 'flex', 
@@ -1435,7 +1435,7 @@ export default function CreateOrderPage() {
                 </div>
 
                 {/* Category Dropdown Filter */}
-                <div style={{ minWidth: '160px', flexShrink: 0 }}>
+                <div className="pos-category-select-wrapper" style={{ minWidth: '160px', flexShrink: 0 }}>
                   <select 
                     id="create-order-category-select"
                     aria-label="Filter by Category"
@@ -1478,7 +1478,7 @@ export default function CreateOrderPage() {
                   )}
 
                   <button 
-                    onClick={stopScanner}
+                    onClick={stopScanner} 
                     aria-label="Close scanner"
                     style={{
                       position: 'absolute', top: '16px', right: '16px', zIndex: 20,
@@ -1491,25 +1491,6 @@ export default function CreateOrderPage() {
                   </button>
                 </div>
               )}
-              
-              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%', minWidth: 0, paddingBottom: '4px' }}>
-                {categories.map(cat => (
-                  <button 
-                    key={cat}
-                    onClick={() => setCategoryFilter(cat)}
-                    style={{
-                      padding: '8px 16px', borderRadius: '100px', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
-                      border: '1px solid ' + (categoryFilter === cat ? 'var(--primary)' : 'var(--border)'),
-                      cursor: 'pointer', transition: 'all 0.2s',
-                      background: categoryFilter === cat ? 'var(--primary)' : 'var(--bg-card)',
-                      color: categoryFilter === cat ? 'white' : 'var(--text-secondary)',
-                      boxShadow: categoryFilter === cat ? '0 4px 10px rgba(0, 97, 255, 0.3)' : 'var(--shadow-sm)'
-                    }}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Product Grid */}

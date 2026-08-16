@@ -4660,6 +4660,8 @@ p {
   .filter-bar .search-bar { min-width: unset; width: 100%; }
   .filter-bar select, .filter-bar input[type="date"] { width: 100%; }
   .filter-bar .btn { width: 100%; justify-content: center; }
+  .filter-bar .filter-dropdown-container { width: 100%; }
+  .filter-btn { width: 100%; justify-content: center; }
 }
 
 /* 2I. Fix Form Grids */
@@ -4742,7 +4744,13 @@ p {
 .pos-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; max-width: 100%; width: 100%; overflow-x: hidden; box-sizing: border-box; }
 @media (max-width: 1200px) { .pos-layout { grid-template-columns: minmax(0, 1fr) 320px; } }
 @media (max-width: 1023px) { .pos-layout { grid-template-columns: minmax(0, 1fr); margin: 0 !important; } }
-@media (max-width: 767px) { .pos-layout { gap: 12px; margin: 0 !important; } }
+@media (max-width: 767px) { 
+  .pos-layout { gap: 12px; margin: 0 !important; }
+  .pos-search-filter-row { flex-direction: column !important; align-items: stretch !important; }
+  .pos-search-input-wrapper { width: 100% !important; min-width: 0 !important; }
+  .pos-category-select-wrapper { width: 100% !important; min-width: 0 !important; }
+  .pos-category-select-wrapper select, #create-order-category-select { width: 100% !important; min-width: 0 !important; }
+}
 
 /* 2P. Fix Badge & Pill Overflow on Mobile */
 @media (max-width: 767px) {

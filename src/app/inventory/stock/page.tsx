@@ -595,120 +595,118 @@ export default function StockInOutPage() {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className="filter-dropdown-container" style={{ position: 'relative' }}>
-              <button 
-                onClick={() => setIsFilterOpen(!isFilterOpen)} 
-                className="btn btn-outline filter-btn" 
-                style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
-              >
-                <Filter size={18} />
-                Filter { (tableCategoryFilter !== 'ALL' || typeFilter !== 'ALL' || sourceFilter !== 'ALL' || dateFilter !== '' || showVoided) && <span style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%' }}></span> }
-              </button>
+          <div className="filter-dropdown-container" style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setIsFilterOpen(!isFilterOpen)} 
+              className="btn btn-outline filter-btn" 
+              style={{ display: 'flex', gap: '8px', alignItems: 'center' }}
+            >
+              <Filter size={18} />
+              Filter { (tableCategoryFilter !== 'ALL' || typeFilter !== 'ALL' || sourceFilter !== 'ALL' || dateFilter !== '' || showVoided) && <span style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%' }}></span> }
+            </button>
 
-              {isFilterOpen && (
-                <div className="filter-dropdown-menu" style={{
-                  position: 'absolute', top: '100%', right: 0, marginTop: '8px', zIndex: 50,
-                  background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)',
-                  padding: '20px', boxShadow: 'var(--shadow-xl)', width: '320px',
-                  backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)'
-                }}>
-                  <h4 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 600 }}>Filter Movements</h4>
+            {isFilterOpen && (
+              <div className="filter-dropdown-menu" style={{
+                position: 'absolute', top: '100%', right: 0, marginTop: '8px', zIndex: 50,
+                background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)',
+                padding: '20px', boxShadow: 'var(--shadow-xl)', width: '320px',
+                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)'
+              }}>
+                <h4 style={{ marginBottom: '16px', fontSize: '14px', fontWeight: 600 }}>Filter Movements</h4>
 
-                  <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label htmlFor="stock-table-category-filter" className="form-label" style={{ fontSize: '12px' }}>Category</label>
-                    <select 
-                      id="stock-table-category-filter"
-                      name="tableCategoryFilter"
-                      className="form-select"
-                      value={tableCategoryFilter} 
-                      onChange={(e) => setTableCategoryFilter(e.target.value)}
-                    >
-                      <option value="ALL">All Categories ({logs.length})</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.name}>
-                          {cat.name} ({logs.filter(l => l.category === cat.name).length})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label htmlFor="stock-type-filter" className="form-label" style={{ fontSize: '12px' }}>Movement Type</label>
-                    <select 
-                      id="stock-type-filter"
-                      name="typeFilter"
-                      className="form-select"
-                      value={typeFilter} 
-                      onChange={(e) => setTypeFilter(e.target.value as 'ALL' | 'IN' | 'OUT')}
-                    >
-                      <option value="ALL">All Types</option>
-                      <option value="IN">Receive Stock (IN)</option>
-                      <option value="OUT">Issue Stock (OUT)</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label htmlFor="stock-source-filter" className="form-label" style={{ fontSize: '12px' }}>Source / Reason</label>
-                    <select 
-                      id="stock-source-filter"
-                      name="sourceFilter"
-                      className="form-select"
-                      value={sourceFilter} 
-                      onChange={(e) => setSourceFilter(e.target.value as any)}
-                    >
-                      <option value="ALL">All Sources</option>
-                      <option value="STOCK_IN">Stock In / Deliveries ({inReceiveCount})</option>
-                      <option value="STOCK_OUT">Stock Out / Issues ({outIssueCount})</option>
-                      <option value="WALK_IN_HOME">Walk-in Sales ({walkInHomeCount})</option>
-                      <option value="AUDIT">Inventory Audits ({auditCount})</option>
-                      <option value="EXPIRY_TRACKING">Disposals / Expired ({disposalCount})</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label htmlFor="stock-date-filter" className="form-label" style={{ fontSize: '12px' }}>Date</label>
-                    <input 
-                      id="stock-date-filter"
-                      name="dateFilter"
-                      type="date" 
-                      className="form-input" 
-                      value={dateFilter}
-                      onChange={(e) => setDateFilter(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label htmlFor="stock-show-voided" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 500, color: 'var(--text-primary)' }}>
-                      <input 
-                        id="stock-show-voided"
-                        name="showVoided"
-                        type="checkbox" 
-                        checked={showVoided} 
-                        onChange={(e) => setShowVoided(e.target.checked)} 
-                        style={{ accentColor: 'var(--primary)' }}
-                      />
-                      <label htmlFor="stock-show-voided" style={{ cursor: 'pointer' }}>Show Voided Only</label>
-                    </label>
-                  </div>
-
-                  <button 
-                    className="btn btn-outline" 
-                    style={{ width: '100%' }}
-                    onClick={() => {
-                      setTableCategoryFilter('ALL');
-                      setTypeFilter('ALL');
-                      setSourceFilter('ALL');
-                      setDateFilter('');
-                      setShowVoided(false);
-                      setIsFilterOpen(false);
-                    }}
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label htmlFor="stock-table-category-filter" className="form-label" style={{ fontSize: '12px' }}>Category</label>
+                  <select 
+                    id="stock-table-category-filter"
+                    name="tableCategoryFilter"
+                    className="form-select"
+                    value={tableCategoryFilter} 
+                    onChange={(e) => setTableCategoryFilter(e.target.value)}
                   >
-                    Clear Filters
-                  </button>
+                    <option value="ALL">All Categories ({logs.length})</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name} ({logs.filter(l => l.category === cat.name).length})
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
-            </div>
+
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label htmlFor="stock-type-filter" className="form-label" style={{ fontSize: '12px' }}>Movement Type</label>
+                  <select 
+                    id="stock-type-filter"
+                    name="typeFilter"
+                    className="form-select"
+                    value={typeFilter} 
+                    onChange={(e) => setTypeFilter(e.target.value as 'ALL' | 'IN' | 'OUT')}
+                  >
+                    <option value="ALL">All Types</option>
+                    <option value="IN">Receive Stock (IN)</option>
+                    <option value="OUT">Issue Stock (OUT)</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label htmlFor="stock-source-filter" className="form-label" style={{ fontSize: '12px' }}>Source / Reason</label>
+                  <select 
+                    id="stock-source-filter"
+                    name="sourceFilter"
+                    className="form-select"
+                    value={sourceFilter} 
+                    onChange={(e) => setSourceFilter(e.target.value as any)}
+                  >
+                    <option value="ALL">All Sources</option>
+                    <option value="STOCK_IN">Stock In / Deliveries ({inReceiveCount})</option>
+                    <option value="STOCK_OUT">Stock Out / Issues ({outIssueCount})</option>
+                    <option value="WALK_IN_HOME">Walk-in Sales ({walkInHomeCount})</option>
+                    <option value="AUDIT">Inventory Audits ({auditCount})</option>
+                    <option value="EXPIRY_TRACKING">Disposals / Expired ({disposalCount})</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label htmlFor="stock-date-filter" className="form-label" style={{ fontSize: '12px' }}>Date</label>
+                  <input 
+                    id="stock-date-filter"
+                    name="dateFilter"
+                    type="date" 
+                    className="form-input" 
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label htmlFor="stock-show-voided" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 500, color: 'var(--text-primary)' }}>
+                    <input 
+                      id="stock-show-voided"
+                      name="showVoided"
+                      type="checkbox" 
+                      checked={showVoided} 
+                      onChange={(e) => setShowVoided(e.target.checked)} 
+                      style={{ accentColor: 'var(--primary)' }}
+                    />
+                    <label htmlFor="stock-show-voided" style={{ cursor: 'pointer' }}>Show Voided Only</label>
+                  </label>
+                </div>
+
+                <button 
+                  className="btn btn-outline" 
+                  style={{ width: '100%' }}
+                  onClick={() => {
+                    setTableCategoryFilter('ALL');
+                    setTypeFilter('ALL');
+                    setSourceFilter('ALL');
+                    setDateFilter('');
+                    setShowVoided(false);
+                    setIsFilterOpen(false);
+                  }}
+                >
+                  Clear Filters
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -765,7 +763,7 @@ export default function StockInOutPage() {
 
                     return (
                       <tr key={log.id} style={{ opacity: log.isVoided ? 0.6 : 1, textDecoration: log.isVoided ? 'line-through' : 'none' }}>
-                        <td data-label="Product" style={{ width: '28%' }}>
+                        <td data-label="Product">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%', minWidth: 0 }}>
                             <div style={{ width: '40px', height: '40px', borderRadius: '4px', overflow: 'hidden', background: 'var(--bg-hover)', border: '1px solid var(--border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               {displayImage ? (
@@ -780,7 +778,7 @@ export default function StockInOutPage() {
                             </div>
                           </div>
                         </td>
-                        <td data-label="Date &amp; Time" style={{ width: '16%' }}>
+                        <td data-label="Date &amp; Time">
                           <div>
                             <div suppressHydrationWarning style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                               {new Date(log.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -790,15 +788,15 @@ export default function StockInOutPage() {
                             </div>
                           </div>
                         </td>
-                        <td data-label="Type" style={{ width: '11%' }}>
+                        <td data-label="Type">
                           <span className={`badge ${log.type === 'IN' ? 'badge-success' : 'badge-danger'}`} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
                             {log.type === 'IN' ? 'Stock In' : 'Stock Out'}
                           </span>
                         </td>
-                        <td data-label="Quantity" style={{ width: '11%', textAlign: 'right', fontWeight: 600, color: log.type === 'IN' ? 'var(--success-dark)' : 'var(--danger-dark)', whiteSpace: 'nowrap' }}>
+                        <td data-label="Quantity" style={{ textAlign: 'right', fontWeight: 600, color: log.type === 'IN' ? 'var(--success-dark)' : 'var(--danger-dark)', whiteSpace: 'nowrap' }}>
                           {log.type === 'IN' ? `+${log.quantity}` : `-${log.quantity}`} {matchedProduct?.unit || 'Base'}
                         </td>
-                        <td data-label="Reference" style={{ width: '22%' }}>
+                        <td data-label="Reference">
                           <div style={{ color: 'var(--text-secondary)', fontSize: '13px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', lineHeight: '1.4' }} title={log.reference || '-'}>
                             {log.reference || '-'}
                           </div>
@@ -808,7 +806,7 @@ export default function StockInOutPage() {
                             </span>
                           )}
                         </td>
-                        <td data-label="Actions" style={{ width: '12%', textAlign: 'right' }}>
+                        <td data-label="Actions" style={{ textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                             {/* Edit Button */}
                             {isAdmin && !log.isVoided && (

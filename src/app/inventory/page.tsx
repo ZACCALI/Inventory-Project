@@ -749,7 +749,7 @@ export default function InventoryPage() {
                             onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
                             onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                           >
-                            <Edit size={18} />
+                            <Edit size={16} />
                           </button>
                         )}
                         
@@ -774,7 +774,7 @@ export default function InventoryPage() {
                                 onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--success)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--success)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--success)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                               >
-                                <RefreshCw size={18} />
+                                <RefreshCw size={16} />
                               </button>
                             );
                           } else if (isOnline && !swrProducts) {
@@ -800,7 +800,7 @@ export default function InventoryPage() {
                                 onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--warning)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--warning)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--warning)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                               >
-                                <Archive size={18} />
+                                <Archive size={16} />
                               </button>
                             );
                           } else {
@@ -822,7 +822,7 @@ export default function InventoryPage() {
                                 onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--danger)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                               >
-                                <Trash2 size={18} />
+                                <Trash2 size={16} />
                               </button>
                             );
                           }
