@@ -50,19 +50,16 @@ export default function CreateOrderPage() {
   const { data: swrProducts, mutate: mutateProducts } = useSWR('/api/products?limit=1000', fetcher, {
     revalidateOnFocus: false,
     dedupeInterval: 10000,
-    refreshInterval: 15000,
     keepPreviousData: true,
   });
   const { data: swrCustomers, mutate: mutateCustomers } = useSWR('/api/customers?limit=1000', fetcher, {
     revalidateOnFocus: false,
     dedupeInterval: 10000,
-    refreshInterval: 15000,
     keepPreviousData: true,
   });
   const { data: swrDrivers, mutate: mutateDrivers } = useSWR('/api/drivers?limit=1000', fetcher, {
     revalidateOnFocus: false,
     dedupeInterval: 10000,
-    refreshInterval: 15000,
     keepPreviousData: true,
   });
   const { data: swrSettings } = useSWR('/api/settings', fetcher, {
@@ -70,6 +67,16 @@ export default function CreateOrderPage() {
     dedupeInterval: 10000,
     keepPreviousData: true,
   });
+
+  // Track previous SWR data to avoid redundant IndexedDB writes
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const prevSyncedProductsRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const prevSyncedCustomersRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const prevSyncedDriversRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const prevSyncedSettingsRef = useRef<any>(null);
 
   // State
   const [products, setProducts] = useState<Product[]>(() => {
@@ -544,7 +551,8 @@ export default function CreateOrderPage() {
         }
 
         // Persist fresh server data into Dexie IndexedDB cache in background without blocking UI
-        if (Array.isArray(swrProducts) && swrProducts.length > 0) {
+        if (Array.isArray(swrProducts) && swrProducts.length > 0 && swrProducts !== prevSyncedProductsRef.current) {
+          prevSyncedProductsRef.current = swrProducts;
           const now = Date.now();
           db.products.bulkPut(
             swrProducts.map((p: any) => ({
@@ -563,7 +571,8 @@ export default function CreateOrderPage() {
           ).catch(() => {});
         }
 
-        if (Array.isArray(swrCustomers) && swrCustomers.length > 0) {
+        if (Array.isArray(swrCustomers) && swrCustomers.length > 0 && swrCustomers !== prevSyncedCustomersRef.current) {
+          prevSyncedCustomersRef.current = swrCustomers;
           const now = Date.now();
           db.customers.bulkPut(
             swrCustomers.map((c: any) => ({
@@ -577,7 +586,8 @@ export default function CreateOrderPage() {
           ).catch(() => {});
         }
 
-        if (Array.isArray(swrDrivers) && swrDrivers.length > 0) {
+        if (Array.isArray(swrDrivers) && swrDrivers.length > 0 && swrDrivers !== prevSyncedDriversRef.current) {
+          prevSyncedDriversRef.current = swrDrivers;
           const now = Date.now();
           db.drivers.bulkPut(
             swrDrivers.map((d: any) => ({
@@ -591,7 +601,8 @@ export default function CreateOrderPage() {
           ).catch(() => {});
         }
 
-        if (swrSettings && !swrSettings.error) {
+        if (swrSettings && !swrSettings.error && swrSettings !== prevSyncedSettingsRef.current) {
+          prevSyncedSettingsRef.current = swrSettings;
           db.settings.put({
             key: 'current',
             data: JSON.stringify(swrSettings),

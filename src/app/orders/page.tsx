@@ -6,8 +6,6 @@ import { useSession } from 'next-auth/react';
 import { Search, Filter,  Download, Edit, Eye, X, Save, Trash2, Archive, RefreshCw, DollarSign, ShoppingCart, User, Unlock, Lock,  ShoppingBag, Home, Truck, Store, Printer,  Receipt, MoreVertical, Package, Calendar, AlertCircle, AlertTriangle, Phone, Mail,    Star, Loader2 } from 'lucide-react';
 import { APP_NAME, formatCurrency, broadcastDataChange } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { useDebounce } from '@/hooks/useDebounce';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db } from '@/lib/db';
@@ -864,7 +862,11 @@ export default function OrdersPage() {
     }
   };
 
-  const handleGenerateInvoice = (order: Order) => {
+  const handleGenerateInvoice = async (order: Order) => {
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
     const doc = new jsPDF();
     const formatPDFCurrency = (amount: number) => `PHP ${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 

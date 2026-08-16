@@ -39,7 +39,7 @@
   /* Text Colors */
   --text-primary: #111827; /* Darker text for readability */
   --text-secondary: #4B5563; /* Medium gray */
-  --text-tertiary: #9CA3AF; /* Light gray */
+  --text-tertiary: #6B7280; /* Light gray (WCAG AA compliant) */
   --text-white: #FFFFFF;
   --text-link: #2563EB;
 
