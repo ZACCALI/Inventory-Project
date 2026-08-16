@@ -43,24 +43,40 @@ function loadQzScript(): Promise<QZ> {
       return;
     }
 
-    const script = document.createElement('script');
-    // Load QZ Tray v2.2.6 from jsDelivr CDN
-    script.src = 'https://cdn.jsdelivr.net/npm/qz-tray@2.2.6/qz-tray.min.js';
-    script.async = true;
-    script.onload = () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const qz = (window as any).qz;
-      if (qz) {
-        resolve(qz);
-      } else {
-        reject(new Error('QZ Tray script loaded but qz global not found'));
-      }
+    const loadFromUrl = (url: string, fallbackUrl?: string) => {
+      const script = document.createElement('script');
+      script.src = url;
+      script.async = true;
+      script.onload = () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const qz = (window as any).qz;
+        if (qz) {
+          resolve(qz);
+        } else {
+          if (fallbackUrl) {
+            script.remove();
+            console.warn(`QZ Tray script loaded from ${url} but qz global not found, falling back to ${fallbackUrl}`);
+            loadFromUrl(fallbackUrl);
+          } else {
+            loadPromise = null;
+            reject(new Error('QZ Tray script loaded but qz global not found'));
+          }
+        }
+      };
+      script.onerror = () => {
+        script.remove();
+        if (fallbackUrl) {
+          console.warn(`Failed to load QZ Tray from ${url}, falling back to ${fallbackUrl}`);
+          loadFromUrl(fallbackUrl);
+        } else {
+          loadPromise = null;
+          reject(new Error('Failed to load QZ Tray script'));
+        }
+      };
+      document.head.appendChild(script);
     };
-    script.onerror = () => {
-      loadPromise = null;
-      reject(new Error('Failed to load QZ Tray script'));
-    };
-    document.head.appendChild(script);
+
+    loadFromUrl('/vendor/qz-tray.min.js', 'https://cdn.jsdelivr.net/npm/qz-tray@2.2.6/qz-tray.min.js');
   });
 
   return loadPromise;

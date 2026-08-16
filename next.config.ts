@@ -29,6 +29,7 @@ const withSerwist = withSerwistInit({
     { url: "/reports", revision },
     { url: "/users", revision },
     { url: "/settings", revision },
+    { url: "/vendor/qz-tray.min.js", revision },
   ],
 });
 

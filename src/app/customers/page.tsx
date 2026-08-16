@@ -265,28 +265,49 @@ export default function CustomersPage() {
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       let networkFailed = false;
 
+      const url = modalMode === 'ADD' ? '/api/customers' : `/api/customers/${currentCustomer.id}`;
+      const method = modalMode === 'ADD' ? 'POST' : 'PUT';
+
       if (!isOffline) {
-        const payload = { ...currentCustomer, id: currentCustomer.id || `OPT-${Date.now()}` };
-        
-        if (modalMode === 'ADD') {
-          setCustomers(prev => [{...payload, _count: {orders: 0}} as unknown as Customer, ...prev]);
-        } else {
-          setCustomers(prev => prev.map(c => c.id === payload.id ? {...c, ...payload} as unknown as Customer : c));
+        try {
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentCustomer)
+          });
+
+          if (res.ok) {
+            const savedData = await res.json().catch(() => null);
+            const payload = (savedData || { ...currentCustomer, id: currentCustomer.id || `OPT-${Date.now()}` }) as unknown as Customer;
+            
+            if (modalMode === 'ADD') {
+              setCustomers(prev => [{ ...payload, _count: { orders: 0 } } as unknown as Customer, ...prev]);
+            } else {
+              setCustomers(prev => prev.map(c => c.id === payload.id ? { ...c, ...payload } as unknown as Customer : c));
+            }
+
+            try {
+              await db.customers.put({
+                id: payload.id,
+                name: payload.name || '',
+                email: payload.email || null,
+                phone: payload.phone || null,
+                address: payload.address || null,
+                lastSynced: Date.now()
+              });
+            } catch (dexieErr) {
+              console.error('Failed to update customer cache online', dexieErr);
+            }
+
+            setIsModalOpen(false);
+            return;
+          } else {
+            networkFailed = true;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
         }
-        setIsModalOpen(false);
-        setActionLoading(false);
-
-        const url = modalMode === 'ADD' ? '/api/customers' : `/api/customers/${currentCustomer.id}`;
-        const method = modalMode === 'ADD' ? 'POST' : 'PUT';
-        fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(currentCustomer)
-        }).catch(err => {
-          console.warn('Network error detected, background save failed', err);
-        });
-
-        return;
       }
 
       if (isOffline || networkFailed) {
@@ -316,7 +337,6 @@ export default function CustomersPage() {
         } else {
           setCustomers(prev => prev.map(c => c.id === payload.id ? {...c, ...payload} as unknown as Customer : c));
         }
-        setActionLoading(false);
         return;
       }
     } catch (error) {

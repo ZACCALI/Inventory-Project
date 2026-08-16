@@ -273,29 +273,50 @@ export default function ExpensesPage() {
       const method = editId ? 'PUT' : 'POST';
 
       if (!isOffline) {
-        const payload = { 
-          ...formData, 
-          amount: Number(formData.amount),
-          id: editId || `OPT-${Date.now()}` 
-        };
-        
-        setIsModalOpen(false);
-        if (editId) {
-          setExpenses(prev => prev.map(e => e.id === payload.id ? {...e, ...payload, date: payload.date || new Date().toISOString()} as unknown as Expense : e));
-        } else {
-          setExpenses(prev => [{...payload, date: payload.date || new Date().toISOString(), createdAt: new Date().toISOString()} as unknown as Expense, ...prev]);
+        try {
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+
+          if (res.ok) {
+            const savedData = await res.json().catch(() => null);
+            const payload = (savedData || { 
+              ...formData, 
+              amount: Number(formData.amount),
+              id: editId || `OPT-${Date.now()}` 
+            }) as unknown as Expense;
+            
+            setIsModalOpen(false);
+            if (editId) {
+              setExpenses(prev => prev.map(e => e.id === payload.id ? { ...e, ...payload, date: payload.date || new Date().toISOString() } as unknown as Expense : e));
+            } else {
+              setExpenses(prev => [{ ...payload, date: payload.date || new Date().toISOString(), createdAt: new Date().toISOString() } as unknown as Expense, ...prev]);
+            }
+
+            try {
+              await db.expenses.put({
+                id: payload.id,
+                amount: payload.amount,
+                category: payload.category,
+                description: payload.description,
+                reference: payload.reference || null,
+                date: payload.date || new Date().toISOString(),
+                lastSynced: Date.now()
+              });
+            } catch (dexieErr) {
+              console.error('Failed to update expense cache online', dexieErr);
+            }
+
+            return;
+          } else {
+            networkFailed = true;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
         }
-        setActionLoading(false);
-
-        fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        }).catch(err => {
-          console.warn('Network error detected, background save failed', err);
-        });
-
-        return;
       }
 
       if (isOffline || networkFailed) {
@@ -308,13 +329,26 @@ export default function ExpensesPage() {
         await addSyncTask('expense', action, payload);
         showToast('offline', 'Action queued offline — will sync when connected');
         
+        try {
+          await db.expenses.put({
+            id: payload.id,
+            amount: payload.amount,
+            category: payload.category,
+            description: payload.description,
+            reference: payload.reference || null,
+            date: payload.date || new Date().toISOString(),
+            lastSynced: Date.now()
+          });
+        } catch (dexieErr) {
+          console.error('Failed to update expense cache offline', dexieErr);
+        }
+
         setIsModalOpen(false);
         if (editId) {
           setExpenses(prev => prev.map(e => e.id === payload.id ? {...e, ...payload, date: payload.date || new Date().toISOString()} as unknown as Expense : e));
         } else {
           setExpenses(prev => [{...payload, date: payload.date || new Date().toISOString(), createdAt: new Date().toISOString()} as unknown as Expense, ...prev]);
         }
-        setActionLoading(false);
         return;
       }
     } catch (error) {

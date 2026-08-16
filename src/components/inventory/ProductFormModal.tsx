@@ -7,6 +7,7 @@ import { useAlert } from '@/components/AlertModal';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { addSyncTask } from '@/lib/offlineSync';
 import { broadcastDataChange } from '@/lib/constants';
+import { db } from '@/lib/db';
 
 export interface ProductUom {
   id?: string;
@@ -273,44 +274,100 @@ export function ProductFormModal({
       };
 
       if (!isOffline) {
-        // Optimistic UI Update
-        const payload = {
-          ...productPayload,
-          id: editingProduct ? editingProduct.id : `OPT-${Date.now()}`,
-          category: formData.categoryId ? categories.find(c => c.id === formData.categoryId) || null : null
-        } as unknown as Product;
+        try {
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productPayload),
+          });
 
-        onSaved(payload, !!editingProduct);
-        onClose();
-        setIsSaving(false);
-        broadcastDataChange('product');
+          if (res.ok) {
+            const savedData = await res.json().catch(() => null);
+            const categoryObj = formData.categoryId ? categories.find(c => c.id === formData.categoryId) || null : null;
+            const payload = (savedData || {
+              ...productPayload,
+              id: editingProduct ? editingProduct.id : `OPT-${Date.now()}`,
+              category: categoryObj
+            }) as unknown as Product;
 
-        // Background sync
-        fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(productPayload),
-        }).catch(err => {
-          console.warn('Network error detected, background save failed', err);
-        });
+            try {
+              await db.products.put({
+                id: payload.id,
+                name: payload.name,
+                sku: payload.sku,
+                barcode: payload.barcode || null,
+                price: Number(payload.price) || 0,
+                costPrice: Number(payload.costPrice) || 0,
+                stock: Number(payload.stock) || 0,
+                image: payload.image || null,
+                categoryName: categoryObj?.name || null,
+                uoms: payload.uoms?.map(u => ({
+                  id: u.id,
+                  name: u.name,
+                  barcode: u.barcode || null,
+                  multiplier: Number(u.multiplier) || 1,
+                  price: Number(u.price) || 0,
+                  isBase: u.isBase
+                })),
+                lastSynced: Date.now()
+              });
+            } catch (dexieErr) {
+              console.warn('Failed to update Dexie product cache', dexieErr);
+            }
 
-        return;
+            onSaved(payload, !!editingProduct);
+            broadcastDataChange('product');
+            onClose();
+            return;
+          } else {
+            networkFailed = true;
+          }
+        } catch (fetchErr) {
+          console.warn('Network error detected, falling back to offline mode', fetchErr);
+          networkFailed = true;
+        }
       }
 
       if (isOffline || networkFailed) {
         const action = editingProduct ? 'UPDATE' : 'CREATE';
+        const categoryObj = formData.categoryId ? categories.find(c => c.id === formData.categoryId) || null : null;
         const payload = {
           ...productPayload,
           id: editingProduct ? editingProduct.id : `OFF-${Date.now()}`,
-          category: formData.categoryId ? categories.find(c => c.id === formData.categoryId) || null : null
+          category: categoryObj
         } as unknown as Product;
 
         await addSyncTask('product', action, payload);
         showToast('offline', 'Action queued offline — will sync when connected');
 
+        try {
+          await db.products.put({
+            id: payload.id,
+            name: payload.name,
+            sku: payload.sku,
+            barcode: payload.barcode || null,
+            price: Number(payload.price) || 0,
+            costPrice: Number(payload.costPrice) || 0,
+            stock: Number(payload.stock) || 0,
+            image: payload.image || null,
+            categoryName: categoryObj?.name || null,
+            uoms: payload.uoms?.map(u => ({
+              id: u.id,
+              name: u.name,
+              barcode: u.barcode || null,
+              multiplier: Number(u.multiplier) || 1,
+              price: Number(u.price) || 0,
+              isBase: u.isBase
+            })),
+            lastSynced: Date.now()
+          });
+        } catch (dexieErr) {
+          console.warn('Failed to update Dexie product cache offline', dexieErr);
+        }
+
         onSaved(payload, !!editingProduct);
+        broadcastDataChange('product');
         onClose();
-        setIsSaving(false);
         return;
       }
     } catch (error) {

@@ -58,8 +58,10 @@ export async function POST(request: NextRequest) {
     const { user, error } = await requirePermission(request, 'inventory');
     if (error) return error;
 
-    // Rate limit: 30 stock movements per user per minute
-    const { allowed } = rateLimit(`stock:${user.id}`, 30, 60 * 1000);
+    // Rate limit: 30 stock movements per user per minute (100 for offline sync burst)
+    const isOfflineHeader = request.headers.get('x-offline-sync') === '1' || request.headers.get('x-offline-sync') === 'true';
+    const rateLimitMax = isOfflineHeader ? 100 : 30;
+    const { allowed } = rateLimit(`stock:${user.id}`, rateLimitMax, 60 * 1000);
     if (!allowed) {
       return NextResponse.json({ error: 'Too many requests. Please wait a moment before trying again.' }, { status: 429 });
     }

@@ -935,7 +935,36 @@ export default function CreateOrderPage() {
             } : undefined
           });
 
-          // Optimistically update stock locally
+          // Optimistically update stock and order locally
+          try {
+            const resolvedCustomerName = manualCustomerName.trim() || (customerIdToUse ? customers.find(c => c.id === customerIdToUse)?.name : null) || fallbackCustomerName || 'BAIE';
+            await db.orders.put({
+              id: orderResult.id,
+              orderNumber: orderResult.orderNumber,
+              customerId: customerIdToUse || null,
+              customerName: resolvedCustomerName,
+              totalAmount: finalTotal,
+              discount: discountAmount,
+              status: orderStatus || 'completed',
+              paymentStatus: paymentStatus || 'unpaid',
+              orderType: payload.orderType || 'wholesale',
+              isDelivery: fulfillmentMode === 'delivery',
+              notes: payload.notes || null,
+              createdAt: Date.now(),
+              lastSynced: Date.now(),
+              items: validItems.map(i => ({
+                productId: i.product.id,
+                productName: i.product.name,
+                quantity: Number(i.qty),
+                price: i.cartPrice,
+                uomName: i.uomName || null,
+                multiplier: i.multiplier || 1,
+              }))
+            });
+          } catch (dexieErr) {
+            console.error('Failed to put online order in Dexie', dexieErr);
+          }
+
           Promise.all(validItems.map(async i => {
             const qtyToDeduct = (typeof i.qty === 'number' ? i.qty : 0) * (i.multiplier || 1);
             await db.products.where('id').equals(i.product.id).modify(p => { p.stock = Math.max(0, (p.stock || 0) - qtyToDeduct); });
@@ -1012,6 +1041,34 @@ export default function CreateOrderPage() {
           phone: finalPhone || selectedObj?.phone || '',
           address: finalAddress || selectedObj?.address || '',
         };
+
+        try {
+          await db.orders.put({
+            id: offlineOrder.id,
+            orderNumber: offlineOrder.orderNumber,
+            customerId: customerIdToUse || null,
+            customerName: resolvedName,
+            totalAmount: finalTotal,
+            discount: discountAmount,
+            status: orderStatus || 'completed',
+            paymentStatus: paymentStatus || 'unpaid',
+            orderType: payload.orderType || 'wholesale',
+            isDelivery: fulfillmentMode === 'delivery',
+            notes: payload.notes || null,
+            createdAt: Date.now(),
+            lastSynced: Date.now(),
+            items: validItems.map(i => ({
+              productId: i.product.id,
+              productName: i.product.name,
+              quantity: Number(i.qty),
+              price: i.cartPrice,
+              uomName: i.uomName || null,
+              multiplier: i.multiplier || 1,
+            }))
+          });
+        } catch (dexieErr) {
+          console.error('Failed to put offline order in Dexie', dexieErr);
+        }
 
         setLastOrder({
           ...offlineOrder,

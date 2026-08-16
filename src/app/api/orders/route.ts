@@ -77,8 +77,10 @@ export async function POST(request: NextRequest) {
     const { user, error } = await requirePermission(request, 'orders');
     if (error) return error;
 
-    // Rate limit: 15 order creations per user per minute
-    const { allowed } = rateLimit(`orders:${user.id}`, 15, 60 * 1000);
+    // Rate limit: 15 order creations per user per minute (100 for offline sync burst)
+    const isOfflineHeader = request.headers.get('x-offline-sync') === '1' || request.headers.get('x-offline-sync') === 'true';
+    const rateLimitMax = isOfflineHeader ? 100 : 15;
+    const { allowed } = rateLimit(`orders:${user.id}`, rateLimitMax, 60 * 1000);
     if (!allowed) {
       return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 });
     }
