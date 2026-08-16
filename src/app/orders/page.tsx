@@ -691,7 +691,7 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        <div className="table-container" style={{ overflow: activeDropdown ? 'visible' : 'auto', minHeight: activeDropdown ? '250px' : 'auto' }}>
+        <div className="table-container">
           <table className="table mobile-stack">
             <thead>
               <tr>

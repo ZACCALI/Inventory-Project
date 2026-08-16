@@ -450,11 +450,15 @@ export default function BarcodeScannerPage() {
           );
           if (found) {
             setLastScanned({ ...(found as unknown as ScannedProduct), status: 'success' });
-            setIsMobileDrawerOpen(true);
+            if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+              setIsMobileDrawerOpen(true);
+            }
           } else {
             setLastScanned(null);
             setNotFoundCode(code);
-            setIsMobileDrawerOpen(true);
+            if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+              setIsMobileDrawerOpen(true);
+            }
           }
         } catch (cacheErr) {
           console.warn('Offline cache lookup failed', cacheErr);
@@ -470,7 +474,9 @@ export default function BarcodeScannerPage() {
         if (product.found === false) {
           setLastScanned(null);
           setNotFoundCode(code);
-          setIsMobileDrawerOpen(true);
+          if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+            setIsMobileDrawerOpen(true);
+          }
           return;
         }
 
@@ -510,7 +516,9 @@ export default function BarcodeScannerPage() {
               return [{ ...product, status: 'success', scannedQty: newQty, physicalCounts: newPhysical }, ...prev];
             }
           });
-          setIsMobileDrawerOpen(true);
+          if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+            setIsMobileDrawerOpen(true);
+          }
         } else {
             setLastScanned({
               id: product.id,
@@ -524,12 +532,16 @@ export default function BarcodeScannerPage() {
               scannedUom: product.scannedUom,
               status: 'success'
             });
-            setIsMobileDrawerOpen(true);
+            if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+              setIsMobileDrawerOpen(true);
+            }
         }
       } else {
         setLastScanned(null);
         setNotFoundCode(code);
-        setIsMobileDrawerOpen(true);
+        if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+          setIsMobileDrawerOpen(true);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -613,10 +625,11 @@ export default function BarcodeScannerPage() {
       <style>{`
         .scanner-layout {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: minmax(380px, 1fr) minmax(380px, 1fr);
           gap: var(--space-lg);
+          align-items: start;
         }
-        @media (max-width: 1023px) {
+        @media (max-width: 768px) {
           .scanner-layout {
             grid-template-columns: 1fr;
           }

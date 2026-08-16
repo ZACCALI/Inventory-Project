@@ -1548,12 +1548,12 @@ export default function CreateOrderPage() {
                       {product.name}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span className="walkin-product-price" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '15px' }}>{formatCurrency(product.price)}</span>
-                          <span className="walkin-product-badge" style={{ fontSize: '9px', background: 'var(--bg-hover)', color: 'var(--text-secondary)', padding: '2px 4px', borderRadius: '4px', fontWeight: 600 }}>(Base)</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                          <span className="walkin-product-price" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '15px', whiteSpace: 'nowrap' }}>{formatCurrency(product.price)}</span>
+                          <span className="walkin-product-badge" style={{ fontSize: '9px', background: 'var(--bg-hover)', color: 'var(--text-secondary)', padding: '2px 4px', borderRadius: '4px', fontWeight: 600, whiteSpace: 'nowrap' }}>(Base)</span>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textAlign: 'right' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textAlign: 'right', whiteSpace: 'nowrap', flexShrink: 0, fontWeight: 500 }}>
                           Stock: {product.stock}
                         </div>
                       </div>

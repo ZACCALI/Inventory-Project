@@ -109,6 +109,7 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -3547,7 +3548,7 @@ p {
 
 .scanner-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(380px, 1fr) minmax(380px, 1fr);
   gap: var(--space-lg);
   align-items: start;
 }
@@ -4751,7 +4752,7 @@ p {
 @media (max-width: 767px) { .reports-grid { grid-template-columns: 1fr; gap: 16px; } }
 
 /* 2S. Scanner page responsive layout */
-@media (max-width: 1023px) {
+@media (max-width: 768px) {
   .scanner-layout {
     grid-template-columns: 1fr !important;
   }

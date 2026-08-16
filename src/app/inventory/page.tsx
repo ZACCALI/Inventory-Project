@@ -782,7 +782,7 @@ export default function InventoryPage() {
                               <div className="skeleton" style={{ width: '34px', height: '34px', borderRadius: '6px' }} />
                             );
                           } else if (hasHistory || !cleanupMode) {
-                            if ((lockProductEdit || lockProductDelete) && !isAdmin) return null;
+                            if (lockProductDelete && !isAdmin) return null;
                             return (
                               <button 
                                 className="btn btn-icon" 
@@ -818,7 +818,7 @@ export default function InventoryPage() {
                                   borderRadius: '6px',
                                   boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                                 }}
-                                data-tooltip="Delete Product"
+                                data-tooltip="Delete Product (Safe: 0 sales)"
                                 onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--danger)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                               >

@@ -717,13 +717,12 @@ export default function StockInOutPage() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>Date &amp; Time</th>
-                  <th>Type</th>
-                  <th style={{ textAlign: 'right' }}>Quantity</th>
-                  <th>Reference</th>
-                  <th>Category</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th style={{ width: '28%' }}>Product</th>
+                  <th style={{ width: '16%', minWidth: '135px' }}>Date &amp; Time</th>
+                  <th style={{ width: '11%' }}>Type</th>
+                  <th style={{ width: '11%', textAlign: 'right' }}>Quantity</th>
+                  <th style={{ width: '22%', minWidth: '180px' }}>Reference</th>
+                  <th style={{ width: '12%', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -734,7 +733,6 @@ export default function StockInOutPage() {
                     <td><div className="skeleton" style={{ height: '20px', width: '50%' }} /></td>
                     <td><div className="skeleton" style={{ height: '20px', width: '40%' }} /></td>
                     <td><div className="skeleton" style={{ height: '20px', width: '70%' }} /></td>
-                    <td><div className="skeleton" style={{ height: '20px', width: '60%' }} /></td>
                     <td><div className="skeleton" style={{ height: '20px', width: '50%' }} /></td>
                   </tr>
                 ))}
@@ -744,19 +742,18 @@ export default function StockInOutPage() {
             <table className="table mobile-stack">
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>Date &amp; Time</th>
-                  <th>Type</th>
-                  <th style={{ textAlign: 'right' }}>Quantity</th>
-                  <th>Reference</th>
-                  <th>Category</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th style={{ width: '28%' }}>Product</th>
+                  <th style={{ width: '16%', minWidth: '135px' }}>Date &amp; Time</th>
+                  <th style={{ width: '11%' }}>Type</th>
+                  <th style={{ width: '11%', textAlign: 'right' }}>Quantity</th>
+                  <th style={{ width: '22%', minWidth: '180px' }}>Reference</th>
+                  <th style={{ width: '12%', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredLogs.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
                       No stock movements recorded yet. Use the buttons above to log movements.
                     </td>
                   </tr>
@@ -768,7 +765,7 @@ export default function StockInOutPage() {
 
                     return (
                       <tr key={log.id} style={{ opacity: log.isVoided ? 0.6 : 1, textDecoration: log.isVoided ? 'line-through' : 'none' }}>
-                        <td data-label="Product">
+                        <td data-label="Product" style={{ width: '28%' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', textAlign: 'left', width: '100%', minWidth: 0 }}>
                             <div style={{ width: '40px', height: '40px', borderRadius: '4px', overflow: 'hidden', background: 'var(--bg-hover)', border: '1px solid var(--border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               {displayImage ? (
@@ -779,30 +776,30 @@ export default function StockInOutPage() {
                             </div>
                             <div style={{ textAlign: 'left', minWidth: 0, flex: 1, overflow: 'hidden' }}>
                               <div style={{ fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }} title={log.product}>{log.product}</div>
-                              <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }} title={log.sku}>{log.sku}</div>
+                              <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }} title={log.sku}>{log.sku}{log.category ? ` • ${log.category}` : ''}</div>
                             </div>
                           </div>
                         </td>
-                        <td data-label="Date &amp; Time">
+                        <td data-label="Date &amp; Time" style={{ width: '16%', minWidth: '135px' }}>
                           <div>
-                            <div suppressHydrationWarning style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600 }}>
+                            <div suppressHydrationWarning style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                               {new Date(log.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
                             </div>
-                            <div suppressHydrationWarning style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '4px', fontWeight: 500 }}>
+                            <div suppressHydrationWarning style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '4px', fontWeight: 500, whiteSpace: 'nowrap' }}>
                               {new Date(log.date).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           </div>
                         </td>
-                        <td data-label="Type">
+                        <td data-label="Type" style={{ width: '11%' }}>
                           <span className={`badge ${log.type === 'IN' ? 'badge-success' : 'badge-danger'}`} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
                             {log.type === 'IN' ? 'Stock In' : 'Stock Out'}
                           </span>
                         </td>
-                        <td data-label="Quantity" style={{ textAlign: 'right', fontWeight: 600, color: log.type === 'IN' ? 'var(--success-dark)' : 'var(--danger-dark)' }}>
+                        <td data-label="Quantity" style={{ width: '11%', textAlign: 'right', fontWeight: 600, color: log.type === 'IN' ? 'var(--success-dark)' : 'var(--danger-dark)', whiteSpace: 'nowrap' }}>
                           {log.type === 'IN' ? `+${log.quantity}` : `-${log.quantity}`} {matchedProduct?.unit || 'Base'}
                         </td>
-                        <td data-label="Reference" style={{ minWidth: 0 }}>
-                          <div style={{ color: 'var(--text-secondary)', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '280px' }} title={log.reference || '-'}>
+                        <td data-label="Reference" style={{ width: '22%', minWidth: '180px' }}>
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '13px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', lineHeight: '1.4' }} title={log.reference || '-'}>
                             {log.reference || '-'}
                           </div>
                           {isOfflinePending && (
@@ -811,8 +808,7 @@ export default function StockInOutPage() {
                             </span>
                           )}
                         </td>
-                        <td data-label="Category">{log.category || '-'}</td>
-                        <td data-label="Actions" style={{ textAlign: 'right' }}>
+                        <td data-label="Actions" style={{ width: '12%', textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                             {/* Edit Button */}
                             {isAdmin && !log.isVoided && (
