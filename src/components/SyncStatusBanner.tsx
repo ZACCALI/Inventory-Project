@@ -29,7 +29,7 @@ export default function SyncStatusBanner() {
   const [isOffline, setIsOffline] = useState(false);
 
   const pendingCount = useLiveQuery(
-    () => db.syncQueue.where('syncStatus').equals('pending').count(),
+    () => db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count(),
     []
   ) || 0;
 
@@ -45,10 +45,10 @@ export default function SyncStatusBanner() {
         return;
       }
       try {
-        await fetch(`/api/test-ping?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
-        setIsOffline(false);
+        const res = await fetch(`/api/test-ping?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+        setIsOffline(!res.ok);
       } catch {
-        setIsOffline(true);
+        setIsOffline(!navigator.onLine);
       }
     };
 

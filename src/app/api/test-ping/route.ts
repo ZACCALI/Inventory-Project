@@ -1,12 +1,23 @@
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/apiAuth';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  try {
-    const { error } = await requireAuth();
-    if (error) return error;
-    return NextResponse.json({ ok: true, timestamp: Date.now() });
-  } catch {
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
-  }
+  return new NextResponse(JSON.stringify({ ok: true, timestamp: Date.now() }), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    },
+  });
 }
+
+export async function HEAD() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    },
+  });
+}
+

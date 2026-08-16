@@ -105,11 +105,16 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       }
       // navigator.onLine is true, but Windows virtual adapters can spoof this. Ping to verify.
       try {
-        await fetch(`/api/test-ping?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
-        setIsOffline(false);
-        handleBackgroundSync();
+        const res = await fetch(`/api/test-ping?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+        if (res.ok) {
+          setIsOffline(false);
+          handleBackgroundSync();
+        } else {
+          setIsOffline(!navigator.onLine);
+          if (navigator.onLine) handleBackgroundSync();
+        }
       } catch {
-        setIsOffline(true);
+        setIsOffline(!navigator.onLine);
       }
     };
 
@@ -117,7 +122,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       // Always ensure the UI reflects the true browser offline state by pinging
       checkOnlineStatus();
       try {
-        const count = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count();
+        const count = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed', 'syncing']).count();
         setPendingSyncCount(count);
       } catch {}
     };
@@ -126,14 +131,14 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       if (isSyncingRef.current) return;
       
       try {
-        const count = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count();
+        const count = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed', 'syncing']).count();
         if (count === 0) return; // Only sync if there are pending items
 
         isSyncingRef.current = true;
         setIsSyncing(true);
-        await processSyncQueue();
+        await processSyncQueue(true);
         
-        const remainingCount = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count();
+        const remainingCount = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed', 'syncing']).count();
         setPendingSyncCount(remainingCount);
       } catch {}
       isSyncingRef.current = false;
@@ -369,7 +374,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
         <div 
           className="hide-mobile"
           style={{ display: 'inline-block', marginRight: '8px', cursor: pendingSyncCount > 0 && !isOffline ? 'pointer' : 'default' }}
-          onClick={() => { if (pendingSyncCount > 0 && !isOffline && !isSyncing) processSyncQueue(); }}
+          onClick={() => { if (pendingSyncCount > 0 && !isOffline && !isSyncing) processSyncQueue(true); }}
           title={isOffline ? 'Offline Mode' : isSyncing ? 'Syncing to Cloud...' : pendingSyncCount > 0 ? `${pendingSyncCount} items waiting to sync` : 'Cloud Sync Active'}
         >
           {isOffline ? (
@@ -403,7 +408,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
             else if (isSyncing) toast('Syncing to Cloud...', { icon: <RefreshCw size={16} className="spin-animation" /> });
             else if (pendingSyncCount > 0) {
               toast.success(`${pendingSyncCount} items waiting to sync`);
-              processSyncQueue();
+              processSyncQueue(true);
             }
             else toast.success('System is Synced!');
           }}

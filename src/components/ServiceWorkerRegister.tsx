@@ -79,7 +79,7 @@ export default function ServiceWorkerRegister() {
     
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'TRIGGER_SYNC') {
-        import('@/lib/offlineSync').then(m => m.processSyncQueue());
+        import('@/lib/offlineSync').then(m => m.processSyncQueue(true));
       }
     };
     if ('serviceWorker' in navigator) {

@@ -66,6 +66,13 @@ export async function addSyncTask(
   return id as number;
 }
 
+// Global auto-sync when browser network connectivity returns
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    processSyncQueue(true).catch((err) => console.warn('Auto-sync on online event failed', err));
+  });
+}
+
 /**
  * Upload a Base64-encoded photo to the server and return its URL.
  * Used for proof-of-delivery and avatar uploads queued while offline.
@@ -87,7 +94,11 @@ async function uploadBase64Photo(base64: string): Promise<string | null> {
 
     const res = await fetch('/api/upload', { 
       method: 'POST', 
-      headers: { 'X-Offline-Sync': '1' },
+      credentials: 'same-origin',
+      headers: { 
+        'X-Offline-Sync': '1',
+        'x-offline-sync': 'true',
+      },
       body: formData 
     });
     if (res.ok) {
@@ -108,25 +119,44 @@ async function uploadBase64Photo(base64: string): Promise<string | null> {
  *  - 'amroding:synced'      — at least one task succeeded
  *  - 'amroding:syncfailed'  — one or more tasks permanently failed
  */
-export async function processSyncQueue(): Promise<{ synced: number; failed: number }> {
+export async function processSyncQueue(force: boolean = false): Promise<{ synced: number; failed: number }> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     return { synced: 0, failed: 0 };
   }
 
+  // Pre-clean stale 'syncing' tasks immediately so UI counts and sync runs don't get stuck
+  try {
+    await db.syncQueue.where('syncStatus').equals('syncing').modify({ 
+      syncStatus: 'pending', 
+      lastError: 'Recovered from interrupted sync' 
+    });
+  } catch (e) { /* ignore */ }
+
   // CROSS-TAB LOCKING: Ensure only one tab processes the queue
   let result = { synced: 0, failed: 0 };
   if (typeof navigator !== 'undefined' && navigator.locks) {
-    await navigator.locks.request('amroding-sync-lock', { ifAvailable: true }, async (lock) => {
-      if (!lock) {
-        console.log('Another tab is already syncing. Skipping.');
-        return; // Lock not acquired, another tab is syncing
+    try {
+      await navigator.locks.request('amroding-sync-lock', { ifAvailable: true }, async (lock) => {
+        if (!lock) {
+          console.log('Another tab is already syncing. Skipping.');
+          return; // Lock not acquired, another tab is syncing
+        }
+        result = await _processQueueInternal(force);
+      });
+    } catch (lockErr) {
+      console.warn('Web Locks failed, falling back to localStorage lock', lockErr);
+      if (acquireLocalStorageLock()) {
+        try {
+          result = await _processQueueInternal(force);
+        } finally {
+          releaseLocalStorageLock();
+        }
       }
-      result = await _processQueueInternal();
-    });
+    }
   } else if (typeof window !== 'undefined' && window.localStorage) {
     if (acquireLocalStorageLock()) {
       try {
-        result = await _processQueueInternal();
+        result = await _processQueueInternal(force);
       } finally {
         releaseLocalStorageLock();
       }
@@ -134,54 +164,43 @@ export async function processSyncQueue(): Promise<{ synced: number; failed: numb
       console.log('Another tab is already syncing (localStorage lock). Skipping.');
     }
   } else {
-    result = await _processQueueInternal(); // Fallback if Web Locks API and localStorage are unsupported
+    result = await _processQueueInternal(force); // Fallback if Web Locks API and localStorage are unsupported
   }
   return result;
 }
 
-async function _processQueueInternal(): Promise<{ synced: number; failed: number }> {
+async function _processQueueInternal(force: boolean = false): Promise<{ synced: number; failed: number }> {
   // Reset any tasks orphaned in 'syncing' state (e.g. from a crash/tab close mid-sync)
-  await db.syncQueue.where('syncStatus').equals('syncing').modify({ syncStatus: 'pending', lastError: 'Recovered from interrupted sync' });
+  await db.syncQueue.where('syncStatus').equals('syncing').modify({ 
+    syncStatus: 'pending', 
+    lastError: 'Recovered from interrupted sync' 
+  });
+
+  if (force) {
+    // Clear retry backoff and restore failed items (that aren't permanent 999 errors) to pending
+    await db.syncQueue
+      .where('syncStatus')
+      .equals('failed')
+      .and(t => t.syncAttempts < 999)
+      .modify({ syncStatus: 'pending', nextRetryAfter: undefined });
+  }
 
   const pending = await db.syncQueue
     .where('syncStatus')
     .anyOf(['pending', 'failed'])
-    .and(t => t.syncAttempts < 15 && (!t.nextRetryAfter || t.nextRetryAfter < Date.now()))
+    .and(t => t.syncAttempts < 999 && (force || !t.nextRetryAfter || t.nextRetryAfter <= Date.now()))
     .toArray();
 
   let synced = 0;
   let failed = 0;
   const syncedTypes = new Set<string>();
   const failedDetails: Array<{ type: string; action: string; error: string }> = [];
-  const preFailedTasks = await db.syncQueue
-    .filter(t => t.syncAttempts >= 999)
-    .toArray();
-  const permanentlyFailedIds = new Set<string>(
-    preFailedTasks
-      .map(t => {
-        try { return (JSON.parse(t.payload) as { id?: string }).id || null; } 
-        catch { return null; }
-      })
-      .filter((id): id is string => !!id)
-  );
-
-  // Pre-populate permanentlyFailedIds from tasks that failed in previous runs
-  const prevFailures = await db.syncQueue
-    .filter(t => t.syncAttempts >= 999)
-    .toArray();
-  for (const pf of prevFailures) {
-    try {
-      const pfPayload = JSON.parse(pf.payload);
-      if (pfPayload.id && String(pfPayload.id).startsWith('OFF-')) {
-        permanentlyFailedIds.add(pfPayload.id);
-      }
-    } catch { /* ignore */ }
-  }
 
   // Pre-populate from existing permanently failed tasks (persists across sync runs)
   const existingFailures = await db.syncQueue
     .where('syncAttempts').aboveOrEqual(15)
     .toArray();
+  const permanentlyFailedIds = new Set<string>();
   for (const ft of existingFailures) {
     try {
       const ftPayload = JSON.parse(ft.payload);
@@ -251,28 +270,52 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
       }
 
       let endpoint = '';
-      const method = task.action === 'CREATE' ? 'POST' : task.action === 'UPDATE' ? 'PUT' : 'DELETE';
+      let method = task.action === 'CREATE' ? 'POST' : task.action === 'UPDATE' ? 'PUT' : 'DELETE';
 
-      if (task.type === 'order') endpoint = task.action === 'CREATE' ? '/api/orders' : `/api/orders/${payload.id}`;
-      else if (task.type === 'customer') endpoint = task.action === 'CREATE' ? '/api/customers' : `/api/customers/${payload.id}`;
-      else if (task.type === 'expense') endpoint = task.action === 'CREATE' ? '/api/expenses' : `/api/expenses/${payload.id}`;
-      else if (task.type === 'product') endpoint = task.action === 'CREATE' ? '/api/products' : `/api/products/${payload.id}`;
-      else if (task.type === 'driver') endpoint = task.action === 'CREATE' ? '/api/drivers' : `/api/drivers/${payload.id}`;
-      else if (task.type === 'category') endpoint = task.action === 'CREATE' ? '/api/categories' : `/api/categories/${payload.id}`;
-      else if (task.type === 'unit') endpoint = task.action === 'CREATE' ? '/api/units' : `/api/units/${payload.id}`;
-      else if (task.type === 'stock') endpoint = task.action === 'CREATE' ? '/api/stock/movement' : `/api/stock/movement/${payload.id}`;
-      else if (task.type === 'batch') endpoint = `/api/batches/${payload.id}`;
-      else if (task.type === 'delivery') endpoint = `/api/delivery/${payload.id}`;
-      else if (task.type === 'settings') endpoint = '/api/settings';
-      else if (task.type === 'payment') endpoint = `/api/orders/${payload.orderId}/payments`;
+      if (task.type === 'order') {
+        endpoint = task.action === 'CREATE' ? '/api/orders' : `/api/orders/${payload.id}`;
+      } else if (task.type === 'customer') {
+        if (payload._profileUpdate) {
+          endpoint = `/api/users/${payload.id}/profile`;
+          method = 'PUT';
+        } else {
+          endpoint = task.action === 'CREATE' ? '/api/customers' : `/api/customers/${payload.id}`;
+        }
+      } else if (task.type === 'expense') {
+        endpoint = task.action === 'CREATE' ? '/api/expenses' : `/api/expenses/${payload.id}`;
+      } else if (task.type === 'product') {
+        endpoint = task.action === 'CREATE' ? '/api/products' : `/api/products/${payload.id}`;
+      } else if (task.type === 'driver') {
+        endpoint = task.action === 'CREATE' ? '/api/drivers' : `/api/drivers/${payload.id}`;
+      } else if (task.type === 'category') {
+        endpoint = task.action === 'CREATE' ? '/api/categories' : `/api/categories/${payload.id}`;
+      } else if (task.type === 'unit') {
+        endpoint = task.action === 'CREATE' ? '/api/units' : `/api/units/${payload.id}`;
+      } else if (task.type === 'stock') {
+        endpoint = task.action === 'CREATE' ? '/api/stock/movement' : `/api/stock/movement/${payload.id}`;
+      } else if (task.type === 'batch') {
+        endpoint = `/api/batches/${payload.id}`;
+        method = 'PUT';
+      } else if (task.type === 'delivery') {
+        endpoint = task.action === 'CREATE' ? '/api/delivery' : `/api/delivery/${payload.id}`;
+        if (task.action === 'UPDATE') method = 'PUT';
+      } else if (task.type === 'settings') {
+        endpoint = '/api/settings';
+        method = 'PUT';
+      } else if (task.type === 'payment') {
+        endpoint = `/api/orders/${payload.orderId}/payments`;
+        method = 'POST';
+      }
 
-      if (!endpoint) throw new Error('Unknown sync task type');
+      if (!endpoint) throw new Error(`Unknown sync task type: ${task.type}`);
 
       const res = await fetch(endpoint, {
         method,
+        credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
           'X-Offline-Sync': '1',
+          'x-offline-sync': 'true',
         },
         body: JSON.stringify(payload),
       });
@@ -301,7 +344,7 @@ async function _processQueueInternal(): Promise<{ synced: number; failed: number
       const responseJsonData = responseJson as { id?: string; orderNumber?: string; createdAt?: string; error?: string; message?: string } | null;
 
       if (res.ok) {
-        await db.syncQueue.update(task.id!, { syncStatus: 'synced' });
+        await db.syncQueue.update(task.id!, { syncStatus: 'synced', lastError: null });
         synced++;
         syncedTypes.add(task.type);
         

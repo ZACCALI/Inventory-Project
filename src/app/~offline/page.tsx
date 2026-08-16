@@ -52,7 +52,7 @@ export default function OfflinePage() {
     
     setIsSyncing(true);
     try {
-      await processSyncQueue();
+      await processSyncQueue(true);
       await fetchSyncStatus();
     } finally {
       setIsSyncing(false);
