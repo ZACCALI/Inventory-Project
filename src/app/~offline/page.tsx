@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/db';
 import { processSyncQueue } from '@/lib/offlineSync';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 export default function OfflinePage() {
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingItems, setPendingItems] = useState<{type: string, count: number}[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
+  const isOnline = useOnlineStatus();
 
   const fetchSyncStatus = async () => {
     try {
@@ -34,20 +35,11 @@ export default function OfflinePage() {
 
   useEffect(() => {
     fetchSyncStatus();
-    setIsOnline(navigator.onLine);
-
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
 
     // Refresh every 5 seconds
     const interval = setInterval(fetchSyncStatus, 5000);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
       clearInterval(interval);
     };
   }, []);

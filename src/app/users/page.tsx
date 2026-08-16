@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import {  Plus, Trash2, X, UserPlus,   Search, Users, User, Shield, Edit, AlertTriangle } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 import Image from "next/image";
 interface UserRecord {
@@ -29,6 +31,7 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
   const limit = 50;
+  const isOnline = useOnlineStatus();
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState<UserRecord | null>(null);
   const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'staff' });
@@ -37,6 +40,10 @@ export default function UsersPage() {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  useModalDismiss(showModal, () => { setShowModal(false); setError(''); });
+  useModalDismiss(!!showEditModal, () => { setShowEditModal(null); setError(''); });
+  useModalDismiss(!!deleteConfirm, () => setDeleteConfirm(null));
 
   const userRole = session?.user?.role;
 
@@ -454,7 +461,7 @@ export default function UsersPage() {
               <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <UserPlus size={20} color="var(--primary)" /> Create New User
               </h2>
-              <button className="btn btn-icon btn-ghost" onClick={() => { setShowModal(false); setError(''); }}>
+              <button className="btn btn-icon btn-ghost" onClick={() => { setShowModal(false); setError(''); }} aria-label="Close dialog">
                 <X size={20} />
               </button>
             </div>
@@ -505,7 +512,7 @@ export default function UsersPage() {
               <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Edit size={20} color="var(--primary)" /> Edit User
               </h2>
-              <button className="btn btn-icon btn-ghost" onClick={() => { setShowEditModal(null); setError(''); }}>
+              <button className="btn btn-icon btn-ghost" onClick={() => { setShowEditModal(null); setError(''); }} aria-label="Close dialog">
                 <X size={20} />
               </button>
             </div>
@@ -559,7 +566,7 @@ export default function UsersPage() {
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
               <h2 className="modal-title">Delete User?</h2>
-              <button className="btn btn-icon btn-ghost" onClick={() => setDeleteConfirm(null)}><X size={20} /></button>
+              <button className="btn btn-icon btn-ghost" onClick={() => setDeleteConfirm(null)} aria-label="Close dialog"><X size={20} /></button>
             </div>
             <div className="modal-body">
               <p style={{ color: 'var(--text-secondary)', margin: 0 }}>

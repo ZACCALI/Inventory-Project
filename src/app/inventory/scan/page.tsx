@@ -10,6 +10,8 @@ import { useAlert } from '@/components/AlertModal';
 import { useBarcodeScanner } from '@/lib/useBarcodeScanner';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db, type OfflineProduct } from '@/lib/db';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 import Image from "next/image";
 const pluralize = (str: string, qty: number) => {
@@ -47,21 +49,8 @@ export default function BarcodeScannerPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  }, []);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const isOnline = useOnlineStatus();
+  useModalDismiss(isMobileDrawerOpen, () => setIsMobileDrawerOpen(false));
   
   // Audit Mode State
   const [auditMode, setAuditMode] = useState(false);

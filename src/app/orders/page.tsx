@@ -7,6 +7,8 @@ import { Search, Filter,  Download, Edit, Eye, X, Save, Trash2, Archive, Refresh
 import { APP_NAME, formatCurrency, broadcastDataChange } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db } from '@/lib/db';
 import { printThermal } from '@/lib/printService';
@@ -48,20 +50,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
 
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  }, []);
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const isOnline = useOnlineStatus();
 
 
   const [lockOrderCancel, setLockOrderCancel] = useState(true);
@@ -128,6 +117,11 @@ export default function OrdersPage() {
   const [selectedProductForUom, setSelectedProductForUom] = useState<any>(null);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [receiptOrder, setReceiptOrder] = useState<any>(null);
+
+  // Modal dismiss & scroll locking
+  useModalDismiss(isEditOpen && !!editingOrder, () => setIsEditOpen(false));
+  useModalDismiss(!!selectedProductForUom, () => setSelectedProductForUom(null));
+  useModalDismiss(!!receiptOrder, () => setReceiptOrder(null));
 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
@@ -1472,7 +1466,7 @@ export default function OrdersPage() {
               </div>
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <button className="btn btn-icon btn-ghost" onClick={() => setIsEditOpen(false)} style={{ margin: '-8px -8px 0 0' }}><X size={20} /></button>
+                <button className="btn btn-icon btn-ghost" onClick={() => setIsEditOpen(false)} aria-label="Close dialog" style={{ margin: '-8px -8px 0 0' }}><X size={20} /></button>
               </div>
             </div>
 
@@ -1965,7 +1959,7 @@ export default function OrdersPage() {
           <div className="modal" role="dialog" aria-modal="true" style={{ width: '100%', maxWidth: '400px', minWidth: '320px' }}>
             <div className="modal-header">
               <h2 className="modal-title">Select Unit</h2>
-              <button className="btn btn-icon btn-ghost" onClick={() => setSelectedProductForUom(null)}><X size={20} /></button>
+              <button className="btn btn-icon btn-ghost" onClick={() => setSelectedProductForUom(null)} aria-label="Close dialog"><X size={20} /></button>
             </div>
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <button 
@@ -2070,7 +2064,7 @@ export default function OrdersPage() {
                     Order No: <strong style={{ color: 'var(--primary)' }}>{receiptOrder.orderNumber}</strong> • {!receiptOrder.customer?.name || ['[normal walk-in]', 'normal walk-in', 'walk-in'].includes(receiptOrder.customer.name.trim().toLowerCase()) ? 'BAIE' : receiptOrder.customer.name}
                   </p>
                 </div>
-                <button className="btn btn-icon btn-ghost" onClick={() => setReceiptOrder(null)} style={{ borderRadius: '50%' }}>
+                <button className="btn btn-icon btn-ghost" onClick={() => setReceiptOrder(null)} aria-label="Close dialog" style={{ borderRadius: '50%' }}>
                   <X size={18} />
                 </button>
               </div>

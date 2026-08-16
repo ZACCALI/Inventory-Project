@@ -8,6 +8,8 @@ import { Plus, Search, Edit, Trash2, X, Save, Filter, Package, AlertTriangle, XC
 import { formatCurrency, broadcastDataChange } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db } from '@/lib/db';
 
@@ -70,21 +72,7 @@ export default function InventoryPage() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  }, []);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const isOnline = useOnlineStatus();
 
   // SWR for instant caching
   const { data: swrProducts, error: swrError } = useSWR(
@@ -407,6 +395,9 @@ export default function InventoryPage() {
     setIsModalOpen(false);
     setEditingProduct(null);
   };
+
+  useModalDismiss(isModalOpen, closeModal);
+  useModalDismiss(!!manageModal, () => setManageModal(null));
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1104,7 +1095,7 @@ export default function InventoryPage() {
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '800px' }}>
             <div className="modal-header">
               <h2 className="modal-title">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
-              <button className="btn btn-icon btn-ghost" onClick={closeModal}>
+              <button className="btn btn-icon btn-ghost" onClick={closeModal} aria-label="Close dialog">
                 <X size={20} />
               </button>
             </div>
@@ -1419,7 +1410,7 @@ function ManageListModal({ type, items, onClose, onUpdate }: { type: 'category' 
       <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '400px' }}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
-          <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={20} /></button>
+          <button className="btn btn-icon btn-ghost" onClick={onClose} aria-label="Close dialog"><X size={20} /></button>
         </div>
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <form onSubmit={handleSave} className="manage-list-form">

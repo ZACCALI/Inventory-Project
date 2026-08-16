@@ -8,6 +8,8 @@ import { Search, Plus, Phone, MapPin, Edit, Trash2, X,  FileText, ShoppingCart, 
 import { useAlert } from '@/components/AlertModal';
 import { formatCurrency, broadcastDataChange } from '@/lib/constants';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db } from '@/lib/db';
 
@@ -36,25 +38,14 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
 
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  }, []);
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const isOnline = useOnlineStatus();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'ADD' | 'EDIT' | 'VIEW'>('ADD');
   const [currentCustomer, setCurrentCustomer] = useState<Partial<Customer>>({ customerType: 'wholesale' });
   const [actionLoading, setActionLoading] = useState(false);
+
+  useModalDismiss(isModalOpen, () => setIsModalOpen(false));
   
   const [activeTab, setActiveTab] = useState<'PROFILE' | 'HISTORY'>('PROFILE');
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -527,7 +518,7 @@ export default function CustomersPage() {
               <h2 className="modal-title">
                 {modalMode === 'ADD' ? 'Add New Customer' : 'Manage Customer'}
               </h2>
-              <button className="btn btn-icon btn-ghost" onClick={() => setIsModalOpen(false)}>
+              <button className="btn btn-icon btn-ghost" onClick={() => setIsModalOpen(false)} aria-label="Close dialog">
                 <X size={20} />
               </button>
             </div>

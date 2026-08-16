@@ -8,6 +8,8 @@ import { addSyncTask } from '@/lib/offlineSync';
 import { useSession } from 'next-auth/react';
 import {   Search, ArrowDownRight, ArrowUpRight, Clock, X, Trash2, ChevronDown, Package, Edit, Save, Filter,    AlertTriangle } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import Image from "next/image";
 interface StockLog {
   id: string;
@@ -55,21 +57,7 @@ export default function StockInOutPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  }, []);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const isOnline = useOnlineStatus();
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -89,6 +77,12 @@ export default function StockInOutPage() {
   const [editManageReasonType, setEditManageReasonType] = useState<'IN' | 'OUT' | null>(null);
   const [editSelectedUomId, setEditSelectedUomId] = useState<string>('BASE');
   const [editExpiryDate, setEditExpiryDate] = useState('');
+
+  // Modal dismiss & body scroll locking
+  useModalDismiss(isModalOpen, () => setIsModalOpen(false));
+  useModalDismiss(!!manageReasonType, () => setManageReasonType(null));
+  useModalDismiss(isEditModalOpen, () => setIsEditModalOpen(false));
+  useModalDismiss(!!editManageReasonType, () => setEditManageReasonType(null));
 
   // Dashboard Stats State
   const [statsTimeframe, setStatsTimeframe] = useState<'today' | 'week' | 'month' | 'year' | 'all'>('today');
@@ -1188,7 +1182,7 @@ export default function StockInOutPage() {
               <h2 className="modal-title">
                 {modalType === 'IN' ? 'Receive Stock (In)' : 'Issue Stock (Out)'}
               </h2>
-              <button className="btn btn-icon btn-ghost" onClick={() => setIsModalOpen(false)}>
+              <button className="btn btn-icon btn-ghost" onClick={() => setIsModalOpen(false)} aria-label="Close dialog">
                 <X size={20} />
               </button>
             </div>
@@ -1435,7 +1429,7 @@ export default function StockInOutPage() {
           <div className="modal" role="dialog" aria-modal="true">
             <div className="modal-header">
               <h2 className="modal-title">Edit Stock Movement</h2>
-              <button className="btn btn-icon btn-ghost" onClick={() => setIsEditModalOpen(false)}>
+              <button className="btn btn-icon btn-ghost" onClick={() => setIsEditModalOpen(false)} aria-label="Close dialog">
                 <X size={20} />
               </button>
             </div>
@@ -1694,7 +1688,7 @@ function ManageReasonsModal({ type, reasons, onClose, onUpdate }: { type: 'IN' |
       <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '400px' }}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
-          <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={20} /></button>
+          <button className="btn btn-icon btn-ghost" onClick={onClose} aria-label="Close dialog"><X size={20} /></button>
         </div>
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <form onSubmit={handleSave} className="manage-list-form">

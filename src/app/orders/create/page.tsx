@@ -14,6 +14,8 @@ import { addSyncTask } from '@/lib/offlineSync';
 import { printThermal } from '@/lib/printService';
 import { loadPrinterConfig } from '@/lib/qzService';
 import { generateOrderNumber } from '@/lib/orderUtils';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 import Image from "next/image";
 interface Product {
@@ -85,20 +87,7 @@ export default function CreateOrderPage() {
   });
   const [idempotencyKey, setIdempotencyKey] = useState<string>('');
 
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  }, []);
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const isOnline = useOnlineStatus();
 
   useEffect(() => {
     const handleOrderSynced = (e: CustomEvent) => {
@@ -200,6 +189,14 @@ export default function CreateOrderPage() {
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [lastOrder, setLastOrder] = useState<any>(null);
+
+  // Modal dismiss & body scroll locking
+  useModalDismiss(!!selectedProductForUom, () => setSelectedProductForUom(null));
+  useModalDismiss(isViewItemsOpen, () => setIsViewItemsOpen(false));
+  useModalDismiss(showConfirmCheckout, () => setShowConfirmCheckout(false));
+  useModalDismiss(showClearConfirm, () => setShowClearConfirm(false));
+  useModalDismiss(isSuccessOpen, () => setIsSuccessOpen(false));
+  useModalDismiss(isMobileCartOpen, () => setIsMobileCartOpen(false));
 
   // Toast State
   const [toastMessage, setToastMessage] = useState<{ message: string, type: 'success' | 'error' | 'warning' } | null>(null);
@@ -1456,6 +1453,7 @@ export default function CreateOrderPage() {
 
                   <button 
                     onClick={stopScanner}
+                    aria-label="Close scanner"
                     style={{
                       position: 'absolute', top: '16px', right: '16px', zIndex: 20,
                       background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', padding: '8px', cursor: 'pointer', color: '#fff', transition: 'all 0.2s ease'
@@ -1618,7 +1616,12 @@ export default function CreateOrderPage() {
                 </>
               )}
               {/* Close Button only visible on Mobile */}
-              <button onClick={() => setIsMobileCartOpen(false)} className="btn btn-icon btn-ghost mobile-only-close" style={{ color: 'var(--text-secondary)' }}>
+              <button 
+                onClick={() => setIsMobileCartOpen(false)} 
+                className="btn btn-icon btn-ghost mobile-only-close" 
+                aria-label="Close cart"
+                style={{ color: 'var(--text-secondary)', minWidth: '40px', minHeight: '40px', width: '40px', height: '40px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+              >
                 <X size={20} />
               </button>
             </div>
@@ -1649,7 +1652,14 @@ export default function CreateOrderPage() {
                         <div style={{ fontWeight: 600, fontSize: '14px', lineHeight: 1.3, paddingRight: '8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {item.product.name}
                         </div>
-                        <button onClick={() => removeFromCart(item.product.id, item.uomName)} className="btn btn-icon btn-ghost" style={{ padding: 0, width: '24px', height: '24px', color: 'var(--danger)', opacity: 0.7 }}><X size={16} /></button>
+                        <button 
+                          onClick={() => removeFromCart(item.product.id, item.uomName)} 
+                          className="btn btn-icon btn-ghost" 
+                          aria-label="Remove item"
+                          style={{ padding: 0, width: '36px', height: '36px', minWidth: '36px', minHeight: '36px', color: 'var(--danger)', opacity: 0.8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <X size={18} />
+                        </button>
                       </div>
                       
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '10px' }}>
@@ -1667,7 +1677,14 @@ export default function CreateOrderPage() {
                       
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-main)', borderRadius: '6px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-                          <button onClick={() => updateQty(item.product.id, item.uomName, Number(item.qty) - 1, true)} className="btn btn-icon btn-ghost" style={{ width: '28px', height: '28px', padding: 0 }}><Minus size={14} /></button>
+                          <button 
+                            onClick={() => updateQty(item.product.id, item.uomName, Number(item.qty) - 1, true)} 
+                            className="btn btn-icon btn-ghost" 
+                            aria-label="Decrease quantity"
+                            style={{ width: '36px', height: '36px', minWidth: '36px', minHeight: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Minus size={16} />
+                          </button>
                           <input 
                             id={`create-order-qty-${item.product.id}`}
                             name={`cartQty_${item.product.id}`}
@@ -1679,7 +1696,14 @@ export default function CreateOrderPage() {
                             onWheel={e => e.currentTarget.blur()}
                             style={{ width: '40px', textAlign: 'center', border: 'none', background: 'transparent', padding: '4px', fontSize: '13px', fontWeight: 600 }}
                           />
-                          <button onClick={() => updateQty(item.product.id, item.uomName, Number(item.qty) + 1, true)} className="btn btn-icon btn-ghost" style={{ width: '28px', height: '28px', padding: 0 }}><Plus size={14} /></button>
+                          <button 
+                            onClick={() => updateQty(item.product.id, item.uomName, Number(item.qty) + 1, true)} 
+                            className="btn btn-icon btn-ghost" 
+                            aria-label="Increase quantity"
+                            style={{ width: '36px', height: '36px', minWidth: '36px', minHeight: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Plus size={16} />
+                          </button>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                           <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
@@ -1808,7 +1832,7 @@ export default function CreateOrderPage() {
                 <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.5px' }}>Select Unit Variant</h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '4px 0 0 0' }}>Choose which unit of <strong>{selectedProductForUom.name}</strong> to add.</p>
               </div>
-              <button className="btn btn-icon btn-ghost" onClick={() => setSelectedProductForUom(null)} style={{ background: 'var(--bg-main)' }}><X size={20} /></button>
+              <button className="btn btn-icon btn-ghost" onClick={() => setSelectedProductForUom(null)} aria-label="Close dialog" style={{ background: 'var(--bg-main)', minWidth: '36px', minHeight: '36px', width: '36px', height: '36px' }}><X size={20} /></button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1867,7 +1891,7 @@ export default function CreateOrderPage() {
               <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '20px' }}>
                 <ShoppingCart size={24} color="var(--primary)" /> Complete Order List
               </h2>
-              <button className="btn btn-icon btn-ghost" onClick={() => setIsViewItemsOpen(false)} style={{ background: 'var(--bg-main)' }}><X size={20} /></button>
+              <button className="btn btn-icon btn-ghost" onClick={() => setIsViewItemsOpen(false)} aria-label="Close dialog" style={{ background: 'var(--bg-main)', minWidth: '36px', minHeight: '36px', width: '36px', height: '36px' }}><X size={20} /></button>
             </div>
             <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto', padding: 0, background: 'var(--bg-main)' }}>
               <table className="table" style={{ margin: 0 }}>
@@ -1902,7 +1926,14 @@ export default function CreateOrderPage() {
                       </td>
                       <td data-label="Quantity" style={{ padding: '16px 24px', textAlign: 'center' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'var(--bg-main)', padding: '4px 8px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                          <button onClick={() => updateQty(item.product.id, item.uomName, Number(item.qty) - 1, true)} className="btn btn-icon btn-ghost" style={{ width: '28px', height: '28px', padding: 0 }}><Minus size={14} /></button>
+                          <button 
+                            onClick={() => updateQty(item.product.id, item.uomName, Number(item.qty) - 1, true)} 
+                            className="btn btn-icon btn-ghost" 
+                            aria-label="Decrease quantity"
+                            style={{ width: '36px', height: '36px', minWidth: '36px', minHeight: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Minus size={16} />
+                          </button>
                           <input 
                             id={`create-order-modal-qty-${item.product.id}-${item.uomName}`}
                             name={`modalQty_${item.product.id}_${item.uomName}`}
@@ -1913,7 +1944,14 @@ export default function CreateOrderPage() {
                             onWheel={e => e.currentTarget.blur()}
                             style={{ width: '40px', textAlign: 'center', fontWeight: 700, fontSize: '15px', border: 'none', background: 'transparent', color: 'var(--text-primary)' }}
                           />
-                          <button onClick={() => updateQty(item.product.id, item.uomName, Number(item.qty) + 1, true)} className="btn btn-icon btn-ghost" style={{ width: '28px', height: '28px', padding: 0 }}><Plus size={14} /></button>
+                          <button 
+                            onClick={() => updateQty(item.product.id, item.uomName, Number(item.qty) + 1, true)} 
+                            className="btn btn-icon btn-ghost" 
+                            aria-label="Increase quantity"
+                            style={{ width: '36px', height: '36px', minWidth: '36px', minHeight: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Plus size={16} />
+                          </button>
                         </div>
                       </td>
                       <td data-label="Unit Price" style={{ padding: '16px 24px', textAlign: 'right' }}>
@@ -1933,7 +1971,14 @@ export default function CreateOrderPage() {
                       </td>
                       <td data-label="Total" style={{ padding: '16px 24px', textAlign: 'right', fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>{formatCurrency(item.cartPrice * (Number(item.qty) || 0))}</td>
                       <td data-label="Actions" style={{ padding: '16px 24px', textAlign: 'center' }}>
-                        <button onClick={() => removeFromCart(item.product.id, item.uomName)} className="btn btn-icon btn-ghost" style={{ color: 'var(--danger)', background: 'var(--danger-light)' }}><Trash2 size={16} /></button>
+                        <button 
+                          onClick={() => removeFromCart(item.product.id, item.uomName)} 
+                          className="btn btn-icon btn-ghost" 
+                          aria-label="Remove item"
+                          style={{ color: 'var(--danger)', background: 'var(--danger-light)', width: '36px', height: '36px', minWidth: '36px', minHeight: '36px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </td>
                     </tr>
                   ))}

@@ -8,6 +8,8 @@ import { Search, Plus, Trash2, X, DollarSign, TrendingDown, Calendar, Edit, Filt
 import { formatCurrency } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db } from '@/lib/db';
 
@@ -38,18 +40,7 @@ export default function ExpensesPage() {
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const isOnline = useOnlineStatus();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -63,6 +54,9 @@ export default function ExpensesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  useModalDismiss(isModalOpen, () => setIsModalOpen(false));
+  useModalDismiss(isCategoryManageOpen, () => setIsCategoryManageOpen(false));
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     amount: '',
@@ -563,7 +557,7 @@ export default function ExpensesPage() {
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '550px' }}>
             <div className="modal-header">
               <h2 className="modal-title">{editId ? 'Edit Expense' : 'Log New Expense'}</h2>
-              <button type="button" className="btn btn-icon btn-ghost" onClick={() => setIsModalOpen(false)}>
+              <button type="button" className="btn btn-icon btn-ghost" onClick={() => setIsModalOpen(false)} aria-label="Close dialog">
                 <X size={20} />
               </button>
             </div>
@@ -675,7 +669,7 @@ export default function ExpensesPage() {
           <div className="modal" style={{ maxWidth: '420px', borderRadius: '24px', display: 'flex', flexDirection: 'column', maxHeight: '80vh' }}>
             <div className="modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Manage Expense Categories</h2>
-              <button type="button" className="btn btn-icon btn-ghost" onClick={() => setIsCategoryManageOpen(false)} style={{ background: 'var(--bg-main)' }}>
+              <button type="button" className="btn btn-icon btn-ghost" onClick={() => setIsCategoryManageOpen(false)} aria-label="Close dialog" style={{ background: 'var(--bg-main)' }}>
                 <X size={20} />
               </button>
             </div>

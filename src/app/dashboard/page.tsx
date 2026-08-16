@@ -13,6 +13,7 @@ import {
 import { formatCurrency } from '@/lib/constants';
 import ExpiryAlertWidget from '@/components/ExpiryAlertWidget';
 import { db } from '@/lib/db';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface DashboardData {
   totalProducts: number;
@@ -65,16 +66,9 @@ export default function DashboardPage() {
     { refreshInterval: 60000 }
   );
 
-  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const isOnline = useOnlineStatus();
+  const isOfflineMode = !isOnline;
   const [pendingDeltas, setPendingDeltas] = useState({ products: 0, stockIn: 0, orders: 0 });
-
-  useEffect(() => {
-    const update = () => setIsOfflineMode(!navigator.onLine);
-    update();
-    window.addEventListener('online', update);
-    window.addEventListener('offline', update);
-    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
-  }, []);
 
   useEffect(() => {
     const computeDeltas = async () => {

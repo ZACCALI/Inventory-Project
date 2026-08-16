@@ -6,6 +6,8 @@ import { fetcher } from '@/lib/fetcher';
 import { useSession } from 'next-auth/react';
 import { Plus, Search, Edit, Trash2, X, Save, Truck,  User, Users, CheckCircle2, List, FileText } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db } from '@/lib/db';
 
@@ -31,20 +33,7 @@ export default function DriversPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  }, []);
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const isOnline = useOnlineStatus();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -208,6 +197,8 @@ export default function DriversPage() {
   };
 
   const closeModal = () => { setIsModalOpen(false); setEditingDriver(null); };
+
+  useModalDismiss(isModalOpen, closeModal);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -487,7 +478,7 @@ export default function DriversPage() {
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '650px' }}>
             <div className="modal-header">
               <h2 className="modal-title">{editingDriver ? 'Manage Driver' : 'Add New Driver'}</h2>
-              <button className="btn btn-icon btn-ghost" onClick={closeModal}><X size={20} /></button>
+              <button className="btn btn-icon btn-ghost" onClick={closeModal} aria-label="Close dialog"><X size={20} /></button>
             </div>
             
             <div className="modal-body" style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column' }}>

@@ -6,6 +6,8 @@ import { fetcher } from '@/lib/fetcher';
 import { useSession} from 'next-auth/react';
 import { Save, Shield, Settings as Building, Lock, User, Info, Printer, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { db } from '@/lib/db';
 import { addSyncTask } from '@/lib/offlineSync';
 import PrinterSetupModal from '@/components/PrinterSetupModal';
@@ -42,8 +44,11 @@ export default function SettingsPage() {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const currentUserEmail = session?.user?.email;
 
+  const isOnline = useOnlineStatus();
   const [activeTab, setActiveTab] = useState('profile');
   const [isPrinterModalOpen, setIsPrinterModalOpen] = useState(false);
+
+  useModalDismiss(isPrinterModalOpen, () => setIsPrinterModalOpen(false));
   const [savedPrinterName, setSavedPrinterName] = useState<string>('');
   const [printerStatus, setPrinterStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [settings, setSettings] = useState<SettingsData>({
@@ -146,14 +151,7 @@ export default function SettingsPage() {
   }, [swrRes, swrError]);
 
   // Offline banner state
-  const [isOffline, setIsOffline] = useState(false);
-  useEffect(() => {
-    const update = () => setIsOffline(!navigator.onLine);
-    update();
-    window.addEventListener('online', update);
-    window.addEventListener('offline', update);
-    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
-  }, []);
+  const isOffline = !isOnline;
 
   async function fetchSettings() {
     if (typeof document !== 'undefined' && document.hidden) return;

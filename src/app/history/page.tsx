@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { Search, User, Activity, PlusCircle, Trash2, Edit3, ChevronLeft, ChevronRight, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { db } from '@/lib/db';
 import { useSession } from 'next-auth/react';
 
@@ -28,18 +29,7 @@ export default function HistoryPage() {
   const [page, setPage] = useState(1);
   const limit = 50;
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const isOnline = useOnlineStatus();
   
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);

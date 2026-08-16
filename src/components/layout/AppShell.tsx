@@ -8,9 +8,12 @@ import Sidebar from '@/components/layout/Sidebar';
 import Navbar from '@/components/layout/Navbar';
 import { db } from '@/lib/db';
 import { loadPrinterConfig } from '@/lib/qzService';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [cachedSession, setCachedSession] = useState<any>(() => {
     if (typeof window === 'undefined') return null;
     try {
@@ -36,13 +39,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [settings, setSettings] = useState<any>(null);
-  const [isOnline, setIsOnline] = useState(true);
+  const isOnline = useOnlineStatus();
+
+  useModalDismiss(mobileSidebarOpen, () => setMobileSidebarOpen(false));
 
   useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    
     const handleSessionExpired = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       console.warn('[Session Expired]', detail?.message);
@@ -50,14 +51,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
 
     if (typeof window !== 'undefined') {
-      window.addEventListener('online', handleOnline);
-      window.addEventListener('offline', handleOffline);
       window.addEventListener('amroding:session-expired', handleSessionExpired);
     }
     return () => {
       if (typeof window !== 'undefined') {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
         window.removeEventListener('amroding:session-expired', handleSessionExpired);
       }
     };

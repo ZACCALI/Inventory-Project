@@ -13,6 +13,7 @@ import {
 } from '@/lib/qzService';
 import { buildReceipt, type PaperWidth } from '@/lib/escpos';
 import { useAlert } from '@/components/AlertModal';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface PrinterSetupModalProps {
   isOpen: boolean;
@@ -32,6 +33,8 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
   const { showToast } = useAlert();
   const modalContentRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  useModalDismiss(isOpen, onClose);
 
   useEffect(() => {
     if (showPreview && modalContentRef.current) {
@@ -179,7 +182,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>Configure QZ Tray for direct ESC/POS printing</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px', borderRadius: 'var(--radius-sm)' }}>
+          <button onClick={onClose} aria-label="Close dialog" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px', borderRadius: 'var(--radius-sm)' }}>
             <X size={20} />
           </button>
         </div>

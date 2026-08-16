@@ -6,6 +6,7 @@ import { fetcher } from '@/lib/fetcher';
 import { BarChart3, TrendingUp, Package, Users, Calendar, Download, Activity, AlertTriangle, ShoppingCart, FileText, DollarSign } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { exportToPDF } from '@/lib/exportUtils';
 import dynamic from 'next/dynamic';
 const RevenueChart = dynamic(() => import('@/components/RevenueChart'), { ssr: false, loading: () => <div style={{ height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Loading charts...</div> });
@@ -40,16 +41,9 @@ export default function ReportsPage() {
 
   const { data: monthlyRes, isLoading: isMonthlyLoading, error: monthlyError, mutate: mutateMonthly } = useSWR('/api/reports?type=monthly', fetcher, { refreshInterval: 60000 });
   const { data: bestRes, isLoading: isBestLoading, error: bestError, mutate: mutateBest } = useSWR('/api/reports?type=bestsellers', fetcher, { refreshInterval: 60000 });
-  const [isOffline, setIsOffline] = useState(false);
+  const isOnline = useOnlineStatus();
+  const isOffline = !isOnline;
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-
-  useEffect(() => {
-    const update = () => setIsOffline(!navigator.onLine);
-    update();
-    window.addEventListener('online', update);
-    window.addEventListener('offline', update);
-    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
-  }, []);
 
   useEffect(() => {
     let hasUpdatedCache = false;

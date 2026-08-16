@@ -5,6 +5,8 @@ import useSWR from 'swr';
 import { Truck, MapPin, Calendar, Search, X, Filter, CheckCircle2, Clock, Phone } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db } from '@/lib/db';
 import { useSession } from 'next-auth/react';
@@ -48,24 +50,15 @@ export default function DeliveryPage() {
 
   const [page, setPage] = useState(1);
   const [totalDeliveries, setTotalDeliveries] = useState(0);
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const isOnline = useOnlineStatus();
   const limit = 50;
 
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
   const [formData, setFormData] = useState({ driverId: '', driverName: '', driverPhone: '', status: '', proofPhoto: '' });
   const [proofPhotoBase64, setProofPhotoBase64] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  useModalDismiss(!!selectedDelivery, () => setSelectedDelivery(null));
 
   async function fetchDrivers() {
     try {
@@ -579,7 +572,7 @@ export default function DeliveryPage() {
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '480px' }}>
             <div className="modal-header">
               <h2 className="modal-title">Update Delivery</h2>
-              <button className="btn btn-icon btn-ghost" onClick={() => setSelectedDelivery(null)}><X size={20} /></button>
+              <button className="btn btn-icon btn-ghost" onClick={() => setSelectedDelivery(null)} aria-label="Close dialog"><X size={20} /></button>
             </div>
             <div style={{ padding: '0 var(--space-lg)', paddingTop: 'var(--space-sm)' }}>
               <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>

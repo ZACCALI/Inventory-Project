@@ -9,6 +9,8 @@ import { formatCurrency } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import { addSyncTask } from '@/lib/offlineSync';
 import { db } from '@/lib/db';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import Image from "next/image";
 interface Batch {
   id: string;
@@ -50,21 +52,9 @@ export default function ExpiryTrackingPage() {
   const [newBatchNumber, setNewBatchNumber] = useState('');
   const [disposeQty, setDisposeQty] = useState<number | string>(1);
   const [actionLoading, setActionLoading] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  }, []);
+  const isOnline = useOnlineStatus();
 
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  useModalDismiss(isModalOpen, () => setIsModalOpen(false));
 
   const isAdmin = session?.user?.role?.toLowerCase() === 'admin';
   const filterRef = useRef<HTMLDivElement>(null);
@@ -650,7 +640,7 @@ export default function ExpiryTrackingPage() {
           <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
               <h2 className="modal-title">Review Batch Expiry</h2>
-              <button className="btn btn-icon btn-ghost" onClick={() => setIsModalOpen(false)}>
+              <button className="btn btn-icon btn-ghost" onClick={() => setIsModalOpen(false)} aria-label="Close dialog">
                 <X size={20} />
               </button>
             </div>
