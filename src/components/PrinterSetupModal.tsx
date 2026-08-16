@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Printer, Wifi, WifiOff, CheckCircle, CheckCircle2, XCircle, RefreshCw, X, Settings } from 'lucide-react';
+import { Printer, Wifi, WifiOff, CheckCircle, CheckCircle2, XCircle, RefreshCw, X, Settings, Lock, FileText } from 'lucide-react';
 import {
   connectQZ,
   isQZConnected,
@@ -277,7 +277,7 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
                   className="btn btn-secondary"
                   style={{ fontSize: '12px', padding: '6px 12px', background: '#fff', color: '#b91c1c', border: '1px solid #fca5a5', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
                 >
-                  🔒 Allow HTTPS Certificate (Click Here) →
+                  <Lock size={14} /> Allow HTTPS Certificate (Click Here) →
                 </a>
                 <p style={{ fontSize: '11px', color: '#991b1b', margin: '6px 0 0', lineHeight: 1.4 }}>
                   (Click the link above, click <strong>Advanced</strong> → <strong>Proceed to localhost (unsafe)</strong>, then come back and click <strong>Connect</strong>)
@@ -353,17 +353,23 @@ export default function PrinterSetupModal({ isOpen, onClose }: PrinterSetupModal
             <button
               onClick={() => setShowPreview(!showPreview)}
               className="btn btn-secondary"
-              style={{ flex: 1, fontSize: '13px', padding: '8px' }}
+              style={{ flex: 1, fontSize: '13px', padding: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
             >
-              📋 {showPreview ? 'Hide Preview' : 'View Preview'}
+              <FileText size={14} /> {showPreview ? 'Hide Preview' : 'View Preview'}
             </button>
             <button
               onClick={handleTestPrint}
               disabled={!selectedPrinter || isTestPrinting}
               className="btn btn-secondary"
-              style={{ flex: 1, fontSize: '13px', padding: '8px' }}
+              style={{ flex: 1, fontSize: '13px', padding: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
             >
-              {isTestPrinting ? 'Printing...' : '🖨 Test'}
+              {isTestPrinting ? (
+                'Printing...'
+              ) : (
+                <>
+                  <Printer size={14} /> Test
+                </>
+              )}
             </button>
             <button
               onClick={handleSave}

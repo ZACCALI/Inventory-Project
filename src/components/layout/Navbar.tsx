@@ -400,7 +400,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
           }}
           onClick={() => {
             if (isOffline) toast.error('Offline Mode (No Internet)');
-            else if (isSyncing) toast('Syncing to Cloud...', { icon: '🔄' });
+            else if (isSyncing) toast('Syncing to Cloud...', { icon: <RefreshCw size={16} className="spin-animation" /> });
             else if (pendingSyncCount > 0) {
               toast.success(`${pendingSyncCount} items waiting to sync`);
               processSyncQueue();

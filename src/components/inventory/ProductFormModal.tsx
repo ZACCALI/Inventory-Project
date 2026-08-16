@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { X, Save, Trash2, Info } from 'lucide-react';
+import { X, Save, Trash2, Info, AlertTriangle } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { addSyncTask } from '@/lib/offlineSync';
@@ -411,11 +411,11 @@ export function ProductFormModal({
                 </div>
                 <select id="product-category" name="categoryId" aria-label="Category" className="form-select" required value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })}>
                   <option value="">-- Select Category --</option>
-                  {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}{String(cat.id).startsWith('OFF-') ? ' ⚠ (Pending Sync)' : ''}</option>)}
+                  {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}{String(cat.id).startsWith('OFF-') ? ' (Pending Sync)' : ''}</option>)}
                 </select>
                 {formData.categoryId && String(formData.categoryId).startsWith('OFF-') && (
-                  <p style={{ fontSize: '12px', color: 'var(--warning, #f59e0b)', marginTop: '4px', marginBottom: 0 }}>
-                    ⚠ This category is pending sync. The product will be saved without the category link until both sync online.
+                  <p style={{ fontSize: '12px', color: 'var(--warning, #f59e0b)', marginTop: '4px', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <AlertTriangle size={13} /> This category is pending sync. The product will be saved without the category link until both sync online.
                   </p>
                 )}
               </div>

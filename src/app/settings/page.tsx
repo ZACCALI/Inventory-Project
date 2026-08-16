@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
 import { useSession} from 'next-auth/react';
-import { Save, Shield, Settings as Building, Lock, User, Info, Printer, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Save, Shield, Settings as Building, Lock, User, Info, Printer, AlertTriangle, CheckCircle2, ClipboardList } from 'lucide-react';
 import { useAlert } from '@/components/AlertModal';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
@@ -895,7 +895,9 @@ export default function SettingsPage() {
                 </div>
 
                 <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: 'var(--radius-md)', padding: '14px 16px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '4px' }}>📋 Setup Steps:</strong>
+                  <strong style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <ClipboardList size={14} /> Setup Steps:
+                  </strong>
                   1. Download and install QZ Tray on this PC<br/>
                   2. Make sure QZ Tray is running (printer icon in system tray)<br/>
                   3. Click &quot;Setup Thermal Printer&quot; above<br/>

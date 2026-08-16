@@ -147,7 +147,7 @@ export async function syncNotificationsForUser(
       toCreate.push({
         userId,
         type: 'low_stock',
-        title: `⚠️ ${lowStockProducts.length} Products Low on Stock`,
+        title: `${lowStockProducts.length} Products Low on Stock`,
         message: `${lowStockProducts.length} products (including ${sampleNames}${remainingCount > 0 ? `, and ${remainingCount} others` : ''}) have fallen below minimum threshold.`,
         link: '/inventory?filter=low_stock',
         referenceId: 'summary'
@@ -184,7 +184,7 @@ export async function syncNotificationsForUser(
       toCreate.push({
         userId,
         type: 'expiry',
-        title: `📅 ${expiringBatches.length} Batches Expiring Soon`,
+        title: `${expiringBatches.length} Batches Expiring Soon`,
         message: `${expiringBatches.length} batches (including ${sampleBatches}${remainingCount > 0 ? `, and ${remainingCount} others` : ''}) are expiring within the next ${settings.expiryWarningDays} days.`,
         link: '/inventory/expiry',
         referenceId: 'summary'
@@ -216,7 +216,7 @@ export async function syncNotificationsForUser(
       toCreate.push({
         userId,
         type: 'delivery',
-        title: `🚚 ${pendingDeliveries.length} Orders Pending Delivery`,
+        title: `${pendingDeliveries.length} Orders Pending Delivery`,
         message: `${pendingDeliveries.length} orders (including #${sampleOrders}${remainingCount > 0 ? `, and ${remainingCount} others` : ''}) are pending dispatch and delivery.`,
         link: `/orders`,
         referenceId: 'summary'
@@ -322,7 +322,7 @@ export async function syncNotificationsForUser(
         const first = notifs[0];
         if (first.type === 'low_stock') {
           return {
-            title: `⚠️ ${notifs.length} Products Low on Stock`,
+            title: `${notifs.length} Products Low on Stock`,
             message: `${notifs.length} products have fallen below minimum threshold.`,
             link: '/inventory?filter=low_stock',
             type: first.type
@@ -330,7 +330,7 @@ export async function syncNotificationsForUser(
         }
         if (first.type === 'expiry') {
           return {
-            title: `📅 ${notifs.length} Batches Expiring Soon`,
+            title: `${notifs.length} Batches Expiring Soon`,
             message: `${notifs.length} batches are expiring within the next ${settings.expiryWarningDays} days.`,
             link: '/inventory/expiry',
             type: first.type
@@ -338,7 +338,7 @@ export async function syncNotificationsForUser(
         }
         if (first.type === 'delivery') {
           return {
-            title: `🚚 ${notifs.length} Orders Pending Delivery`,
+            title: `${notifs.length} Orders Pending Delivery`,
             message: `${notifs.length} orders are pending dispatch and delivery.`,
             link: '/orders',
             type: first.type

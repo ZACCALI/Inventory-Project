@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, createContext, useContext, useCallback, useEffect } from 'react';
-import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Cloud, Info, X, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 interface ModalState {
@@ -65,7 +65,7 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
     else if (type === 'error') toast.error(message);
     else if (type === 'offline' || type === 'loading') {
       toast(message, {
-        icon: '☁️',
+        icon: <Cloud size={18} color="var(--warning, #f59e0b)" />,
         duration: 3000,
         style: {
           background: 'var(--bg-card, #1e293b)',
