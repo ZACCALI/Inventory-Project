@@ -601,8 +601,6 @@ export function OrderReceiptModal({
                   <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#000000' }}>{companyName.toUpperCase()}</h2>
                   <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#555', fontWeight: 'bold' }}>
                     MAUL ILIAN, MARANTAO LANAO DEL SUR
-                    <br />
-                    VAT Reg. TIN: 000-000-000-00000
                   </p>
                 </div>
 
