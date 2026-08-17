@@ -1285,18 +1285,18 @@ export default function CreateOrderPage() {
 
   return (
     <>
-      <div className="page-header mobile-col" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 className="page-title">Walk-in Home Order</h1>
-          <p className="page-subtitle">Process a new wholesale delivery or walk-in pickup</p>
-        </div>
-      </div>
-
       <div className="pos-layout" style={{ maxWidth: '100%', width: '100%', overflowX: 'hidden', minWidth: 0, boxSizing: 'border-box' }}>
         
         {/* LEFT PANEL: Order Details & Product Grid */}
         <div className="walkin-left-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', minWidth: 0, maxWidth: '100%' }}>
           
+          <div className="page-header mobile-col" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h1 className="page-title">Walk-in Home Order</h1>
+              <p className="page-subtitle">Process a new wholesale delivery or walk-in pickup</p>
+            </div>
+          </div>
+
           <div>
             {/* Order Details Surface Card */}
             <div className="card" style={{ marginBottom: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', minWidth: 0, maxWidth: '100%' }}>
@@ -1662,9 +1662,9 @@ export default function CreateOrderPage() {
         </div>
 
         {/* RIGHT PANEL: Cart & Payment */}
-        <div className={`walkin-right-panel ${isMobileCartOpen ? 'mobile-open' : ''}`}>
-          <div className="mobile-drag-handle"></div>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <div className={`walkin-right-panel ${isMobileCartOpen ? 'mobile-open' : ''}`} style={{ display: 'flex', flexDirection: 'column', background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)', position: 'sticky', top: '20px', maxHeight: 'calc(100vh - 100px)', height: 'calc(100vh - 100px)', alignSelf: 'start', zIndex: 10, minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
+          <div className="mobile-drag-handle" style={{ width: '40px', height: '4px', background: 'var(--border)', borderRadius: '2px', margin: '12px auto 0 auto' }}></div>
+          <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <ShoppingCart size={20} color="var(--primary)" />
               Order Cart
@@ -1693,7 +1693,7 @@ export default function CreateOrderPage() {
           </div>
 
           {/* Cart Items Area */}
-          <div style={{ flex: '1 1 auto', overflowY: 'auto', maxHeight: '340px', minHeight: '100px', padding: '16px', background: 'var(--bg-main)' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: 'var(--bg-main)' }}>
             {cart.length === 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-tertiary)', gap: '16px' }}>
                 <div style={{ width: '64px', height: '64px', flexShrink: 0, borderRadius: '50%', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
@@ -2215,36 +2215,14 @@ export default function CreateOrderPage() {
         .mobile-only-close { display: none !important; }
         .mobile-drag-handle { display: none; }
 
-        @media (min-width: 1024px) {
-          .walkin-right-panel {
-            position: sticky !important;
-            top: 24px !important;
-            align-self: start !important;
-            max-height: calc(100vh - 48px) !important;
-            display: flex !important;
-            flex-direction: column !important;
-            background: #FFFFFF !important;
-            border: 1px solid var(--border) !important;
-            border-radius: var(--radius-lg) !important;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05) !important;
-            overflow: hidden !important;
-            z-index: 20 !important;
-            transform: none !important;
-          }
-        }
-
-        @media (max-width: 1023px) {
+        @media (max-width: 1100px) {
           .mobile-drag-handle {
             display: block; width: 40px; height: 4px; background: var(--border); border-radius: 4px;
-            margin: 12px auto 16px;
+            margin: 12px auto 20px;
           }
           .mobile-cart-overlay {
             display: block; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.4); z-index: 900;
-          }
-          .mobile-fab-container {
-            display: block; position: fixed; bottom: max(32px, env(safe-area-inset-bottom, 32px)); 
-            left: 24px; right: 24px; z-index: 90;
           }
           .mobile-fab {
             width: 100%; background: var(--primary); color: #fff; border: none; border-radius: 100px;
@@ -2254,19 +2232,25 @@ export default function CreateOrderPage() {
           .mobile-fab:active { transform: scale(0.98); }
           .mobile-only-close { display: flex !important; }
 
+          .walkin-layout {
+            flex-direction: column !important;
+            height: calc(100vh - 64px) !important;
+            overflow: hidden !important;
+            margin: calc(var(--space-sm) * -1) calc(var(--space-md) * -1) !important;
+          }
           .walkin-left-panel {
             overflow-y: auto !important;
             padding-bottom: 100px !important;
           }
           .walkin-right-panel {
             position: fixed !important; top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important;
-            width: 100% !important; height: 85vh !important; max-height: 85vh !important; border-radius: 20px 20px 0 0 !important;
+            width: 100% !important; height: 85vh !important; border-radius: 16px 16px 0 0 !important;
             transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1);
             z-index: 1000 !important; box-shadow: 0 -10px 40px rgba(0,0,0,0.15) !important;
-            border-left: none !important; border-top: 1px solid var(--border) !important;
+            border: none !important; border-top: 1px solid var(--border) !important;
           }
           .walkin-right-panel.mobile-open {
-            transform: translateY(0) !important;
+            transform: translateY(0);
           }
           .walkin-product-grid {
             gap: 12px !important;
@@ -2279,6 +2263,23 @@ export default function CreateOrderPage() {
           .walkin-product-title { font-size: 13px !important; margin-bottom: 4px !important; }
           .walkin-product-price { font-size: 14px !important; }
           .walkin-product-badge { font-size: 8px !important; padding: 1px 3px !important; }
+        }
+
+        @media (min-width: 769px) and (max-width: 1100px) {
+          .mobile-fab-container {
+            display: block; position: fixed; bottom: max(32px, env(safe-area-inset-bottom, 32px)); 
+            left: calc(var(--sidebar-width) + 24px); right: 24px; z-index: 90; transition: left 0.3s ease;
+          }
+          :global(.app-layout.sidebar-collapsed) .mobile-fab-container {
+            left: calc(var(--sidebar-collapsed) + 24px) !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .mobile-fab-container {
+            display: block; position: fixed; bottom: max(32px, env(safe-area-inset-bottom, 32px)); 
+            left: 24px; right: 24px; z-index: 90;
+          }
         }
 
         @media (max-width: 600px) {
