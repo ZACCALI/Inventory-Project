@@ -1662,7 +1662,7 @@ export default function CreateOrderPage() {
         </div>
 
         {/* RIGHT PANEL: Cart & Payment */}
-        <div className={`walkin-right-panel ${isMobileCartOpen ? 'mobile-open' : ''}`} style={{ display: 'flex', flexDirection: 'column', background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)', position: 'sticky', top: '20px', maxHeight: 'calc(100vh - 100px)', height: 'calc(100vh - 100px)', alignSelf: 'start', zIndex: 10, minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
+        <div className={`walkin-right-panel ${isMobileCartOpen ? 'mobile-open' : ''}`} style={{ display: 'flex', flexDirection: 'column', background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)', position: 'sticky', top: 0, maxHeight: 'calc(100vh - 80px)', height: 'calc(100vh - 80px)', alignSelf: 'start', zIndex: 10, minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
           <div className="mobile-drag-handle" style={{ width: '40px', height: '4px', background: 'var(--border)', borderRadius: '2px', margin: '12px auto 0 auto' }}></div>
           <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
