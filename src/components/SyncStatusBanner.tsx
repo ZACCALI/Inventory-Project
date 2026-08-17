@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle, AlertTriangle, X, CloudOff, RefreshCw } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/lib/db';
+import { CheckCircle, AlertTriangle, X } from 'lucide-react';
 
 interface SyncFailureDetail {
   type: string;
@@ -18,91 +16,63 @@ interface SyncBannerState {
 }
 
 /**
- * Global component that listens for sync events dispatched by offlineSync.ts
- * and shows the user a brief notification banner:
- *  - Green flash when sync completes successfully
- *  - Persistent amber warning when a sync task permanently fails
+ * Global component that listens for real offline sync events dispatched by offlineSync.ts:
+ *  - Clean, brief success toast ONLY when actual offline actions (> 0) were synced
+ *  - Informative amber alert when an offline action encounters an error/conflict
+ *  - 0-action routine data changes are handled completely silently without intrusive popups
  */
 export default function SyncStatusBanner() {
   const [banner, setBanner] = useState<SyncBannerState | null>(null);
   const [visible, setVisible] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
-
-  const pendingCount = useLiveQuery(
-    () => db.syncQueue.where('syncStatus').anyOf(['pending', 'failed']).count(),
-    []
-  ) || 0;
-
-  const syncingCount = useLiveQuery(
-    () => db.syncQueue.where('syncStatus').equals('syncing').count(),
-    []
-  ) || 0;
-
-  useEffect(() => {
-    const checkOnline = async () => {
-      if (!navigator.onLine) {
-        setIsOffline(true);
-        return;
-      }
-      try {
-        const res = await fetch(`/api/test-ping?t=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
-        setIsOffline(!res.ok);
-      } catch {
-        setIsOffline(!navigator.onLine);
-      }
-    };
-
-    checkOnline();
-    window.addEventListener('online', checkOnline);
-    window.addEventListener('offline', checkOnline);
-    const interval = setInterval(checkOnline, 5000);
-    return () => {
-      window.removeEventListener('online', checkOnline);
-      window.removeEventListener('offline', checkOnline);
-      clearInterval(interval);
-    };
-  }, []);
 
   useEffect(() => {
     const handleSynced = (e: Event) => {
-      const ev = e as CustomEvent<{ synced: number; types: string[] }>;
+      const ev = e as CustomEvent<{ synced?: number; types?: string[] }>;
       const count = ev.detail?.synced || 0;
-      const types = ev.detail?.types?.join(', ') || 'data';
+      
+      // Approach 1: Silent if 0 actions were synced (prevents popup on regular data updates)
+      if (count <= 0) return;
+
+      const rawTypes = ev.detail?.types?.filter(t => t && t !== 'data') || [];
+      const types = rawTypes.length > 0 ? ` (${rawTypes.join(', ')})` : '';
+
       setBanner({
         kind: 'success',
-        message: `${count} offline action${count !== 1 ? 's' : ''} synced successfully (${types}).`,
+        message: `${count} offline ${count === 1 ? 'action' : 'actions'} synchronized successfully${types}.`,
       });
       setVisible(true);
-      // Auto-dismiss success after 4 seconds
-      setTimeout(() => setVisible(false), 4000);
+
+      // Auto-dismiss success toast after 3.5 seconds
+      const timer = setTimeout(() => setVisible(false), 3500);
+      return () => clearTimeout(timer);
     };
 
     const handleFailed = (e: Event) => {
-      const ev = e as CustomEvent<{ failed: SyncFailureDetail[] }>;
+      const ev = e as CustomEvent<{ failed?: SyncFailureDetail[] }>;
       const failures = ev.detail?.failed || [];
+      if (failures.length === 0) return;
 
       // Build a human-readable message
       const stockConflicts = failures.filter(f =>
-        f.error.toLowerCase().includes('cannot issue') ||
-        f.error.toLowerCase().includes('stock') ||
-        f.error.toLowerCase().includes('available')
+        f.error?.toLowerCase().includes('cannot issue') ||
+        f.error?.toLowerCase().includes('stock') ||
+        f.error?.toLowerCase().includes('available')
       );
       const otherFailures = failures.filter(f => !stockConflicts.includes(f));
 
       let message = '';
       if (stockConflicts.length > 0) {
-        message = `${stockConflicts.length} stock action${stockConflicts.length !== 1 ? 's' : ''} failed due to insufficient stock. The items could not be deducted because the inventory was already updated by someone else while you were offline.`;
+        message = `${stockConflicts.length} stock action${stockConflicts.length !== 1 ? 's' : ''} failed due to insufficient stock. Another user may have updated inventory while you were offline.`;
       } else {
         message = `${failures.length} offline action${failures.length !== 1 ? 's' : ''} failed to sync. Check your connection and try refreshing.`;
       }
 
-      if (otherFailures.length > 0) {
+      if (otherFailures.length > 0 && stockConflicts.length > 0) {
         message += ` (${otherFailures.length} other error${otherFailures.length !== 1 ? 's' : ''})`;
       }
 
       setBanner({ kind: 'failure', message, details: failures });
       setVisible(true);
-      // Failures stay visible until manually dismissed
     };
 
     window.addEventListener('amroding:synced', handleSynced);
@@ -113,114 +83,80 @@ export default function SyncStatusBanner() {
     };
   }, []);
 
-  const isSuccess = banner?.kind === 'success';
+  if (!visible || !banner) return null;
+
+  const isSuccess = banner.kind === 'success';
 
   return (
-    <>
-      {/* Live pending queue indicator / Offline Status */}
-      {(isOffline || pendingCount > 0 || syncingCount > 0) && (
-        <div
-          className="offline-banner-floating"
-          style={{
-            position: 'fixed',
-            bottom: '20px',
-            right: '20px',
-            zIndex: 99998,
-            background: isOffline ? '#ef4444' : syncingCount > 0 ? '#3b82f6' : '#f59e0b',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '12px',
-            fontWeight: 600,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            animation: 'fadeIn 0.3s ease'
-          }}
-        >
-          {isOffline ? (
-            <CloudOff size={14} />
-          ) : syncingCount > 0 ? (
-            <RefreshCw size={14} className="spin" />
-          ) : (
-            <CloudOff size={14} />
-          )}
-          <span>
-            {isOffline 
-              ? `Offline Mode (Working Offline)${pendingCount > 0 ? ` - ${pendingCount} pending` : ''}`
-              : syncingCount > 0 
-                ? `Syncing ${syncingCount} item${syncingCount !== 1 ? 's' : ''}...` 
-                : `${pendingCount} offline item${pendingCount !== 1 ? 's' : ''} pending`}
-          </span>
-        </div>
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        position: 'fixed',
+        bottom: '24px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 99999,
+        maxWidth: '540px',
+        width: 'calc(100vw - 32px)',
+        background: isSuccess ? '#f0fdf4' : '#fffbeb',
+        border: `1px solid ${isSuccess ? '#86efac' : '#fde68a'}`,
+        borderRadius: '12px',
+        padding: '12px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)',
+        animation: 'syncBannerSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}
+    >
+      {isSuccess ? (
+        <CheckCircle size={18} color="#16a34a" style={{ flexShrink: 0 }} />
+      ) : (
+        <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0 }} />
       )}
-
-      {/* Flash Banner for success/failure */}
-      {visible && banner && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '80px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 99999,
-            maxWidth: '600px',
-            width: 'calc(100vw - 32px)',
-            background: isSuccess ? '#dcfce7' : '#fef3c7',
-            border: `1px solid ${isSuccess ? '#16a34a' : '#f59e0b'}`,
-            borderRadius: '12px',
-            padding: '14px 16px',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-            animation: 'slideUp 0.3s ease',
-          }}
-        >
-          {isSuccess
-            ? <CheckCircle size={18} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
-            : <AlertTriangle size={18} color="#92400e" style={{ flexShrink: 0, marginTop: '2px' }} />}
-          <span style={{
-            fontSize: '13px',
-            fontWeight: 500,
-            color: isSuccess ? '#14532d' : '#92400e',
-            flex: 1,
-            lineHeight: '1.5',
-          }}>
-            {banner.message}
-          </span>
-          <button
-            onClick={() => setVisible(false)}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: isSuccess ? '#14532d' : '#92400e',
-              padding: '2px',
-              flexShrink: 0,
-            }}
-            aria-label="Dismiss"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-      <style>{`
-        @media (min-width: 769px) {
-          .offline-banner-floating {
-            display: none !important;
+      <span
+        style={{
+          fontSize: '13px',
+          fontWeight: 600,
+          color: isSuccess ? '#15803d' : '#b45309',
+          flex: 1,
+          lineHeight: '1.4',
+        }}
+      >
+        {banner.message}
+      </span>
+      <button
+        onClick={() => setVisible(false)}
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: isSuccess ? '#15803d' : '#b45309',
+          padding: '4px',
+          borderRadius: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          opacity: 0.8,
+        }}
+        aria-label="Dismiss notification"
+      >
+        <X size={16} />
+      </button>
+      <style jsx>{`
+        @keyframes syncBannerSlideUp {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
           }
         }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
       `}</style>
-    </>
+    </div>
   );
 }
