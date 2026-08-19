@@ -1185,7 +1185,7 @@ export default function CreateOrderPage() {
         </head>
         <body>
           <div class="header">
-            <h1>{companyName}</h1>
+            <h1>${companyName}</h1>
             <p>MAUL ILIAN, MARANTAO LANAO DEL SUR</p>
             <p style="margin-top: 8px; font-weight: 600; color: #000000;">OFFICIAL RECEIPT</p>
           </div>
@@ -1271,7 +1271,7 @@ export default function CreateOrderPage() {
 
           <div class="footer">
             <p>Thank you for your purchase!</p>
-            <p>Facebook: {companyName.toUpperCase()}</p>
+            <p>Facebook: ${companyName.toUpperCase()}</p>
           </div>
         </body>
       </html>
