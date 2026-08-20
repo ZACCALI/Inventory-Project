@@ -183,6 +183,7 @@ function printHtmlFallback(data: ThermalReceiptData, paper: PaperWidth = '58'): 
 
     printWindow.document.write(html);
     printWindow.document.close();
+    printWindow.document.title = 'Official Receipt';
     printWindow.focus();
     setTimeout(() => { printWindow.print(); printWindow.close(); }, 800);
     return true;

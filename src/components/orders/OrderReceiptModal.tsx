@@ -171,9 +171,11 @@ export function OrderReceiptModal({
     const html = `
       <html>
         <head>
-          <title>Receipt - ${escapeHtml(targetOrder.orderNumber || 'Order')}</title>
+          <meta charset="utf-8"/>
+          <meta name="referrer" content="no-referrer"/>
+          <title>Official Receipt</title>
           <style>
-            @page { margin: 15mm; }
+            @page { size: auto; margin: 10mm; }
             body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; font-size: 13px; color: #222; }
             .header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #000000; padding-bottom: 16px; }
             .header h1 { font-size: 22px; font-weight: 800; color: #000000; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1px; }
@@ -191,7 +193,7 @@ export function OrderReceiptModal({
             .totals .row.grand { border-top: 2px solid #000000; padding-top: 12px; margin-top: 8px; font-size: 18px; font-weight: 800; color: #000000; }
             .totals .row.discount { color: #e53e3e; }
             .footer { text-align: center; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; color: #888; font-size: 11px; }
-            @media print { body { padding: 0; } }
+            @media print { body { padding: 0; } @page { margin: 10mm; } }
           </style>
         </head>
         <body>
@@ -280,6 +282,7 @@ export function OrderReceiptModal({
 
     printWindow.document.write(html);
     printWindow.document.close();
+    printWindow.document.title = 'Official Receipt';
     printWindow.focus();
     setTimeout(() => {
       printWindow.print();
