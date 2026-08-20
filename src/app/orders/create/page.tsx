@@ -1163,33 +1163,72 @@ export default function CreateOrderPage() {
           <meta name="referrer" content="no-referrer"/>
           <title>Official Receipt</title>
           <style>
-            @page { size: auto; margin: 10mm; }
-            body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; font-size: 13px; color: #222; }
-            .header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #000000; padding-bottom: 16px; }
-            .header h1 { font-size: 22px; font-weight: 800; color: #000000; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1px; }
-            .header p { margin: 2px 0; color: #555; font-size: 12px; }
-            .meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; padding: 12px 16px; background: #f5f7fa; border-radius: 8px; }
-            .meta div { font-size: 12px; min-width: 120px; }
-            .meta strong { display: block; font-size: 13px; color: #222; margin-bottom: 2px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            thead th { background: #000000; color: #fff; padding: 10px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
+            /* ── Paper-agnostic: fills A4, A5, Letter, Legal, any size ── */
+            @page { size: auto; margin: 8mm; }
+            *, *::before, *::after { box-sizing: border-box; }
+            html, body {
+              width: 100%;
+              margin: 0;
+              padding: 0;
+              font-family: 'Segoe UI', Arial, sans-serif;
+              font-size: 11px;
+              color: #222;
+              background: #fff;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .wrapper { width: 100%; padding: 6mm; }
+            .header { text-align: center; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 8px; }
+            .header h1 { font-size: 16px; font-weight: 800; color: #000; margin: 0 0 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .header p { margin: 1px 0; color: #555; font-size: 10px; }
+            .meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; padding: 6px 8px; background: #f5f7fa; border-radius: 4px; }
+            .meta div { font-size: 10px; min-width: 100px; }
+            .meta strong { display: block; font-size: 10px; font-weight: 700; color: #222; margin-bottom: 1px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 8px; table-layout: fixed; }
+            col.num   { width: 6%; }
+            col.prod  { width: 46%; }
+            col.qty   { width: 10%; }
+            col.price { width: 17%; }
+            col.total { width: 21%; }
+            thead th {
+              background: #000;
+              color: #fff;
+              padding: 4px 5px;
+              font-size: 9px;
+              text-transform: uppercase;
+              letter-spacing: 0.3px;
+              text-align: left;
+            }
             thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5) { text-align: right; }
-            tbody td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+            tbody tr { page-break-inside: avoid; break-inside: avoid; }
+            tbody td {
+              padding: 3px 5px;
+              border-bottom: 1px solid #eee;
+              font-size: 10px;
+              word-break: break-word;
+              vertical-align: top;
+            }
             tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5) { text-align: right; }
-            .totals { margin-left: auto; width: 280px; }
-            .totals .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
-            .totals .row.grand { border-top: 2px solid #000000; padding-top: 12px; margin-top: 8px; font-size: 18px; font-weight: 800; color: #000000; }
+            tbody tr:last-child td { border-bottom: none; }
+            .totals { margin-left: auto; width: 55%; max-width: 240px; }
+            .totals .row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; }
+            .totals .row.grand { border-top: 2px solid #000; padding-top: 6px; margin-top: 4px; font-size: 13px; font-weight: 800; color: #000; }
             .totals .row.discount { color: #e53e3e; }
             .totals .row.change { color: #38a169; font-weight: 700; }
-            .footer { text-align: center; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; color: #888; font-size: 11px; }
-            @media print { body { padding: 0; } @page { margin: 10mm; } }
+            .footer { text-align: center; margin-top: 14px; padding-top: 8px; border-top: 1px solid #ddd; color: #888; font-size: 9px; }
+            @media print {
+              html, body { margin: 0 !important; padding: 0 !important; }
+              .wrapper { padding: 0 !important; }
+              @page { margin: 8mm; }
+            }
           </style>
         </head>
         <body>
+          <div class="wrapper">
           <div class="header">
             <h1>${companyName}</h1>
             <p>MAUL ILIAN, MARANTAO LANAO DEL SUR</p>
-            <p style="margin-top: 8px; font-weight: 600; color: #000000;">OFFICIAL RECEIPT</p>
+            <p style="margin-top: 4px; font-weight: 700; color: #000;">OFFICIAL RECEIPT</p>
           </div>
 
           <div class="meta">
@@ -1212,7 +1251,7 @@ export default function CreateOrderPage() {
               ${lastOrder.createdBy?.name || 'ADMIN'}
             </div>
             ${lastOrder.customer ? `
-            <div style="width: 100%; border-top: 1px dashed #ddd; margin-top: 8px; padding-top: 8px;">
+            <div style="width: 100%; border-top: 1px dashed #ddd; margin-top: 4px; padding-top: 4px;">
               <strong>Customer Details</strong>
               Customer: ${(!lastOrder.customer?.name || ['[normal walk-in]', 'normal walk-in', 'walk-in'].includes(lastOrder.customer.name.trim().toLowerCase())) ? 'BAIE' : lastOrder.customer.name}<br/>
               ${lastOrder.customer?.phone ? `Phone: ${lastOrder.customer.phone}<br/>` : ''}
@@ -1222,6 +1261,13 @@ export default function CreateOrderPage() {
           </div>
 
           <table>
+            <colgroup>
+              <col class="num"/>
+              <col class="prod"/>
+              <col class="qty"/>
+              <col class="price"/>
+              <col class="total"/>
+            </colgroup>
             <thead>
               <tr>
                 <th>#</th>
@@ -1235,7 +1281,7 @@ export default function CreateOrderPage() {
               ${lastOrder.items.map((i: { product?: { name: string }, uomName?: string, quantity: number, price: number, subtotal: number }, idx: number) => `
                 <tr>
                   <td>${idx + 1}</td>
-                  <td>${i.product?.name || 'Item'}${i.uomName ? ` <small style="color:#000000;">(${i.uomName})</small>` : ''}</td>
+                  <td>${i.product?.name || 'Item'}${i.uomName ? ` <small style="color:#555;">(${i.uomName})</small>` : ''}</td>
                   <td>${i.quantity}</td>
                   <td>${Number(i.price).toFixed(2)}</td>
                   <td><strong>${(Number(i.quantity) * Number(i.price)).toFixed(2)}</strong></td>
@@ -1257,7 +1303,7 @@ export default function CreateOrderPage() {
             ` : ''}
             <div class="row grand">
               <span>Total</span>
-              <span>₱${lastOrder.totalAmount.toFixed(2)}</span>
+              <span>&#8369;${lastOrder.totalAmount.toFixed(2)}</span>
             </div>
             ${lastOrder.tendered > 0 ? `
               <div class="row">
@@ -1274,6 +1320,7 @@ export default function CreateOrderPage() {
           <div class="footer">
             <p>Thank you for your purchase!</p>
             <p>Facebook: ${companyName.toUpperCase()}</p>
+          </div>
           </div>
         </body>
       </html>
