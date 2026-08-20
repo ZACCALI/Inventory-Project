@@ -175,63 +175,91 @@ export function OrderReceiptModal({
           <meta name="referrer" content="no-referrer"/>
           <title>Official Receipt</title>
           <style>
-            /* ── Paper-agnostic: fills A4, A5, Letter, Legal, any size ── */
-            @page { size: auto; margin: 8mm; }
+            @page { size: auto; margin: 12mm; }
             *, *::before, *::after { box-sizing: border-box; }
             html, body {
               width: 100%;
               margin: 0;
               padding: 0;
               font-family: 'Segoe UI', Arial, sans-serif;
-              font-size: 11px;
+              font-size: 12px;
               color: #222;
               background: #fff;
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-            .wrapper { width: 100%; padding: 6mm; }
-            .header { text-align: center; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 8px; }
-            .header h1 { font-size: 16px; font-weight: 800; color: #000; margin: 0 0 2px; text-transform: uppercase; letter-spacing: 0.5px; }
-            .header p { margin: 1px 0; color: #555; font-size: 10px; }
-            .meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; padding: 6px 8px; background: #f5f7fa; border-radius: 4px; }
-            .meta div { font-size: 10px; min-width: 100px; }
-            .meta strong { display: block; font-size: 10px; font-weight: 700; color: #222; margin-bottom: 1px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 8px; table-layout: fixed; }
-            col.num   { width: 6%; }
-            col.prod  { width: 46%; }
-            col.qty   { width: 10%; }
-            col.price { width: 17%; }
-            col.total { width: 21%; }
+            .wrapper {
+              max-width: 680px;
+              width: 100%;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 20px;
+              border-bottom: 2px solid #000;
+              padding-bottom: 14px;
+            }
+            .header h1 {
+              font-size: 20px;
+              font-weight: 800;
+              color: #000;
+              margin: 0 0 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .header p {
+              margin: 2px 0;
+              color: #555;
+              font-size: 12px;
+            }
+            .meta {
+              display: flex;
+              justify-content: space-between;
+              flex-wrap: wrap;
+              gap: 12px;
+              margin-bottom: 18px;
+              padding: 10px 14px;
+              background: #f5f7fa;
+              border-radius: 6px;
+            }
+            .meta div { font-size: 12px; min-width: 110px; }
+            .meta strong { display: block; font-size: 12px; font-weight: 700; color: #111; margin-bottom: 2px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 18px; table-layout: fixed; }
+            col.num   { width: 7%; }
+            col.prod  { width: 47%; }
+            col.qty   { width: 12%; }
+            col.price { width: 16%; }
+            col.total { width: 18%; }
             thead th {
               background: #000;
               color: #fff;
-              padding: 4px 5px;
-              font-size: 9px;
+              padding: 8px 10px;
+              font-size: 11px;
               text-transform: uppercase;
-              letter-spacing: 0.3px;
+              letter-spacing: 0.5px;
               text-align: left;
             }
             thead th:nth-child(3), thead th:nth-child(4), thead th:nth-child(5) { text-align: right; }
             tbody tr { page-break-inside: avoid; break-inside: avoid; }
             tbody td {
-              padding: 3px 5px;
+              padding: 7px 10px;
               border-bottom: 1px solid #eee;
-              font-size: 10px;
+              font-size: 12px;
               word-break: break-word;
-              vertical-align: top;
+              vertical-align: middle;
             }
             tbody td:nth-child(3), tbody td:nth-child(4), tbody td:nth-child(5) { text-align: right; }
             tbody tr:last-child td { border-bottom: none; }
-            .totals { margin-left: auto; width: 55%; max-width: 240px; }
-            .totals .row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; }
-            .totals .row.grand { border-top: 2px solid #000; padding-top: 6px; margin-top: 4px; font-size: 13px; font-weight: 800; color: #000; }
+            .totals { margin-left: auto; width: 280px; }
+            .totals .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; }
+            .totals .row.grand { border-top: 2px solid #000; padding-top: 8px; margin-top: 4px; font-size: 16px; font-weight: 800; color: #000; }
             .totals .row.discount { color: #e53e3e; }
-            .totals .row.change { color: #38a169; font-weight: 700; }
-            .footer { text-align: center; margin-top: 14px; padding-top: 8px; border-top: 1px solid #ddd; color: #888; font-size: 9px; }
+            .footer { text-align: center; margin-top: 24px; padding-top: 12px; border-top: 1px solid #ddd; color: #777; font-size: 11px; }
             @media print {
-              html, body { margin: 0 !important; padding: 0 !important; }
-              .wrapper { padding: 0 !important; }
-              @page { margin: 8mm; }
+              html, body { margin: 0 auto !important; padding: 0 !important; }
+              .wrapper { max-width: 680px !important; width: 100% !important; margin: 0 auto !important; padding: 0 !important; }
+              @page { margin: 12mm; }
             }
           </style>
         </head>
