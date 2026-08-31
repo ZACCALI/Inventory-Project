@@ -23,6 +23,7 @@ import { db } from '@/lib/db';
 import { processSyncQueue } from '@/lib/offlineSync';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { getDefaultLandingPage } from '@/lib/constants';
 
 import Image from "next/image";
 // ── Fix #11: Proper TypeScript interface ──────────────────────
@@ -352,13 +353,16 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
   // Memoize unread count so it's not recalculated on every render
   const unreadCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
 
+  const userRole = (activeSession?.user as { role?: string })?.role;
+  const logoHref = getDefaultLandingPage(userRole);
+
   return (
     <header className="navbar">
       <div className="navbar-left">
         <button className="menu-toggle" onClick={onMenuToggle} aria-label="Toggle navigation menu">
           <Menu size={22} strokeWidth={1.75} />
         </button>
-        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', overflow: 'hidden' }}>
+        <Link href={logoHref} style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', overflow: 'hidden' }}>
           <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0, boxShadow: '0 2px 8px rgba(37,99,235,0.3)' }}>
             <Truck size={20} strokeWidth={1.5} />
           </div>
@@ -485,7 +489,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
                       <button className="notification-item" onClick={() => { 
                           if (!notif.isRead) handleMarkAsReadIndividual(notif.id);
                           setNotificationsOpen(false); 
-                          router.push(notif.link || '/dashboard'); 
+                          router.push(notif.link || logoHref); 
                         }} style={{ width: '100%', textAlign: 'left' }}>
                         <div className={`notification-icon ${notif.type}`}>
                           {notif.type === 'low_stock' && <AlertTriangle size={16} />}

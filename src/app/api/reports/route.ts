@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAuth } from '@/lib/apiAuth';
+import { requireAdmin } from '@/lib/apiAuth';
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await requireAuth();
+    const { user, error } = await requireAdmin(request);
     if (error) return error;
 
     const type = request.nextUrl.searchParams.get('type') || 'dashboard';
@@ -115,12 +115,6 @@ export async function GET(request: NextRequest) {
         deliveryStats: deliveryStatsFormatted,
         recentDeliveries,
       });
-    }
-
-    if (type === 'inventory' || type === 'monthly' || type === 'bestsellers') {
-      if (user.role !== 'admin') {
-        return NextResponse.json({ error: 'Access denied. Only Admins can view detailed reports.' }, { status: 403 });
-      }
     }
 
     if (type === 'sales') {

@@ -5,9 +5,10 @@ import { signIn, useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Package, ShoppingCart, Truck, BarChart3, Shield, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { getDefaultLandingPage } from '@/lib/constants';
 
 export default function LoginPage() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const [email, setEmail] = useState('');
@@ -22,9 +23,20 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.replace('/dashboard');
+      const role = session?.user?.role;
+      let perms: string | undefined;
+      try {
+        const cachedSettings = localStorage.getItem('amroding_settings_cache');
+        if (cachedSettings) {
+          const parsed = JSON.parse(cachedSettings);
+          perms = role === 'staff' ? parsed.staffPermissions : parsed.cashierPermissions;
+        }
+      } catch (e) {}
+
+      const landing = getDefaultLandingPage(role, perms);
+      router.replace(landing);
     }
-  }, [status, router]);
+  }, [status, session, router]);
 
   useEffect(() => {
     // Load settings
@@ -148,7 +160,31 @@ export default function LoginPage() {
         }
         setLoading(false);
       } else if (result.ok) {
-        router.push('/dashboard');
+        try {
+          const sessionRes = await fetch('/api/auth/session');
+          let landing = '/dashboard';
+          if (sessionRes.ok) {
+            const sessionData = await sessionRes.json();
+            const role = sessionData?.user?.role;
+            let perms: string | undefined;
+            try {
+              const cachedSettings = localStorage.getItem('amroding_settings_cache');
+              if (cachedSettings) {
+                const parsed = JSON.parse(cachedSettings);
+                perms = role === 'staff' ? parsed.staffPermissions : parsed.cashierPermissions;
+              }
+            } catch (e) {}
+            landing = getDefaultLandingPage(role, perms);
+          }
+          router.push(landing);
+        } catch {
+          let cachedRole: string | undefined;
+          try {
+            const saved = localStorage.getItem('amroding_cached_session');
+            if (saved) cachedRole = JSON.parse(saved)?.user?.role;
+          } catch (e) {}
+          router.push(getDefaultLandingPage(cachedRole));
+        }
         router.refresh();
       } else {
         setError('Sign-in failed. Please try again.');

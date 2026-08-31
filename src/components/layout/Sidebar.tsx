@@ -40,11 +40,13 @@ const getNavItems = (userRole?: string, permissions: string[] = []) => {
 
   const sections = [];
 
-  // Main is visible to all
-  sections.push({
-    section: 'Main',
-    items: [{ name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard }],
-  });
+  // Main is visible only to Admin
+  if (isAdmin) {
+    sections.push({
+      section: 'Main',
+      items: [{ name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard }],
+    });
+  }
 
   // Inventory
   if (hasPerm('inventory')) {

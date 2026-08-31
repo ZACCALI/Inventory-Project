@@ -10,6 +10,7 @@ import { db } from '@/lib/db';
 import { loadPrinterConfig } from '@/lib/qzService';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { getDefaultLandingPage } from '@/lib/constants';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -153,10 +154,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Dynamic Route Protection
   useEffect(() => {
-    if (!settings || !userRole || userRole === 'admin' || isPublicPage) return;
+    if (!userRole || userRole === 'admin' || isPublicPage) return;
 
-    const permissionsStr = userRole === 'staff' ? settings.staffPermissions : settings.cashierPermissions;
+    const permissionsStr = userRole === 'staff' ? settings?.staffPermissions : settings?.cashierPermissions;
     const permissions = permissionsStr ? permissionsStr.split(',').map((s: string) => s.trim()) : [];
+    const defaultLanding = getDefaultLandingPage(userRole, permissions);
+
+    // Explicitly block /dashboard for non-admin
+    if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
+      router.replace(defaultLanding);
+      return;
+    }
 
     const pathMappings: Record<string, string> = {
       '/inventory': 'inventory',
@@ -174,9 +182,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (currentBaseRoute) {
       const requiredPermission = pathMappings[currentBaseRoute];
       if (['finances', 'reports', 'users'].includes(requiredPermission)) {
-        router.push('/dashboard');
-      } else if (!permissions.includes(requiredPermission)) {
-        router.push('/dashboard');
+        router.replace(defaultLanding);
+      } else if (settings && !permissions.includes(requiredPermission)) {
+        router.replace(defaultLanding);
       }
     }
   }, [pathname, settings, userRole, isPublicPage, router]);

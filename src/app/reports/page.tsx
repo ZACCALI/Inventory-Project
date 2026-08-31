@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { BarChart3, TrendingUp, Package, Users, Calendar, Download, Activity, AlertTriangle, ShoppingCart, FileText, DollarSign } from 'lucide-react';
-import { formatCurrency } from '@/lib/constants';
+import { formatCurrency, getDefaultLandingPage } from '@/lib/constants';
 import { useAlert } from '@/components/AlertModal';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { exportToPDF } from '@/lib/exportUtils';
@@ -30,6 +32,34 @@ interface BestsellerData {
 }
 
 export default function ReportsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  const userRole = (session?.user as { role?: string })?.role;
+  const isAdmin = userRole === 'admin';
+
+  useEffect(() => {
+    let role = userRole;
+    if (!role && typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('amroding_cached_session');
+        if (saved) role = JSON.parse(saved)?.user?.role;
+      } catch (e) {}
+    }
+
+    if (role && role !== 'admin') {
+      let perms: string | undefined;
+      try {
+        const cachedSettings = localStorage.getItem('amroding_settings_cache');
+        if (cachedSettings) {
+          const parsed = JSON.parse(cachedSettings);
+          perms = role === 'staff' ? parsed.staffPermissions : parsed.cashierPermissions;
+        }
+      } catch (e) {}
+      router.replace(getDefaultLandingPage(role, perms));
+    }
+  }, [session, status, userRole, router]);
+
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [bestsellers, setBestsellers] = useState<BestsellerData[]>([]);
   const [totalReceivables, setTotalReceivables] = useState(0);
@@ -39,8 +69,16 @@ export default function ReportsPage() {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { showAlert, showToast } = useAlert();
 
-  const { data: monthlyRes, isLoading: isMonthlyLoading, error: monthlyError, mutate: mutateMonthly } = useSWR('/api/reports?type=monthly', fetcher, { refreshInterval: 60000 });
-  const { data: bestRes, isLoading: isBestLoading, error: bestError, mutate: mutateBest } = useSWR('/api/reports?type=bestsellers', fetcher, { refreshInterval: 60000 });
+  const { data: monthlyRes, isLoading: isMonthlyLoading, error: monthlyError, mutate: mutateMonthly } = useSWR(
+    typeof window !== 'undefined' && isAdmin ? '/api/reports?type=monthly' : null,
+    fetcher,
+    { refreshInterval: 60000 }
+  );
+  const { data: bestRes, isLoading: isBestLoading, error: bestError, mutate: mutateBest } = useSWR(
+    typeof window !== 'undefined' && isAdmin ? '/api/reports?type=bestsellers' : null,
+    fetcher,
+    { refreshInterval: 60000 }
+  );
   const isOnline = useOnlineStatus();
   const isOffline = !isOnline;
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
@@ -395,6 +433,10 @@ export default function ReportsPage() {
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
   const totalProfit = filteredMonthlyData.reduce((sum, m) => sum + m.profit, 0);
   const totalCollections = filteredMonthlyData.reduce((sum, m) => sum + (m.collections || 0), 0);
+
+  if (userRole && userRole !== 'admin') {
+    return null;
+  }
 
   if (loading) {
     return (

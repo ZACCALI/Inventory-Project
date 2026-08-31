@@ -3,15 +3,32 @@
 import { CloudOff, ArrowLeft, RefreshCw, Server, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { db } from '@/lib/db';
 import { processSyncQueue } from '@/lib/offlineSync';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { getDefaultLandingPage } from '@/lib/constants';
 
 export default function OfflinePage() {
+  const { data: session } = useSession();
+  const [cachedRole, setCachedRole] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingItems, setPendingItems] = useState<{type: string, count: number}[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const isOnline = useOnlineStatus();
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('amroding_cached_session');
+      if (saved) {
+        setCachedRole(JSON.parse(saved)?.user?.role || null);
+      }
+    } catch (e) {}
+  }, []);
+
+  const userRole = session?.user?.role || cachedRole;
+  const homeHref = getDefaultLandingPage(userRole);
+  const homeLabel = userRole === 'admin' ? 'Back to Dashboard' : 'Back to Home';
 
   const fetchSyncStatus = async () => {
     try {
@@ -182,7 +199,7 @@ export default function OfflinePage() {
           )}
 
           <Link 
-            href="/dashboard" 
+            href={homeHref} 
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -200,7 +217,7 @@ export default function OfflinePage() {
               transition: 'background 0.2s ease'
             }}
           >
-            <ArrowLeft size={18} /> Back to Dashboard
+            <ArrowLeft size={18} /> {homeLabel}
           </Link>
         </div>
       </div>

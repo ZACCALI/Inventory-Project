@@ -10,7 +10,7 @@ import {
   Package, TrendingUp, AlertTriangle, ClipboardList,
   Truck, DollarSign, ArrowUpRight, ArrowDownRight, CheckCircle2, WifiOff
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/constants';
+import { formatCurrency, getDefaultLandingPage } from '@/lib/constants';
 import ExpiryAlertWidget from '@/components/ExpiryAlertWidget';
 import { db } from '@/lib/db';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -50,18 +50,42 @@ interface DashboardData {
 const COLORS = ['#0061FF', '#2ECC71', '#E67E22', '#E74C3C', '#9B59B6', '#1ABC9C'];
 
 export default function DashboardPage() {
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  const userRole = (session?.user as { role?: string })?.role;
+  const isAdmin = userRole === 'admin';
+
+  useEffect(() => {
+    let role = userRole;
+    if (!role && typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('amroding_cached_session');
+        if (saved) role = JSON.parse(saved)?.user?.role;
+      } catch (e) {}
+    }
+
+    if (role && role !== 'admin') {
+      let perms: string | undefined;
+      try {
+        const cachedSettings = localStorage.getItem('amroding_settings_cache');
+        if (cachedSettings) {
+          const parsed = JSON.parse(cachedSettings);
+          perms = role === 'staff' ? parsed.staffPermissions : parsed.cashierPermissions;
+        }
+      } catch (e) {}
+      router.replace(getDefaultLandingPage(role, perms));
+    }
+  }, [session, status, userRole, router]);
+
   const { data: dashData, isLoading: isDashLoading, error: dashError, mutate: mutateDash } = useSWR<DashboardData>(
-    typeof window !== 'undefined' ? '/api/reports?type=dashboard' : null,
+    typeof window !== 'undefined' && isAdmin ? '/api/reports?type=dashboard' : null,
     fetcher,
     { refreshInterval: 60000 }
   );
 
   const { data: salesResult, isLoading: isSalesLoading, mutate: mutateSales } = useSWR(
-    typeof window !== 'undefined' ? '/api/reports?type=sales' : null,
+    typeof window !== 'undefined' && isAdmin ? '/api/reports?type=sales' : null,
     fetcher,
     { refreshInterval: 60000 }
   );
@@ -136,6 +160,10 @@ export default function DashboardPage() {
   const data = dashData || offlineDashData;
   const salesData = salesResult?.dailySales || [];
   const loading = (isDashLoading || isSalesLoading) && !data && !isOfflineMode;
+
+  if (userRole && userRole !== 'admin') {
+    return null;
+  }
 
   if (loading) {
     return (
