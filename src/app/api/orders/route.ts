@@ -8,7 +8,7 @@ import { generateOrderNumber } from '@/lib/orderUtils';
 
 export async function GET(request: NextRequest) {
   try {
-    const { error } = await requirePermission(request, 'orders');
+    const { user, error } = await requirePermission(request, 'orders');
     if (error) return error;
 
     const search = request.nextUrl.searchParams.get('search') || '';
@@ -63,7 +63,19 @@ export async function GET(request: NextRequest) {
       prisma.order.count({ where }),
     ]);
 
-    return NextResponse.json(orders, {
+    const sanitizedOrders = user.role === 'admin'
+      ? orders
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      : orders.map((order: any) => ({
+          ...order,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          items: order.items?.map((item: any) => ({
+            ...item,
+            product: item.product ? { ...item.product, costPrice: 0 } : item.product,
+          })),
+        }));
+
+    return NextResponse.json(sanitizedOrders, {
       headers: { 'X-Total-Count': total.toString() },
     });
   } catch (error) {
@@ -210,7 +222,11 @@ export async function POST(request: NextRequest) {
 
       // Profit margin safety check - Enforced for ALL orders including Walk-in Store
       if (totalCost > 0 && totalAmount < totalCost) {
-        throw new Error(`Discount too high! The final selling price (₱${totalAmount.toFixed(2)}) must not be less than your total cost price (₱${totalCost.toFixed(2)}).`);
+        if (user.role === 'admin') {
+          throw new Error(`Discount too high! The final selling price (₱${totalAmount.toFixed(2)}) must not be less than your total cost price (₱${totalCost.toFixed(2)}).`);
+        } else {
+          throw new Error('Discount Error: The final selling price cannot be lower than the allowable product cost threshold.');
+        }
       }
 
       const newOrder = await tx.order.create({

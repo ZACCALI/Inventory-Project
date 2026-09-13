@@ -43,6 +43,7 @@ interface ScannedProduct {
 export default function BarcodeScannerPage() {
   const { showAlert, showConfirm, showToast } = useAlert();
   const { data: session } = useSession();
+  const isAdmin = session?.user?.role?.toLowerCase() === 'admin';
   const router = useRouter();
   const [scannedCode, setScannedCode] = useState('');
   const [lastScanned, setLastScanned] = useState<ScannedProduct | null>(null);
@@ -1076,30 +1077,32 @@ export default function BarcodeScannerPage() {
                 </div>
 
                 {/* Pricing Section */}
-                <div style={{ marginBottom: 'var(--space-lg)' }}>
-                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-tertiary)', marginBottom: '8px', fontWeight: 800 }}>Pricing</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {/* Base Price Row */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg-main)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--success-dark)' }}>{formatCurrency(lastScanned.price)}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>1 {pluralize(lastScanned.unit || 'Piece', 1)}</div>
-                      </div>
-                      <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--success-dark)', background: 'var(--success-light)', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Base</span>
-                    </div>
-                    {/* Bulk Price Rows */}
-{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {lastScanned.uoms && lastScanned.uoms.map((u: any) => (
-                      <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg-main)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+                {isAdmin && (
+                  <div style={{ marginBottom: 'var(--space-lg)' }}>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-tertiary)', marginBottom: '8px', fontWeight: 800 }}>Pricing</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {/* Base Price Row */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg-main)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
                         <div>
-                          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--primary)' }}>{formatCurrency(u.price)}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>1 {u.name} ({u.multiplier} {pluralize(lastScanned.unit || 'Piece', u.multiplier)})</div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--success-dark)' }}>{formatCurrency(lastScanned.price)}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>1 {pluralize(lastScanned.unit || 'Piece', 1)}</div>
                         </div>
-                        <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{u.name}</span>
+                        <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--success-dark)', background: 'var(--success-light)', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Base</span>
                       </div>
-                    ))}
+                      {/* Bulk Price Rows */}
+  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {lastScanned.uoms && lastScanned.uoms.map((u: any) => (
+                        <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg-main)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--primary)' }}>{formatCurrency(u.price)}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>1 {u.name} ({u.multiplier} {pluralize(lastScanned.unit || 'Piece', u.multiplier)})</div>
+                          </div>
+                          <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{u.name}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Stock Section */}
                 <div style={{ paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
@@ -1213,7 +1216,7 @@ export default function BarcodeScannerPage() {
           <div style={{ fontSize: '14px', fontWeight: 700, opacity: 0.9 }}>
             {auditMode && auditItems.length > 0
               ? `${auditItems.reduce((acc, i) => acc + i.scannedQty, 0)} Counted`
-              : (lastScanned ? formatCurrency(lastScanned.price) : 'View')}
+              : (isAdmin && lastScanned ? formatCurrency(lastScanned.price) : (lastScanned ? 'View Details' : 'View'))}
           </div>
         </button>
       </div>

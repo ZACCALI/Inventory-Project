@@ -7,7 +7,7 @@ import { checkAndSetIdempotency } from '@/lib/idempotency';
 
 export async function GET(request: NextRequest) {
   try {
-    const { error } = await requireAuth();
+    const { user, error } = await requireAuth();
     if (error) return error;
 
     const search = request.nextUrl.searchParams.get('search') || '';
@@ -20,12 +20,23 @@ export async function GET(request: NextRequest) {
     const skip = limit ? Math.max(0, (page - 1) * limit) : 0;
 
     const where: Record<string, unknown> = {};
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-        { barcode: { contains: search, mode: 'insensitive' } },
-      ];
+    if (search.trim()) {
+      const tokens = search.trim().split(/\s+/).filter(Boolean);
+      if (tokens.length > 1) {
+        where.AND = tokens.map(token => ({
+          OR: [
+            { name: { contains: token, mode: 'insensitive' } },
+            { sku: { contains: token, mode: 'insensitive' } },
+            { barcode: { contains: token, mode: 'insensitive' } },
+          ],
+        }));
+      } else {
+        where.OR = [
+          { name: { contains: search.trim(), mode: 'insensitive' } },
+          { sku: { contains: search.trim(), mode: 'insensitive' } },
+          { barcode: { contains: search.trim(), mode: 'insensitive' } },
+        ];
+      }
     }
     if (category) {
       where.categoryId = category;
@@ -84,7 +95,11 @@ export async function GET(request: NextRequest) {
     const lowStockCount = statsRows.filter(p => p.stock > 0 && p.stock <= p.minStock).length;
     const outOfStockCount = statsRows.filter(p => p.stock <= 0).length;
 
-    return NextResponse.json(products, {
+    const sanitizedProducts = user.role === 'admin'
+      ? products
+      : products.map(({ costPrice, ...p }) => ({ ...p, costPrice: 0 }));
+
+    return NextResponse.json(sanitizedProducts, {
       headers: {
         'X-Total-Count': total.toString(),
         'X-In-Stock': inStockCount.toString(),
@@ -135,9 +150,9 @@ export async function POST(request: NextRequest) {
 
     const { name, sku, barcode, price, costPrice, stock, minStock, unit, expiryDate, image, categoryId, uoms } = parsed.data;
 
-    // Block if selling price <= cost price
+    // Block if selling price <= cost price (do not leak cost values in error message)
     if (costPrice !== undefined && Number(price) <= Number(costPrice)) {
-      return NextResponse.json({ error: `Pricing Error: Base Selling Price (${price}) must be higher than Cost Price (${costPrice}).` }, { status: 400 });
+      return NextResponse.json({ error: 'Pricing Error: Base Selling Price must be higher than Cost Price.' }, { status: 400 });
     }
 
     // Validate Barcode Uniqueness within the product
@@ -187,7 +202,7 @@ export async function POST(request: NextRequest) {
           sku,
           barcode: barcode ? barcode.trim() : null,
           price: price,
-          costPrice: costPrice,
+          costPrice: user.role === 'admin' ? (costPrice || 0) : 0,
           stock: initialStock,
           minStock: minStock || 10,
           unit: unit || 'pcs',

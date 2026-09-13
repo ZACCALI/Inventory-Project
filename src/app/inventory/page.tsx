@@ -608,12 +608,12 @@ export default function InventoryPage() {
           <table className="table mobile-stack">
             <thead>
               <tr>
-                <th style={{ width: '32%' }}>Product Details</th>
-                <th style={{ width: '18%' }}>Category</th>
-                <th style={{ textAlign: 'right', width: '14%' }}>Price</th>
-                <th style={{ textAlign: 'right', width: '14%' }}>Stock</th>
-                <th style={{ width: '12%' }}>Status</th>
-                <th style={{ textAlign: 'right', width: '10%' }}>Actions</th>
+                <th style={{ width: isAdmin ? '32%' : '42%' }}>Product Details</th>
+                <th style={{ width: isAdmin ? '18%' : '24%' }}>Category</th>
+                {isAdmin && <th style={{ textAlign: 'right', width: '14%' }}>Price</th>}
+                <th style={{ textAlign: 'right', width: isAdmin ? '14%' : '16%' }}>Stock</th>
+                <th style={{ width: isAdmin ? '12%' : '10%' }}>Status</th>
+                <th style={{ textAlign: 'right', width: isAdmin ? '10%' : '8%' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -622,7 +622,7 @@ export default function InventoryPage() {
                   <tr key={idx}>
                     <td><div className="skeleton" style={{ height: '20px', width: '80%' }} /></td>
                     <td><div className="skeleton" style={{ height: '20px', width: '60%' }} /></td>
-                    <td><div className="skeleton" style={{ height: '20px', width: '70%' }} /></td>
+                    {isAdmin && <td><div className="skeleton" style={{ height: '20px', width: '70%' }} /></td>}
                     <td><div className="skeleton" style={{ height: '20px', width: '90%' }} /></td>
                     <td><div className="skeleton" style={{ height: '20px', width: '50%' }} /></td>
                     <td><div className="skeleton" style={{ height: '20px', width: '50%' }} /></td>
@@ -630,7 +630,7 @@ export default function InventoryPage() {
                 ))
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '40px', color: 'var(--text-tertiary)' }}>
+                  <td colSpan={isAdmin ? 6 : 5} style={{ padding: '40px', color: 'var(--text-tertiary)' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', textAlign: 'center' }}>
                       No products found.
                     </div>
@@ -655,33 +655,33 @@ export default function InventoryPage() {
                       </div>
                     </td>
                     <td data-label="Category">{product.category?.name || '-'}</td>
-                    <td data-label="Price" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                        {/* Base Selling Price */}
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                          <span style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '15px' }}>{formatCurrency(product.price)}</span>
-                          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>/ {product.unit || 'Piece'}</span>
-                        </div>
-                        {/* Cost Price */}
-                        {isAdmin && (
+                    {isAdmin && (
+                      <td data-label="Price" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                          {/* Base Selling Price */}
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '15px' }}>{formatCurrency(product.price)}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>/ {product.unit || 'Piece'}</span>
+                          </div>
+                          {/* Cost Price */}
                           <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', background: 'var(--bg-hover)', padding: '2px 6px', borderRadius: '4px' }}>
                             Cost: {formatCurrency(product.costPrice)}
                           </div>
-                        )}
-                        {/* Bulk Pricing (if any) */}
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {product.uoms && product.uoms.filter((u: any) => !u.isBase).length > 0 && (
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {product.uoms.filter((u: any) => !u.isBase).map((uom: any) => (
-                              <div key={uom.id || uom.name} style={{ fontSize: '10px', background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                                {uom.name}: {formatCurrency(Number(uom.price))}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </td>
+                          {/* Bulk Pricing (if any) */}
+                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                          {product.uoms && product.uoms.filter((u: any) => !u.isBase).length > 0 && (
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                              {product.uoms.filter((u: any) => !u.isBase).map((uom: any) => (
+                                <div key={uom.id || uom.name} style={{ fontSize: '10px', background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                  {uom.name}: {formatCurrency(Number(uom.price))}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    )}
                     <td data-label="Stock" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                         {/* Primary Base Stock */}

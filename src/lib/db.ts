@@ -8,6 +8,7 @@ export interface OfflineProduct {
   price: number;
   costPrice: number;
   stock: number;
+  minStock?: number;
   image: string | null;
   categoryName: string | null;
   uoms?: {

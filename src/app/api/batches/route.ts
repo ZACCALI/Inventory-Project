@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
-    const { error } = await requirePermission(request, 'inventory');
+    const { user, error } = await requirePermission(request, 'inventory');
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -38,7 +38,15 @@ export async function GET(request: NextRequest) {
       orderBy: { expiryDate: 'asc' },
     });
 
-    return NextResponse.json(batches);
+    const sanitizedBatches = user.role === 'admin'
+      ? batches
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      : batches.map((b: any) => ({
+          ...b,
+          product: b.product ? { ...b.product, costPrice: 0 } : b.product,
+        }));
+
+    return NextResponse.json(sanitizedBatches);
   } catch (error) {
     console.error('Failed to fetch batches:', error);
     return NextResponse.json({ error: 'Failed to fetch batches' }, { status: 500 });

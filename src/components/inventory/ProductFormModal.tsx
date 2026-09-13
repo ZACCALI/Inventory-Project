@@ -211,13 +211,15 @@ export function ProductFormModal({
     e.preventDefault();
     setIsSaving(true);
 
-    // 1. Validate Pricing (Safety Feature)
-    const priceNum = Number(formData.price);
-    const costPriceNum = Number(formData.costPrice);
-    if (costPriceNum > 0 && priceNum <= costPriceNum) {
-      showAlert('error', 'Pricing Error', `Base Selling Price (${priceNum}) must be higher than Cost Price (${costPriceNum}).`);
-      setIsSaving(false);
-      return;
+    // 1. Validate Pricing (Safety Feature - Admin Only)
+    if (isAdmin) {
+      const priceNum = Number(formData.price);
+      const costPriceNum = Number(formData.costPrice);
+      if (costPriceNum > 0 && priceNum <= costPriceNum) {
+        showAlert('error', 'Pricing Error', 'Base Selling Price must be higher than Cost Price.');
+        setIsSaving(false);
+        return;
+      }
     }
 
     // 2. Validate Barcode Uniqueness (Against local state to protect offline queue)
@@ -259,10 +261,9 @@ export function ProductFormModal({
       const method = editingProduct ? 'PUT' : 'POST';
       const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products';
 
-      const productPayload = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const productPayload: Record<string, any> = {
         ...formData,
-        price: Number(formData.price) || 0,
-        costPrice: Number(formData.costPrice) || 0,
         stock: Number(formData.stock) || 0,
         minStock: Number(formData.minStock) || 0,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -272,6 +273,14 @@ export function ProductFormModal({
           price: Number(u.price) || 0
         }))
       };
+
+      if (isAdmin) {
+        productPayload.price = Number(formData.price) || 0;
+        productPayload.costPrice = Number(formData.costPrice) || 0;
+      } else {
+        delete productPayload.costPrice;
+        delete productPayload.price;
+      }
 
       if (!isOffline) {
         try {
@@ -297,7 +306,7 @@ export function ProductFormModal({
                 sku: payload.sku,
                 barcode: payload.barcode || null,
                 price: Number(payload.price) || 0,
-                costPrice: Number(payload.costPrice) || 0,
+                costPrice: isAdmin ? (Number(payload.costPrice) || 0) : 0,
                 stock: Number(payload.stock) || 0,
                 image: payload.image || null,
                 categoryName: categoryObj?.name || null,
@@ -347,7 +356,7 @@ export function ProductFormModal({
             sku: payload.sku,
             barcode: payload.barcode || null,
             price: Number(payload.price) || 0,
-            costPrice: Number(payload.costPrice) || 0,
+            costPrice: isAdmin ? (Number(payload.costPrice) || 0) : 0,
             stock: Number(payload.stock) || 0,
             image: payload.image || null,
             categoryName: categoryObj?.name || null,
@@ -493,14 +502,18 @@ export function ProductFormModal({
                 </select>
               </div>
 
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label htmlFor="product-cost-price" className="form-label">Base Cost Price (₱) *</label>
-                <input id="product-cost-price" name="costPrice" type="number" step="0.01" min="0" className="form-input" required value={formData.costPrice} onChange={e => setFormData({ ...formData, costPrice: e.target.value })} onWheel={e => (e.target as HTMLElement).blur()} />
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label htmlFor="product-selling-price" className="form-label">Base Selling Price (₱) *</label>
-                <input id="product-selling-price" name="price" type="number" step="0.01" min="0" className="form-input" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} onWheel={e => (e.target as HTMLElement).blur()} />
-              </div>
+              {isAdmin && (
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label htmlFor="product-cost-price" className="form-label">Base Cost Price (₱) *</label>
+                  <input id="product-cost-price" name="costPrice" type="number" step="0.01" min="0" className="form-input" required={isAdmin} value={formData.costPrice} onChange={e => setFormData({ ...formData, costPrice: e.target.value })} onWheel={e => (e.target as HTMLElement).blur()} />
+                </div>
+              )}
+              {isAdmin && (
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label htmlFor="product-selling-price" className="form-label">Base Selling Price (₱) *</label>
+                  <input id="product-selling-price" name="price" type="number" step="0.01" min="0" className="form-input" required={isAdmin} value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} onWheel={e => (e.target as HTMLElement).blur()} />
+                </div>
+              )}
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label htmlFor="product-min-stock" className="form-label">Min Stock Alert *</label>
@@ -527,7 +540,7 @@ export function ProductFormModal({
                   </button>
                 </div>
                 {formData.uoms.map((uom, index) => (
-                  <div key={index} className="uom-grid">
+                  <div key={index} className="uom-grid" style={{ gridTemplateColumns: isAdmin ? undefined : '1fr 1fr 1fr auto' }}>
                     <div>
                       <label htmlFor={`uom-name-${index}`} className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Unit Name (e.g. Box)</label>
                       <input id={`uom-name-${index}`} name={`uomName${index}`} type="text" placeholder="Box" className="form-input" value={uom.name} onChange={e => { const newUoms = [...formData.uoms]; newUoms[index].name = e.target.value; setFormData({ ...formData, uoms: newUoms }); }} />
@@ -540,10 +553,12 @@ export function ProductFormModal({
                       <label htmlFor={`uom-qty-${index}`} className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Items per Unit</label>
                       <input id={`uom-qty-${index}`} name={`uomQty${index}`} type="number" placeholder="Qty" min="1" className="form-input" value={uom.multiplier} disabled={!isAdmin} onChange={e => { const newUoms = [...formData.uoms]; newUoms[index].multiplier = e.target.value; setFormData({ ...formData, uoms: newUoms }); }} onWheel={e => (e.target as HTMLElement).blur()} />
                     </div>
-                    <div>
-                      <label htmlFor={`uom-price-${index}`} className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Selling Price</label>
-                      <input id={`uom-price-${index}`} name={`uomPrice${index}`} type="number" step="0.01" min="0" placeholder="Price" className="form-input" value={uom.price} onChange={e => { const newUoms = [...formData.uoms]; newUoms[index].price = e.target.value; setFormData({ ...formData, uoms: newUoms }); }} onWheel={e => (e.target as HTMLElement).blur()} />
-                    </div>
+                    {isAdmin && (
+                      <div>
+                        <label htmlFor={`uom-price-${index}`} className="form-label" style={{ fontSize: '11px', marginBottom: '4px' }}>Selling Price</label>
+                        <input id={`uom-price-${index}`} name={`uomPrice${index}`} type="number" step="0.01" min="0" placeholder="Price" className="form-input" value={uom.price} onChange={e => { const newUoms = [...formData.uoms]; newUoms[index].price = e.target.value; setFormData({ ...formData, uoms: newUoms }); }} onWheel={e => (e.target as HTMLElement).blur()} />
+                      </div>
+                    )}
                     <button type="button" className="btn btn-icon btn-ghost" style={{ marginTop: 0, marginRight: 'auto', marginBottom: '4px', marginLeft: 'auto', width: '30px', height: '30px', padding: 0, color: 'var(--danger)', background: '#ffebee', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => { const newUoms = formData.uoms.filter((_, i) => i !== index); setFormData({ ...formData, uoms: newUoms }); }}>
                       <Trash2 size={16} />
                     </button>

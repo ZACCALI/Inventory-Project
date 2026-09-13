@@ -404,8 +404,8 @@ export default function ExpiryTrackingPage() {
       )}
 
       {loading ? (
-        <div className="stats-grid-3">
-          {[1,2,3].map(i => (
+        <div className="stats-grid-3" style={{ gridTemplateColumns: isAdmin ? undefined : 'repeat(2, minmax(0, 1fr))' }}>
+          {(isAdmin ? [1, 2, 3] : [1, 2]).map(i => (
             <div key={i} className="stat-card">
               <div className="skeleton" style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', flexShrink: 0 }} />
               <div className="stat-info">
@@ -417,7 +417,7 @@ export default function ExpiryTrackingPage() {
           ))}
         </div>
       ) : (
-        <div className="stats-grid-3">
+        <div className="stats-grid-3" style={{ gridTemplateColumns: isAdmin ? undefined : 'repeat(2, minmax(0, 1fr))' }}>
           <div className="stat-card">
             <div className="stat-icon red"><AlertTriangle size={24} /></div>
             <div className="stat-info">
@@ -432,12 +432,14 @@ export default function ExpiryTrackingPage() {
               <div className="stat-value">{soonCount}</div>
             </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-info">
-              <div className="stat-label">Estimated Loss Value</div>
-              <div className="stat-value" style={{ color: 'var(--danger-dark)' }}>{formatCurrency(estLoss)}</div>
+          {isAdmin && (
+            <div className="stat-card">
+              <div className="stat-info">
+                <div className="stat-label">Estimated Loss Value</div>
+                <div className="stat-value" style={{ color: 'var(--danger-dark)' }}>{formatCurrency(estLoss)}</div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 

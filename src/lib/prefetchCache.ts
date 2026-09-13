@@ -7,6 +7,7 @@ import { db } from './db';
 const PREFETCH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 const PREFETCH_LS_KEY = 'amroding_last_prefetch';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface APIOrder {
   id: string;
   orderNumber: string;
@@ -54,6 +55,7 @@ interface APIProduct {
   price?: number;
   costPrice?: number;
   stock?: number;
+  minStock?: number;
   image?: string | null;
   category?: { name: string } | null;
   uoms?: {
@@ -96,6 +98,7 @@ async function runPrefetch() {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return;
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [productsRes, customersRes, driversRes, categoriesRes, settingsRes, ordersRes, expensesRes, stockMovementsRes] = await Promise.allSettled([
       fetch('/api/products'),
       fetch('/api/customers?limit=500'),
@@ -121,6 +124,7 @@ async function runPrefetch() {
             price: p.price || 0,
             costPrice: p.costPrice || 0,
             stock: p.stock || 0,
+            minStock: p.minStock || 10,
             image: p.image || null,
             categoryName: p.category?.name || null,
             uoms: p.uoms || [],

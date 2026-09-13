@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
+import { useSession } from 'next-auth/react';
 import { Search, RotateCcw, Package, Tag, CheckCircle2, AlertTriangle, XCircle, CloudOff } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -84,6 +85,10 @@ const stockCheckerFetcher = async (url: string): Promise<ApiResponse> => {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function StockCheckerPage() {
+  const { data: session } = useSession();
+  const userRole = (session?.user as { role?: string })?.role?.toLowerCase();
+  const canViewSellingPrice = userRole === 'admin' || userRole === 'cashier';
+
   const isOnline = useOnlineStatus();
   const [searchInput, setSearchInput] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
@@ -128,10 +133,15 @@ export default function StockCheckerPage() {
 
   const { data: onlineCategories } = useSWR<Category[]>(isOnline ? '/api/categories' : null, fetcher);
 
-  // Load from Dexie cache for offline support
-  useEffect(() => {
-    if (!isOnline) {
-      db.products.toArray().then(cached => {
+  // Load from Dexie cache for offline support and seamless fallback
+  const loadOfflineData = useCallback(async () => {
+    try {
+      const [cached, cats] = await Promise.all([
+        db.products.toArray(),
+        db.categories.toArray(),
+      ]);
+
+      if (cached && cached.length > 0) {
         setOfflineProducts(cached.map(p => ({
           id: p.id,
           name: p.name,
@@ -139,33 +149,55 @@ export default function StockCheckerPage() {
           barcode: p.barcode,
           price: p.price,
           stock: p.stock,
-          minStock: 10,
+          minStock: p.minStock ?? 10,
           image: p.image,
           category: p.categoryName ? { id: p.categoryName, name: p.categoryName } : null,
         })));
-      }).catch(() => {});
+      }
 
-      db.categories.toArray().then(cats => {
+      if (cats && cats.length > 0) {
         setOfflineCategories(cats.map(c => ({ id: c.id, name: c.name })));
-      }).catch(() => {});
+      }
+    } catch (err) {
+      console.warn('Failed to load offline products from Dexie:', err);
     }
-  }, [isOnline]);
+  }, []);
 
-  // Compute offline data when disconnected
+  useEffect(() => {
+    loadOfflineData();
+    window.addEventListener('amroding:data-changed', loadOfflineData);
+    window.addEventListener('online', loadOfflineData);
+    window.addEventListener('offline', loadOfflineData);
+    return () => {
+      window.removeEventListener('amroding:data-changed', loadOfflineData);
+      window.removeEventListener('online', loadOfflineData);
+      window.removeEventListener('offline', loadOfflineData);
+    };
+  }, [loadOfflineData]);
+
+  // Compute offline data when disconnected or API is unavailable
   const offlineFiltered = useMemo(() => {
-    if (isOnline) return null;
     let list = [...offlineProducts];
-    if (effectiveSearch) {
-      const q = effectiveSearch.toLowerCase();
-      list = list.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q) ||
-        (p.barcode && p.barcode.toLowerCase().includes(q))
-      );
+
+    // Tokenized search across name, sku, barcode
+    if (effectiveSearch.trim()) {
+      const tokens = effectiveSearch.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      list = list.filter(p => {
+        const text = `${p.name} ${p.sku} ${p.barcode || ''}`.toLowerCase();
+        return tokens.every(token => text.includes(token));
+      });
     }
+
+    // Resolve category ID to name for offline matching
     if (selectedCategory) {
-      list = list.filter(p => p.category?.id === selectedCategory || p.category?.name === selectedCategory);
+      const activeCats = (isOnline && onlineCategories && onlineCategories.length > 0) ? onlineCategories : offlineCategories;
+      const selectedCat = activeCats.find(c => c.id === selectedCategory || c.name === selectedCategory);
+      const catName = selectedCat?.name || selectedCategory;
+      list = list.filter(p => p.category?.name === catName || p.category?.id === selectedCategory);
     }
+
+    // Capture base total before stockStatus filter
+    const baseTotal = list.length;
 
     const inStock = list.filter(p => p.stock > p.minStock).length;
     const lowStock = list.filter(p => p.stock > 0 && p.stock <= p.minStock).length;
@@ -184,12 +216,12 @@ export default function StockCheckerPage() {
       inStock,
       lowStock,
       outOfStock,
-      baseTotal: offlineProducts.length,
+      baseTotal,
     };
-  }, [isOnline, offlineProducts, effectiveSearch, selectedCategory, selectedStockStatus, currentPage]);
+  }, [offlineProducts, effectiveSearch, selectedCategory, isOnline, onlineCategories, offlineCategories, selectedStockStatus, currentPage]);
 
-  const activeData = isOnline ? data : offlineFiltered;
-  const categories = isOnline ? onlineCategories : offlineCategories;
+  const activeData = (isOnline && !error && data) ? data : offlineFiltered;
+  const categories = (isOnline && onlineCategories && onlineCategories.length > 0) ? onlineCategories : offlineCategories;
 
   const products = activeData?.items;
   const total = activeData?.total ?? 0;
@@ -269,10 +301,14 @@ export default function StockCheckerPage() {
       <div className="stats-grid" style={{ marginBottom: '16px' }}>
         {/* Total Products */}
         <div
+          role="button"
+          tabIndex={0}
           className={`stat-card ${selectedStockStatus === '' ? 'active-card' : ''}`}
           onClick={() => { setSelectedStockStatus(''); setCurrentPage(1); }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(''); setCurrentPage(1); } }}
           style={{ cursor: 'pointer', border: selectedStockStatus === '' && hasFilters ? '2px solid var(--primary)' : undefined }}
           title="Click to view all stock statuses"
+          aria-label="View all stock statuses"
         >
           <div className="stat-icon blue">
             <Package size={22} />
@@ -285,10 +321,14 @@ export default function StockCheckerPage() {
 
         {/* In Stock */}
         <div
+          role="button"
+          tabIndex={0}
           className={`stat-card ${selectedStockStatus === 'in_stock' ? 'active-card' : ''}`}
           onClick={() => { setSelectedStockStatus(prev => prev === 'in_stock' ? '' : 'in_stock'); setCurrentPage(1); }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(prev => prev === 'in_stock' ? '' : 'in_stock'); setCurrentPage(1); } }}
           style={{ cursor: 'pointer', border: selectedStockStatus === 'in_stock' ? '2px solid var(--success)' : undefined }}
           title="Click to filter In Stock products"
+          aria-label="Filter in stock products"
         >
           <div className="stat-icon green">
             <CheckCircle2 size={22} />
@@ -301,10 +341,14 @@ export default function StockCheckerPage() {
 
         {/* Low Stock */}
         <div
+          role="button"
+          tabIndex={0}
           className={`stat-card ${selectedStockStatus === 'low_stock' ? 'active-card' : ''}`}
           onClick={() => { setSelectedStockStatus(prev => prev === 'low_stock' ? '' : 'low_stock'); setCurrentPage(1); }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(prev => prev === 'low_stock' ? '' : 'low_stock'); setCurrentPage(1); } }}
           style={{ cursor: 'pointer', border: selectedStockStatus === 'low_stock' ? '2px solid var(--warning)' : undefined }}
           title="Click to filter Low Stock products"
+          aria-label="Filter low stock products"
         >
           <div className="stat-icon orange">
             <AlertTriangle size={22} />
@@ -319,10 +363,14 @@ export default function StockCheckerPage() {
 
         {/* Out of Stock */}
         <div
+          role="button"
+          tabIndex={0}
           className={`stat-card ${selectedStockStatus === 'out_of_stock' ? 'active-card' : ''}`}
           onClick={() => { setSelectedStockStatus(prev => prev === 'out_of_stock' ? '' : 'out_of_stock'); setCurrentPage(1); }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(prev => prev === 'out_of_stock' ? '' : 'out_of_stock'); setCurrentPage(1); } }}
           style={{ cursor: 'pointer', border: selectedStockStatus === 'out_of_stock' ? '2px solid var(--danger)' : undefined }}
           title="Click to filter Out of Stock products"
+          aria-label="Filter out of stock products"
         >
           <div className="stat-icon red">
             <XCircle size={22} />
@@ -351,13 +399,14 @@ export default function StockCheckerPage() {
             <input
               type="text"
               className="form-input"
+              aria-label="Search product name, barcode or SKU"
               placeholder="Search product name, barcode or SKU…"
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               style={{ paddingLeft: '36px' }}
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+          <button type="submit" className="btn btn-primary" aria-label="Search products" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
             <Search size={16} /> Search
           </button>
         </form>
@@ -415,6 +464,7 @@ export default function StockCheckerPage() {
               <button
                 type="button"
                 className="btn btn-secondary"
+                aria-label="Clear all filters"
                 onClick={clearFilters}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', marginTop: '20px' }}
               >
@@ -435,7 +485,7 @@ export default function StockCheckerPage() {
                 <th>Product Name</th>
                 <th>Barcode / SKU</th>
                 <th>Category</th>
-                <th>Selling Price</th>
+                {canViewSellingPrice && <th>Selling Price</th>}
                 <th style={{ textAlign: 'center' }}>Current Stock</th>
                 <th style={{ textAlign: 'center' }}>Status</th>
               </tr>
@@ -453,14 +503,14 @@ export default function StockCheckerPage() {
                     </td>
                     <td data-label="Barcode / SKU"><div className="skeleton" style={{ width: '100px', height: '14px', borderRadius: '4px' }} /></td>
                     <td data-label="Category"><div className="skeleton" style={{ width: '90px', height: '14px', borderRadius: '4px' }} /></td>
-                    <td data-label="Selling Price"><div className="skeleton" style={{ width: '60px', height: '14px', borderRadius: '4px' }} /></td>
+                    {canViewSellingPrice && <td data-label="Selling Price"><div className="skeleton" style={{ width: '60px', height: '14px', borderRadius: '4px' }} /></td>}
                     <td data-label="Current Stock" style={{ textAlign: 'center' }}><div className="skeleton" style={{ width: '30px', height: '14px', borderRadius: '4px', margin: '0 auto' }} /></td>
                     <td data-label="Status" style={{ textAlign: 'center' }}><div className="skeleton" style={{ width: '70px', height: '22px', borderRadius: '20px', margin: '0 auto' }} /></td>
                   </tr>
                 ))
               ) : !products || products.length === 0 ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={canViewSellingPrice ? 7 : 6}>
                     <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
                       <Package size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
                       <p style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-secondary)' }}>No products found</p>
@@ -530,9 +580,11 @@ export default function StockCheckerPage() {
                           <span style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>—</span>
                         )}
                       </td>
-                      <td data-label="Selling Price" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {formatCurrency(product.price)}
-                      </td>
+                      {canViewSellingPrice && (
+                        <td data-label="Selling Price" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {formatCurrency(product.price)}
+                        </td>
+                      )}
                       <td data-label="Current Stock" style={{ textAlign: 'center', fontWeight: 600, color: 'var(--text-primary)' }}>
                         {product.stock}
                       </td>
@@ -564,6 +616,7 @@ export default function StockCheckerPage() {
               <button
                 type="button"
                 className="btn btn-secondary"
+                aria-label="Previous page"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 style={{ padding: '6px 10px', fontSize: '13px' }}
@@ -578,6 +631,8 @@ export default function StockCheckerPage() {
                   <button
                     key={p}
                     type="button"
+                    aria-label={`Page ${p}`}
+                    aria-current={p === currentPage ? 'page' : undefined}
                     onClick={() => setCurrentPage(p as number)}
                     className={p === currentPage ? 'btn btn-primary' : 'btn btn-secondary'}
                     style={{ padding: '6px 10px', fontSize: '13px', minWidth: '34px' }}
@@ -590,6 +645,7 @@ export default function StockCheckerPage() {
               <button
                 type="button"
                 className="btn btn-secondary"
+                aria-label="Next page"
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
                 style={{ padding: '6px 10px', fontSize: '13px' }}

@@ -43,7 +43,7 @@ async function deductBatchStock(tx: any, productId: string, quantityToDeduct: nu
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { error } = await requirePermission(request, 'orders');
+    const { user, error } = await requirePermission(request, 'orders');
     if (error) return error;
 
     const { id } = await params;
@@ -61,7 +61,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const totalPaid = (order as any).payments?.reduce((sum: number, p: any) => sum + p.amount, 0) || 0;
-    return NextResponse.json({ ...order, amountPaid: totalPaid });
+    const sanitizedOrder = user.role === 'admin'
+      ? { ...order, amountPaid: totalPaid }
+      : {
+          ...order,
+          amountPaid: totalPaid,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          items: order.items?.map((item: any) => ({
+            ...item,
+            product: item.product ? { ...item.product, costPrice: 0 } : item.product,
+          })),
+        };
+    return NextResponse.json(sanitizedOrder);
   } catch (error) {
     console.error('Order GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch order' }, { status: 500 });
@@ -334,7 +345,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return updatedOrder;
     }, { maxWait: 10000, timeout: 30000 });
 
-    return NextResponse.json(order);
+    const sanitizedOrder = user.role === 'admin'
+      ? order
+      : {
+          ...order,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          items: order.items?.map((item: any) => ({
+            ...item,
+            product: item.product ? { ...item.product, costPrice: 0 } : item.product,
+          })),
+        };
+
+    return NextResponse.json(sanitizedOrder);
   } catch (error: unknown) {
     console.error('Order PUT error:', error);
     const statusCode = (error as Error).message?.includes('not found') ? 404 : (error as Error).message?.includes('denied') || (error as Error).message?.includes('Only admins') ? 403 : (error as Error).message?.includes('cancelled') || (error as Error).message?.includes('Cannot edit') || (error as Error).message?.includes('Insufficient') || (error as Error).message?.includes('Discount too high') ? 400 : 500;

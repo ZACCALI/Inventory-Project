@@ -5,7 +5,7 @@ import { updateProductSchema } from '@/lib/validations';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { error } = await requirePermission(request, 'inventory');
+    const { user, error } = await requirePermission(request, 'inventory');
     if (error) return error;
 
     const { id } = await params;
@@ -14,7 +14,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       include: { category: true, uoms: true, stockLogs: { orderBy: { createdAt: 'desc' }, take: 20, include: { user: true } }, orderItems: { include: { order: true } } },
     });
     if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    return NextResponse.json(product);
+    const sanitized = user.role === 'admin' ? product : { ...product, costPrice: 0 };
+    return NextResponse.json(sanitized);
   } catch (error) {
     console.error('Product GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });
@@ -45,10 +46,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { name, sku, barcode, image, price, costPrice, stock, minStock, unit, expiryDate, categoryId, isArchived, uoms } = parsed.data;
 
-    // Enforce selling price > cost price for base unit
+    // Enforce selling price > cost price for base unit (do not leak cost values in error message)
     if (price !== undefined && costPrice !== undefined) {
       if (price <= costPrice) {
-        return NextResponse.json({ error: `Pricing Error: Base Selling Price (${price}) must be higher than Cost Price (${costPrice}).` }, { status: 400 });
+        return NextResponse.json({ error: 'Pricing Error: Base Selling Price must be higher than Cost Price.' }, { status: 400 });
       }
     } else if (price !== undefined || costPrice !== undefined) {
       // Need to fetch current to validate if only one is updated
@@ -57,7 +58,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const checkPrice = price !== undefined ? price : current.price;
         const checkCost = costPrice !== undefined ? costPrice : current.costPrice;
         if (checkPrice <= checkCost) {
-          return NextResponse.json({ error: `Pricing Error: Base Selling Price (${checkPrice}) must be higher than Cost Price (${checkCost}).` }, { status: 400 });
+          return NextResponse.json({ error: 'Pricing Error: Base Selling Price must be higher than Cost Price.' }, { status: 400 });
         }
       }
     }
@@ -100,7 +101,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           barcode: barcode !== undefined ? (barcode ? barcode.trim() : null) : undefined,
           image: image !== undefined ? (image || null) : undefined,
           price: price !== undefined ? price : undefined,
-          costPrice: costPrice !== undefined ? costPrice : undefined,
+          costPrice: user.role === 'admin' && costPrice !== undefined ? costPrice : undefined,
           minStock: minStock !== undefined ? minStock : undefined,
           unit: unit !== undefined ? unit : undefined,
           expiryDate: expiryDate !== undefined ? (expiryDate ? new Date(expiryDate) : null) : undefined,
@@ -172,7 +173,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return updated;
     });
 
-    return NextResponse.json(product);
+    const sanitized = user.role === 'admin' ? product : { ...product, costPrice: 0 };
+    return NextResponse.json(sanitized);
   } catch (error: unknown) {
     console.error('Product PUT error:', error);
     let msg = 'Failed to update product';
