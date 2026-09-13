@@ -6,6 +6,7 @@ import { Search, ChevronDown, Package, Save, X, AlertTriangle } from 'lucide-rea
 import { useAlert } from '@/components/AlertModal';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { addSyncTask } from '@/lib/offlineSync';
+import { db } from '@/lib/db';
 import { ManageReasonsModal } from './ManageReasonsModal';
 
 export interface ProductUom {
@@ -235,11 +236,46 @@ export function StockMovementModal({
       }
 
       if (isOffline || networkFailed) {
-        payload.id = `OFF-${Date.now()}`;
+        const offlineId = `OFF-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        payload.id = offlineId;
         await addSyncTask('stock', 'CREATE', payload);
+
+        // Also save directly to Dexie stockMovements cache
+        try {
+          await db.stockMovements.put({
+            id: offlineId,
+            productId: selectedProduct.id,
+            productName: selectedProduct.name,
+            sku: selectedProduct.sku,
+            categoryName: selectedProduct.category?.name || 'Uncategorized',
+            image: selectedProduct.image || null,
+            type: modalType,
+            quantity: finalQuantity,
+            reason: formattedReason,
+            source: determineSource,
+            user: 'Offline User',
+            isVoided: false,
+            date: new Date().toISOString(),
+            lastSynced: Date.now(),
+          });
+        } catch (dexieErr) {
+          console.warn('Failed to save offline stock movement to Dexie', dexieErr);
+        }
+
+        // Also update cached product stock in Dexie
+        const delta = modalType === 'IN' ? finalQuantity : -finalQuantity;
+        try {
+          const cachedProduct = await db.products.get(selectedProduct.id);
+          if (cachedProduct) {
+            await db.products.update(selectedProduct.id, {
+              stock: Math.max(0, (cachedProduct.stock || 0) + delta),
+              lastSynced: Date.now()
+            });
+          }
+        } catch {}
+
         showAlert('success', 'Action queued offline', 'Your stock movement will sync when you reconnect.');
 
-        const delta = modalType === 'IN' ? finalQuantity : -finalQuantity;
         onSuccess({
           productId: selectedProduct.id,
           delta,

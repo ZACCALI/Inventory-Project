@@ -37,7 +37,7 @@ const customCache: RuntimeCaching[] = [
     }),
   },
   {
-    matcher: /\/api\/(customers|drivers|products|orders|expenses|history|categories|units|reports).*/i,
+    matcher: /\/api\/(customers|drivers|products|orders|expenses|history|categories|units|reports|stock).*/i,
     handler: new NetworkFirst({
       cacheName: "core-api-data",
       networkTimeoutSeconds: 3,

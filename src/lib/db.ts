@@ -69,10 +69,16 @@ export interface OfflineSettings {
 export interface OfflineStockMovement {
   id: string;
   productId: string;
+  productName?: string;
+  sku?: string;
+  categoryName?: string;
+  image?: string | null;
   type: string;
   quantity: number;
   reason: string;
   source: string;
+  user?: string;
+  isVoided?: boolean;
   date: string;
   lastSynced: number;
 }

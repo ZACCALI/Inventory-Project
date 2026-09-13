@@ -73,85 +73,224 @@ export default function StockInOutPage() {
   const [statsTimeframe, setStatsTimeframe] = useState<'today' | 'week' | 'month' | 'year' | 'all'>('today');
   const [stats, setStats] = useState({ totalIn: 0, totalOut: 0, logCount: 0 });
 
-  const { data: swrRes } = useSWR('/api/stock/movement', fetcher);
+  const { data: swrRes, error: swrError } = useSWR('/api/stock/movement', fetcher, {
+    revalidateOnFocus: true,
+    revalidateIfStale: true,
+  });
 
-  useEffect(() => {
-    const applyOfflineTasks = async () => {
-      let finalLogs: StockLog[] = [];
-      if (swrRes) {
-        finalLogs = Array.isArray(swrRes) ? [...swrRes] : [];
-      } else {
+  const calculateOfflineStats = (logsList: StockLog[], tf: 'today' | 'week' | 'month' | 'year' | 'all') => {
+    const now = new Date();
+    let startDate: Date | null = null;
+    
+    if (tf === 'today') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (tf === 'week') {
+      const d = new Date(now);
+      d.setDate(now.getDate() - now.getDay());
+      d.setHours(0, 0, 0, 0);
+      startDate = d;
+    } else if (tf === 'month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (tf === 'year') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    }
+
+    const filtered = logsList.filter(l => {
+      if (l.isVoided) return false;
+      if (!startDate) return true;
+      return new Date(l.date) >= startDate;
+    });
+
+    const totalIn = filtered.filter(l => l.type === 'IN').reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
+    const totalOut = filtered.filter(l => l.type === 'OUT').reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
+    const logCount = filtered.length;
+
+    return { totalIn, totalOut, logCount };
+  };
+
+  const mergePendingOfflineTasks = async (baseLogs: StockLog[], currentProducts: Product[] = products): Promise<StockLog[]> => {
+    let finalLogs = [...baseLogs];
+    try {
+      const pendingTasks = await db.syncQueue
+        .where('type')
+        .equals('stock')
+        .and(t => t.syncStatus === 'pending' || t.syncStatus === 'failed')
+        .toArray();
+
+      for (const task of pendingTasks) {
         try {
-          const cachedStr = localStorage.getItem('amroding_stock_logs_cache');
-          if (cachedStr) {
-            finalLogs = JSON.parse(cachedStr);
-            if (finalLogs.length > 0) setLogs(finalLogs);
+          const payload = JSON.parse(task.payload);
+          const taskId = payload.id || (task.id ? `OFF-${task.id}` : `OFF-${Date.now()}`);
+
+          if (task.action === 'CREATE') {
+            const existingIndex = finalLogs.findIndex(l => l.id === taskId || (task.id && l.id === String(task.id)));
+            const prod = currentProducts.find(p => p.id === payload.productId);
+            const newLogEntry: StockLog = {
+              id: taskId,
+              date: payload.date || new Date(task.createdAt).toISOString(),
+              product: payload.productName || prod?.name || 'Unknown Offline Product',
+              sku: payload.sku || prod?.sku || '',
+              category: payload.categoryName || prod?.category?.name || 'Uncategorized',
+              image: payload.image || prod?.image || null,
+              type: payload.type,
+              quantity: payload.quantity,
+              reference: payload.reason || (payload.type === 'IN' ? 'Offline Stock Delivery' : 'Offline Stock Out'),
+              source: payload.source || 'OFFLINE',
+              user: 'Offline User',
+              productId: payload.productId,
+              isVoided: false
+            };
+            if (existingIndex >= 0) {
+              finalLogs[existingIndex] = { ...finalLogs[existingIndex], ...newLogEntry };
+            } else {
+              finalLogs.unshift(newLogEntry);
+            }
+          } else if (task.action === 'UPDATE') {
+            finalLogs = finalLogs.map(l => {
+              if (l.id === payload.id) {
+                return {
+                  ...l,
+                  quantity: payload.quantity ?? l.quantity,
+                  reference: payload.reason ?? l.reference
+                };
+              }
+              return l;
+            });
+          } else if (task.action === 'DELETE') {
+            finalLogs = finalLogs.map(l => {
+              if (l.id === payload.id) {
+                return { ...l, isVoided: true };
+              }
+              return l;
+            });
           }
-        } catch {}
-        try {
-          const cached = await db.stockMovements.toArray();
-          finalLogs = cached.map(m => ({
+        } catch (e) {
+          console.warn('Failed to parse sync task payload', e);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch pending sync tasks', e);
+    }
+
+    finalLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return finalLogs;
+  };
+
+  const loadOfflineData = async (currentProducts: Product[] = products): Promise<StockLog[]> => {
+    let finalLogs: StockLog[] = [];
+
+    // 1. Ensure we have products to resolve details if needed
+    let resolvedProducts = currentProducts;
+    if (resolvedProducts.length === 0) {
+      try {
+        const cachedProducts = await db.products.toArray();
+        if (cachedProducts.length > 0) {
+          resolvedProducts = cachedProducts.map(p => ({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            barcode: p.barcode,
+            price: p.price,
+            stock: p.stock,
+            image: p.image,
+            unit: (p as unknown as { unit?: string }).unit || p.uoms?.find(u => u.isBase)?.name || 'pcs',
+            category: p.categoryName ? { name: p.categoryName } : null,
+            uoms: p.uoms || []
+          }));
+          setProducts(resolvedProducts);
+        }
+      } catch {}
+    }
+
+    // 2. Try Dexie stockMovements table
+    try {
+      const cached = await db.stockMovements.toArray();
+      if (cached && cached.length > 0) {
+        finalLogs = cached.map(m => {
+          const prod = resolvedProducts.find(p => p.id === m.productId);
+          return {
             id: m.id,
             date: m.date,
-            product: products.find(p => p.id === m.productId)?.name || 'Unknown',
-            sku: products.find(p => p.id === m.productId)?.sku || '',
-            category: products.find(p => p.id === m.productId)?.category?.name || '',
+            product: m.productName || prod?.name || 'Unknown Product',
+            sku: m.sku || prod?.sku || '',
+            category: m.categoryName || prod?.category?.name || '-',
+            image: m.image || prod?.image || null,
             type: m.type,
             quantity: m.quantity,
             reference: m.reason,
             source: m.source,
-            user: 'Offline User',
+            user: m.user || 'Offline User',
             productId: m.productId,
-            isVoided: false
-          })) as unknown as StockLog[];
-          finalLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        } catch (e) {
-          console.warn('No stockMovements cache', e);
-        }
+            isVoided: Boolean(m.isVoided)
+          };
+        });
       }
-      
+    } catch (e) {
+      console.warn('Failed to load stockMovements from Dexie', e);
+    }
+
+    // 3. Fallback to localStorage if Dexie is empty
+    if (finalLogs.length === 0) {
       try {
-        const pendingTasks = await db.syncQueue
-          .where('syncStatus')
-          .anyOf(['pending', 'failed'])
-          .toArray();
-          
-        for (const task of pendingTasks) {
-          if (task.type === 'stock' && task.action === 'CREATE') {
-            const payload = JSON.parse(task.payload);
-            const productMatch = products.find(p => p.id === payload.productId);
-            if (!finalLogs.find(l => l.id === task.id?.toString())) {
-              finalLogs.unshift({
-                id: task.id?.toString() || `OFF-${Date.now()}`,
-                date: new Date(task.createdAt).toISOString(),
-                product: productMatch?.name || 'Unknown Offline Product',
-                sku: productMatch?.sku || '',
-                category: productMatch?.category?.name || 'Uncategorized',
-                type: payload.type,
-                quantity: payload.quantity,
-                reference: payload.reason || (payload.type === 'IN' ? 'Offline Stock Delivery' : 'Offline Stock Out'),
-                source: payload.source,
-                user: 'Offline User',
-                productId: payload.productId,
-                isVoided: false
-              });
-            }
+        const cachedStr = localStorage.getItem('amroding_stock_logs_cache');
+        if (cachedStr) {
+          const parsed = JSON.parse(cachedStr);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            finalLogs = parsed;
           }
         }
       } catch (e) {
-        console.warn('Failed to merge offline stock tasks', e);
+        console.warn('Failed to load stock logs from localStorage', e);
       }
-      
-      setLogs(finalLogs);
-      setLoading(false);
+    }
+
+    // 4. Merge pending / failed offline tasks
+    return await mergePendingOfflineTasks(finalLogs, resolvedProducts);
+  };
+
+  useEffect(() => {
+    const syncData = async () => {
+      if (swrRes && Array.isArray(swrRes)) {
+        const merged = await mergePendingOfflineTasks(swrRes, products);
+        setLogs(merged);
+        setLoading(false);
+
+        try {
+          localStorage.setItem('amroding_stock_logs_cache', JSON.stringify(swrRes));
+          const now = Date.now();
+          await db.stockMovements.bulkPut(swrRes.map((l: StockLog) => ({
+            id: l.id,
+            productId: l.productId,
+            productName: l.product,
+            sku: l.sku,
+            categoryName: l.category,
+            image: l.image || null,
+            type: l.type,
+            quantity: l.quantity,
+            reason: l.reference,
+            source: l.source,
+            user: l.user,
+            isVoided: Boolean(l.isVoided),
+            date: l.date,
+            lastSynced: now,
+          })));
+        } catch (e) {
+          console.warn('Failed to update stockMovements cache in Dexie', e);
+        }
+      } else if (swrError || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+        const offlineLogs = await loadOfflineData(products);
+        setLogs(offlineLogs);
+        setLoading(false);
+        fetchStats(statsTimeframe, offlineLogs);
+      }
     };
 
-    applyOfflineTasks();
-  }, [swrRes, products]);
+    syncData();
+  }, [swrRes, swrError, products]);
 
   useEffect(() => {
     if (!swrRes) {
-      const t = setTimeout(() => setLoading(false), 2000);
+      const t = setTimeout(() => setLoading(false), 1500);
       return () => clearTimeout(t);
     }
   }, [swrRes]);
@@ -161,28 +300,38 @@ export default function StockInOutPage() {
     try {
       const res = await fetch('/api/stock/movement');
       if (!res.ok) throw new Error('Network response was not ok');
-      const data = await res.json();
-      setLogs(data);
-      localStorage.setItem('amroding_stock_logs_cache', JSON.stringify(data));
-      
+      const data: StockLog[] = await res.json();
+      const merged = await mergePendingOfflineTasks(data, products);
+      setLogs(merged);
+      setLoading(false);
+
       try {
-        await db.stockMovements.clear();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await db.stockMovements.bulkAdd(data.map((l: any) => ({
+        localStorage.setItem('amroding_stock_logs_cache', JSON.stringify(data));
+        const now = Date.now();
+        await db.stockMovements.bulkPut(data.map((l: StockLog) => ({
           id: l.id,
           productId: l.productId,
+          productName: l.product,
+          sku: l.sku,
+          categoryName: l.category,
+          image: l.image || null,
           type: l.type,
           quantity: l.quantity,
           reason: l.reference,
           source: l.source,
-          date: l.date
+          user: l.user,
+          isVoided: Boolean(l.isVoided),
+          date: l.date,
+          lastSynced: now,
         })));
       } catch (e) {
         console.warn('Failed to update stockMovements cache in Dexie', e);
       }
-    } catch (error: unknown) {
-      if ((error as Error)?.message === 'Failed to fetch' || error instanceof TypeError) return;
-      console.error('Failed to fetch stock logs', error);
+    } catch {
+      const offlineLogs = await loadOfflineData(products);
+      setLogs(offlineLogs);
+      setLoading(false);
+      fetchStats(statsTimeframe, offlineLogs);
     }
   };
 
@@ -223,15 +372,18 @@ export default function StockInOutPage() {
     }
   };
 
-  const fetchStats = async (tf = statsTimeframe) => {
+  const fetchStats = async (tf = statsTimeframe, currentLogs = logs) => {
     try {
       const res = await fetch(`/api/stock/stats?timeframe=${tf}`);
       if (!res.ok) throw new Error('Network response was not ok');
       const data = await res.json();
       setStats(data);
-    } catch (error: unknown) {
-      if ((error as Error)?.message === 'Failed to fetch' || error instanceof TypeError) return;
-      console.error('Failed to fetch stock stats', error);
+      try {
+        localStorage.setItem(`amroding_stock_stats_${tf}`, JSON.stringify(data));
+      } catch {}
+    } catch {
+      const offlineStats = calculateOfflineStats(currentLogs, tf);
+      setStats(offlineStats);
     }
   };
 
@@ -260,7 +412,7 @@ export default function StockInOutPage() {
   useEffect(() => {
     fetchLogs();
     fetchProducts();
-    fetchStats();
+    fetchStats(statsTimeframe);
     loadReasons();
 
     const fetchSettings = async () => {
@@ -285,14 +437,25 @@ export default function StockInOutPage() {
     const handleAppSync = () => {
       fetchLogs();
       fetchProducts();
-      fetchStats();
+      fetchStats(statsTimeframe);
     };
+
     window.addEventListener('appDataSynced', handleAppSync);
+    window.addEventListener('amroding:data-changed', handleAppSync);
+    window.addEventListener('amroding:synced', handleAppSync);
+    window.addEventListener('online', handleAppSync);
+    window.addEventListener('stockSynced', handleAppSync);
+    window.addEventListener('offlineSyncTaskAdded', handleAppSync);
 
     return () => {
       window.removeEventListener('appDataSynced', handleAppSync);
+      window.removeEventListener('amroding:data-changed', handleAppSync);
+      window.removeEventListener('amroding:synced', handleAppSync);
+      window.removeEventListener('online', handleAppSync);
+      window.removeEventListener('stockSynced', handleAppSync);
+      window.removeEventListener('offlineSyncTaskAdded', handleAppSync);
     };
-  }, []);
+  }, [statsTimeframe]);
 
   const openModal = (type: 'IN' | 'OUT') => {
     setModalType(type);
@@ -311,15 +474,13 @@ export default function StockInOutPage() {
       fetchStats();
       fetchProducts();
     } else {
+      loadOfflineData().then(offlineLogs => {
+        setLogs(offlineLogs);
+        fetchStats(statsTimeframe, offlineLogs);
+      });
       setProducts(prev => prev.map(p => {
         if (p.id !== productId) return p;
         return { ...p, stock: Math.max(0, (p.stock || 0) + delta) };
-      }));
-      setStats(prev => ({
-        ...prev,
-        totalIn: type === 'IN' ? prev.totalIn + finalQuantity : prev.totalIn,
-        totalOut: type === 'OUT' ? prev.totalOut + finalQuantity : prev.totalOut,
-        logCount: prev.logCount + 1
       }));
     }
   };
@@ -376,9 +537,34 @@ export default function StockInOutPage() {
 
       if (isOffline || networkFailed) {
         await addSyncTask('stock', 'UPDATE', { id: editingLog.id, quantity: finalQuantity, reason: formattedReason, productId: editFormData.productId, expiryDate: editExpiryDate || undefined });
+        
+        // Update local Dexie stockMovements
+        try {
+          await db.stockMovements.update(editingLog.id, {
+            quantity: finalQuantity,
+            reason: formattedReason,
+            lastSynced: Date.now()
+          });
+        } catch {}
+
+        // Adjust Dexie product stock
+        const qtyDiff = finalQuantity - editingLog.quantity;
+        const stockDelta = editingLog.type === 'IN' ? qtyDiff : -qtyDiff;
+        try {
+          const cachedProduct = await db.products.get(editingLog.productId);
+          if (cachedProduct) {
+            await db.products.update(editingLog.productId, {
+              stock: Math.max(0, (cachedProduct.stock || 0) + stockDelta),
+              lastSynced: Date.now()
+            });
+          }
+        } catch {}
+
         setIsEditModalOpen(false);
         showToast('offline', 'Edit queued offline — will sync when connected');
-        setLogs(prev => prev.map(l => l.id === editingLog.id ? { ...l, quantity: finalQuantity, reference: formattedReason } : l));
+        const updatedLogs = logs.map(l => l.id === editingLog.id ? { ...l, quantity: finalQuantity, reference: formattedReason } : l);
+        setLogs(updatedLogs);
+        fetchStats(statsTimeframe, updatedLogs);
       }
     } catch {
       showAlert('error', 'Action Failed', 'Failed to update stock movement');
@@ -416,8 +602,31 @@ export default function StockInOutPage() {
 
       if (isOffline || networkFailed) {
         await addSyncTask('stock', 'DELETE', { id, type });
+        
+        // Update Dexie stockMovements
+        try {
+          await db.stockMovements.update(id, { isVoided: true, lastSynced: Date.now() });
+        } catch {}
+
+        // Restore product stock in Dexie
+        const targetLog = logs.find(l => l.id === id);
+        if (targetLog) {
+          const stockDelta = targetLog.type === 'IN' ? -targetLog.quantity : targetLog.quantity;
+          try {
+            const cachedProduct = await db.products.get(targetLog.productId);
+            if (cachedProduct) {
+              await db.products.update(targetLog.productId, {
+                stock: Math.max(0, (cachedProduct.stock || 0) + stockDelta),
+                lastSynced: Date.now()
+              });
+            }
+          } catch {}
+        }
+
         showToast('offline', 'Void queued offline — will sync when connected');
-        setLogs(prev => prev.filter(l => l.id !== id));
+        const updatedLogs = logs.map(l => l.id === id ? { ...l, isVoided: true } : l);
+        setLogs(updatedLogs);
+        fetchStats(statsTimeframe, updatedLogs);
       }
     } catch {
       showAlert('error', 'Action Failed', 'Failed to void stock log.');
@@ -447,9 +656,9 @@ export default function StockInOutPage() {
     
     let matchesSource = true;
     if (sourceFilter === 'STOCK_IN') {
-      matchesSource = l.type === 'IN' && ['RECEIVE', 'MANUAL'].includes(l.source);
+      matchesSource = l.type === 'IN' && ['RECEIVE', 'MANUAL', 'OFFLINE'].includes(l.source);
     } else if (sourceFilter === 'STOCK_OUT') {
-      matchesSource = l.type === 'OUT' && l.source === 'MANUAL';
+      matchesSource = l.type === 'OUT' && ['MANUAL', 'OFFLINE'].includes(l.source);
     } else if (sourceFilter !== 'ALL') {
       matchesSource = l.source === sourceFilter;
     }
@@ -759,7 +968,7 @@ export default function StockInOutPage() {
                   filteredLogs.map((log) => {
                     const matchedProduct = products.find(p => p.id === log.productId);
                     const displayImage = log.image || matchedProduct?.image;
-                    const isOfflinePending = String(log.id).startsWith('OFF-');
+                    const isOfflinePending = String(log.id).startsWith('OFF-') || String(log.id).startsWith('mock-');
 
                     return (
                       <tr key={log.id} style={{ opacity: log.isVoided ? 0.6 : 1, textDecoration: log.isVoided ? 'line-through' : 'none' }}>

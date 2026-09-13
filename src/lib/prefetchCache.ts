@@ -30,6 +30,22 @@ interface APIExpense {
   reference?: string | null;
 }
 
+interface APIStockMovement {
+  id: string;
+  date: string;
+  product: string;
+  sku: string;
+  image?: string | null;
+  category: string;
+  type: string;
+  quantity: number;
+  reference: string;
+  source: string;
+  user: string;
+  productId: string;
+  isVoided?: boolean;
+}
+
 interface APIProduct {
   id: string;
   name: string;
@@ -80,7 +96,7 @@ async function runPrefetch() {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return;
 
   try {
-    const [productsRes, customersRes, driversRes, categoriesRes, settingsRes, ordersRes, expensesRes] = await Promise.allSettled([
+    const [productsRes, customersRes, driversRes, categoriesRes, settingsRes, ordersRes, expensesRes, stockMovementsRes] = await Promise.allSettled([
       fetch('/api/products'),
       fetch('/api/customers?limit=500'),
       fetch('/api/drivers'),
@@ -88,6 +104,7 @@ async function runPrefetch() {
       fetch('/api/settings'),
       fetch('/api/orders?limit=100&page=1'),
       fetch('/api/expenses?limit=100'),
+      fetch('/api/stock/movement?limit=500'),
     ]);
 
     // Cache products
@@ -237,6 +254,36 @@ async function runPrefetch() {
             lastSynced: now,
           }))
         );
+      }
+    }
+
+    // Cache recent stock movements for offline viewing
+    if (stockMovementsRes.status === 'fulfilled' && stockMovementsRes.value.ok) {
+      const body = await stockMovementsRes.value.json();
+      const movements = Array.isArray(body) ? body : (body?.data ?? []);
+      if (Array.isArray(movements)) {
+        const now = Date.now();
+        await db.stockMovements.bulkPut(
+          movements.map((m: APIStockMovement) => ({
+            id: m.id,
+            productId: m.productId,
+            productName: m.product || 'Unknown Product',
+            sku: m.sku || '',
+            categoryName: m.category || '',
+            image: m.image || null,
+            type: m.type,
+            quantity: m.quantity,
+            reason: m.reference,
+            source: m.source,
+            user: m.user || 'System',
+            isVoided: Boolean(m.isVoided),
+            date: m.date,
+            lastSynced: now,
+          }))
+        );
+        try {
+          localStorage.setItem('amroding_stock_logs_cache', JSON.stringify(movements));
+        } catch {}
       }
     }
 

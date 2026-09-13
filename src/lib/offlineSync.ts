@@ -424,6 +424,23 @@ async function _processQueueInternal(force: boolean = false): Promise<{ synced: 
                      await db.table('orders').where('id').equals(tempId).modify({ id: realId, orderNumber: responseJsonData.orderNumber || responseJsonData.id, createdAt: responseJsonData.createdAt }).catch(() => {});
                   }
                 } catch {}
+              } else if (task.type === 'stock') {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('stockSynced', {
+                    detail: {
+                      tempId,
+                      realId,
+                      date: responseJsonData.createdAt || new Date().toISOString()
+                    }
+                  }));
+                }
+                try {
+                  await db.stockMovements.where('id').equals(tempId).modify({
+                    id: realId,
+                    date: responseJsonData.createdAt || new Date().toISOString(),
+                    lastSynced: Date.now()
+                  }).catch(() => {});
+                } catch {}
               }
             }
           } catch (e) {
@@ -436,6 +453,26 @@ async function _processQueueInternal(force: boolean = false): Promise<{ synced: 
           try {
             await db.settings.put({ key: 'current', data: JSON.stringify(responseJsonData), lastSynced: Date.now() });
           } catch { /* ignore */ }
+        }
+
+        // After syncing stock movements UPDATE or DELETE, update local db.stockMovements cache
+        if (task.type === 'stock') {
+          if (task.action === 'UPDATE' && payload.id) {
+            try {
+              await db.stockMovements.where('id').equals(payload.id).modify({
+                quantity: payload.quantity,
+                reason: payload.reason,
+                lastSynced: Date.now()
+              }).catch(() => {});
+            } catch { /* ignore */ }
+          } else if (task.action === 'DELETE' && payload.id) {
+            try {
+              await db.stockMovements.where('id').equals(payload.id).modify({
+                isVoided: true,
+                lastSynced: Date.now()
+              }).catch(() => {});
+            } catch { /* ignore */ }
+          }
         }
 
       } else {
