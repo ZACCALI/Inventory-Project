@@ -156,6 +156,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!userRole || userRole === 'admin' || isPublicPage) return;
 
+    // Wait for settings to be loaded before enforcing permission-based redirects.
+    // If settings is null while online, they are still being fetched — acting on
+    // empty permissions would incorrectly redirect the user to the wrong page.
+    if (!settings && isOnline) return;
+
     const permissionsStr = userRole === 'staff' ? settings?.staffPermissions : settings?.cashierPermissions;
     const permissions = permissionsStr ? permissionsStr.split(',').map((s: string) => s.trim()) : [];
     const defaultLanding = getDefaultLandingPage(userRole, permissions);
@@ -187,7 +192,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         router.replace(defaultLanding);
       }
     }
-  }, [pathname, settings, userRole, isPublicPage, router]);
+  }, [pathname, settings, userRole, isPublicPage, router, isOnline]);
 
   // Don't show shell on public pages
   if (isPublicPage) {

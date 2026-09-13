@@ -21,7 +21,7 @@ interface UserRecord {
 }
 
 export default function UsersPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const { showToast, showAlert } = useAlert();
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -127,12 +127,17 @@ export default function UsersPage() {
   }, [router, getQueryString]);
 
   useEffect(() => {
+    // Wait for session to fully resolve before making access decisions.
+    // During loading, userRole is undefined — acting on it would incorrectly
+    // redirect an admin to the Landing Page (/).
+    if (status === 'loading') return;
+
     if (userRole !== 'admin') {
       router.push('/');
       return;
     }
     fetchUsers();
-  }, [userRole, router, fetchUsers]);
+  }, [status, userRole, router, fetchUsers]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();

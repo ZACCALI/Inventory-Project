@@ -17,13 +17,11 @@ interface ApiResponse<T = any> {
 
 async function handleResponse<T>(res: Response): Promise<ApiResponse<T>> {
   if (res.status === 401) {
-    // Session expired — redirect to login
-    if (typeof window !== 'undefined') {
-      if (navigator.onLine) {
-        window.location.href = '/login';
-      }
-    }
-    return { data: null, error: 'Session expired. Redirecting to login...', status: 401, ok: false };
+    // Return the error to the caller — do NOT hard-redirect here.
+    // A transient 401 from any background request (prefetch, notifications, etc.)
+    // must not eject an otherwise authenticated user. The AppShell auth guard
+    // and NextAuth session are the authoritative sources for auth redirects.
+    return { data: null, error: 'Authentication required. Please sign in.', status: 401, ok: false };
   }
 
   if (res.status === 403) {
