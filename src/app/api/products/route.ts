@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const search = request.nextUrl.searchParams.get('search') || '';
     const category = request.nextUrl.searchParams.get('category') || '';
     const showArchived = request.nextUrl.searchParams.get('archived') === 'true';
+    const stockStatus = request.nextUrl.searchParams.get('stockStatus') || '';
     const page = parseInt(request.nextUrl.searchParams.get('page') || '1');
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '100');
     const skip = (page - 1) * limit;
@@ -33,8 +34,14 @@ export async function GET(request: NextRequest) {
     } else {
       where.isArchived = false;
     }
+    // Coarse stock filter — exact per-product cross-column comparison done as post-filter below
+    if (stockStatus === 'out_of_stock') {
+      where.stock = { equals: 0 };
+    } else if (stockStatus === 'low_stock' || stockStatus === 'in_stock') {
+      where.stock = { gt: 0 };
+    }
 
-    const [products, total] = await Promise.all([
+    let [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
         include: { 
@@ -45,11 +52,23 @@ export async function GET(request: NextRequest) {
           }
         },
         orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
+        // For cross-column stock status filters we fetch all matching rows first, then slice
+        skip: (stockStatus === 'low_stock' || stockStatus === 'in_stock') ? 0 : skip,
+        take: (stockStatus === 'low_stock' || stockStatus === 'in_stock') ? undefined : limit,
       }),
       prisma.product.count({ where }),
     ]);
+
+    // Post-query cross-column filter for low_stock / in_stock (stock vs minStock per product)
+    if (stockStatus === 'low_stock') {
+      products = products.filter(p => p.stock > 0 && p.stock <= p.minStock);
+      total = products.length;
+      products = products.slice(skip, skip + limit);
+    } else if (stockStatus === 'in_stock') {
+      products = products.filter(p => p.stock > p.minStock);
+      total = products.length;
+      products = products.slice(skip, skip + limit);
+    }
 
     return NextResponse.json(products, {
       headers: { 'X-Total-Count': total.toString() },

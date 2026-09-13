@@ -742,6 +742,7 @@ export default function SettingsPage() {
                   { key: 'customers', label: 'Customer Directory' },
                   { key: 'orders', label: 'Sales & Orders' },
                   { key: 'history', label: 'Transaction History' },
+                  { key: 'stock-checker', label: 'Stock & Price Checker' },
                 ].map(mod => {
                   const staffHasIt = settings.staffPermissions.includes(mod.key);
                   const cashierHasIt = settings.cashierPermissions.includes(mod.key);

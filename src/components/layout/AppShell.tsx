@@ -29,7 +29,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     try {
       const saved = localStorage.getItem('amroding_cached_session');
       if (saved) setCachedSession(JSON.parse(saved));
-    } catch (e) {}
+    } catch {}
 
     // Hydrate printer config on startup (restores from DB if local storage was cleared)
     loadPrinterConfig().catch(console.error);
@@ -181,6 +181,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       '/reports': 'reports',
       '/users': 'users',
       '/history': 'history',
+      '/stock-checker': 'stock-checker',
     };
 
     const currentBaseRoute = Object.keys(pathMappings).find(route => pathname.startsWith(route));
@@ -247,7 +248,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         isOpen={mobileSidebarOpen}
         onNavigate={() => setMobileSidebarOpen(false)}
         permissions={
-          userRole === 'admin' ? ['inventory', 'delivery', 'customers', 'orders', 'history'] 
+          userRole === 'admin' ? ['inventory', 'delivery', 'customers', 'orders', 'history', 'stock-checker'] 
           : (userRole === 'staff' ? settings?.staffPermissions?.split(',')?.map((s:string)=>s.trim()) 
           : settings?.cashierPermissions?.split(',')?.map((s:string)=>s.trim())) || []
         }

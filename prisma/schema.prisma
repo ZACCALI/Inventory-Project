@@ -252,7 +252,7 @@ model SystemSettings {
   lockStockVoid      Boolean  @default(false)
   stockInReasons     String   @default("[\"New Stock Delivery\",\"Customer Return\",\"Inventory Adjustment\",\"Transfer In\",\"Other\"]")
   stockOutReasons    String   @default("[\"Damage/Spoilage\",\"Expired\",\"Internal Use\",\"Inventory Adjustment\",\"Customer Order\",\"Transfer Out\",\"Other\"]")
-  staffPermissions   String   @default("inventory,stock,delivery,drivers,history")
+  staffPermissions   String   @default("inventory,stock,delivery,drivers,history,stock-checker")
   cashierPermissions String   @default("customers,orders")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

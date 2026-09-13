@@ -19,7 +19,7 @@ import {
   ChevronLeft,
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ChevronRight,
-
+  Search,
   Receipt,
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Menu,
@@ -59,6 +59,20 @@ const getNavItems = (userRole?: string, permissions: string[] = []) => {
         { name: 'Expiry Tracking', href: '/inventory/expiry', icon: AlertTriangle },
       ],
     });
+  }
+
+  // Stock & Price Checker — own permission key so admin can grant it independently
+  if (hasPerm('stock-checker')) {
+    // Find the Inventory section and append, or add as standalone section
+    const invSection = sections.find(s => s.section === 'Inventory');
+    if (invSection) {
+      invSection.items.push({ name: 'Stock & Price Check', href: '/stock-checker', icon: Search });
+    } else {
+      sections.push({
+        section: 'Inventory',
+        items: [{ name: 'Stock & Price Check', href: '/stock-checker', icon: Search }],
+      });
+    }
   }
 
   // People
