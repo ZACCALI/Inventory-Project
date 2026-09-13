@@ -230,7 +230,7 @@ export const driverSchema = z.object({
 //  Settings
 // ============================================================
 
-const VALID_MODULES = ['inventory', 'orders', 'delivery', 'customers', 'reports', 'expenses', 'stock', 'drivers', 'history'] as const;
+const VALID_MODULES = ['inventory', 'orders', 'delivery', 'customers', 'reports', 'expenses', 'stock', 'drivers', 'history', 'stock-checker'] as const;
 
 export const settingsSchema = z.object({
   companyName: safeOptionalString(200),

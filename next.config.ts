@@ -19,6 +19,7 @@ const withSerwist = withSerwistInit({
     { url: "/inventory/stock", revision },
     { url: "/inventory/scan", revision },
     { url: "/inventory/expiry", revision },
+    { url: "/stock-checker", revision },
     { url: "/customers", revision },
     { url: "/drivers", revision },
     { url: "/orders", revision },

@@ -15,8 +15,9 @@ export async function GET(request: NextRequest) {
     const showArchived = request.nextUrl.searchParams.get('archived') === 'true';
     const stockStatus = request.nextUrl.searchParams.get('stockStatus') || '';
     const page = parseInt(request.nextUrl.searchParams.get('page') || '1');
-    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '100');
-    const skip = (page - 1) * limit;
+    const hasLimitParam = request.nextUrl.searchParams.has('limit');
+    const limit = hasLimitParam ? parseInt(request.nextUrl.searchParams.get('limit')!) : undefined;
+    const skip = limit ? Math.max(0, (page - 1) * limit) : 0;
 
     const where: Record<string, unknown> = {};
     if (search) {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
     // Coarse stock filter — exact per-product cross-column comparison done as post-filter below
     if (stockStatus === 'out_of_stock') {
-      where.stock = { equals: 0 };
+      where.stock = { lte: 0 };
     } else if (stockStatus === 'low_stock' || stockStatus === 'in_stock') {
       where.stock = { gt: 0 };
     }
@@ -63,15 +64,34 @@ export async function GET(request: NextRequest) {
     if (stockStatus === 'low_stock') {
       products = products.filter(p => p.stock > 0 && p.stock <= p.minStock);
       total = products.length;
-      products = products.slice(skip, skip + limit);
+      products = limit ? products.slice(skip, skip + limit) : products;
     } else if (stockStatus === 'in_stock') {
       products = products.filter(p => p.stock > p.minStock);
       total = products.length;
-      products = products.slice(skip, skip + limit);
+      products = limit ? products.slice(skip, skip + limit) : products;
     }
 
+    // Compute stats for overview cards across the filtered set
+    const statsWhere = { ...where };
+    if (stockStatus) {
+      delete statsWhere.stock;
+    }
+    const statsRows = await prisma.product.findMany({
+      where: statsWhere,
+      select: { stock: true, minStock: true },
+    });
+    const inStockCount = statsRows.filter(p => p.stock > p.minStock).length;
+    const lowStockCount = statsRows.filter(p => p.stock > 0 && p.stock <= p.minStock).length;
+    const outOfStockCount = statsRows.filter(p => p.stock <= 0).length;
+
     return NextResponse.json(products, {
-      headers: { 'X-Total-Count': total.toString() },
+      headers: {
+        'X-Total-Count': total.toString(),
+        'X-In-Stock': inStockCount.toString(),
+        'X-Low-Stock': lowStockCount.toString(),
+        'X-Out-Of-Stock': outOfStockCount.toString(),
+        'X-Base-Total': statsRows.length.toString(),
+      },
     });
   } catch (error) {
     console.error('Products GET error:', error);

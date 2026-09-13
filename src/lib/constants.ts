@@ -77,9 +77,10 @@ export function getDefaultLandingPage(role?: string | null, permissions?: string
       ? permissions.split(',').map(s => s.trim()).filter(Boolean)
       : [];
 
-  // If role is staff, prioritize inventory -> orders -> delivery -> customers -> history -> settings
+  // If role is staff, prioritize inventory -> stock-checker -> orders -> delivery -> customers -> history -> settings
   if (role === 'staff') {
     if (permsList.length === 0 || permsList.includes('inventory')) return '/inventory';
+    if (permsList.includes('stock-checker')) return '/stock-checker';
     if (permsList.includes('orders')) return '/orders';
     if (permsList.includes('delivery')) return '/delivery';
     if (permsList.includes('customers')) return '/customers';
@@ -87,10 +88,11 @@ export function getDefaultLandingPage(role?: string | null, permissions?: string
     return '/settings';
   }
 
-  // If role is cashier, prioritize orders -> inventory -> delivery -> customers -> history -> settings
+  // If role is cashier, prioritize orders -> inventory -> stock-checker -> delivery -> customers -> history -> settings
   if (role === 'cashier') {
     if (permsList.length === 0 || permsList.includes('orders')) return '/orders';
     if (permsList.includes('inventory')) return '/inventory';
+    if (permsList.includes('stock-checker')) return '/stock-checker';
     if (permsList.includes('delivery')) return '/delivery';
     if (permsList.includes('customers')) return '/customers';
     if (permsList.includes('history')) return '/history';
@@ -99,6 +101,7 @@ export function getDefaultLandingPage(role?: string | null, permissions?: string
 
   // Generic fallback if role is undefined / unknown
   if (permsList.includes('inventory')) return '/inventory';
+  if (permsList.includes('stock-checker')) return '/stock-checker';
   if (permsList.includes('orders')) return '/orders';
   if (permsList.includes('delivery')) return '/delivery';
   if (permsList.includes('customers')) return '/customers';
@@ -152,6 +155,6 @@ export function broadcastDataChange(entity?: string) {
       if (channel) {
         channel.postMessage({ type: 'DATA_CHANGED', detail });
       }
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
   }
 }

@@ -1,12 +1,25 @@
 export default function StockCheckerLoading() {
   return (
-    <div className="page-container">
+    <div style={{ animation: 'simpleFadeIn 150ms ease' }}>
       {/* Page header skeleton */}
       <div className="page-header">
         <div>
           <div className="skeleton" style={{ width: '220px', height: '28px', borderRadius: 'var(--radius-sm)', marginBottom: '8px' }} />
           <div className="skeleton" style={{ width: '340px', height: '18px', borderRadius: 'var(--radius-sm)' }} />
         </div>
+      </div>
+
+      {/* Stats grid skeleton (cards on top) */}
+      <div className="stats-grid" style={{ marginBottom: '16px' }}>
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="stat-card">
+            <div className="skeleton" style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', flexShrink: 0 }} />
+            <div className="stat-info">
+              <div className="skeleton" style={{ height: '12px', width: '70px', marginBottom: '8px' }} />
+              <div className="skeleton" style={{ height: '22px', width: '50px' }} />
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Filters + Search card skeleton */}
