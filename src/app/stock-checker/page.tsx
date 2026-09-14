@@ -49,23 +49,6 @@ function getStockStatus(stock: number, minStock: number): { label: string; class
 
 const PAGE_SIZE = 20;
 
-// Common FMCG distributor brands to match reference image UI
-const KNOWN_BRANDS = [
-  'CDO',
-  'Magnolia',
-  'Purefoods',
-  'Argentina',
-  'Lucky Me',
-  'Del Monte',
-  'Nescafe',
-  'Birch Tree',
-  'San Miguel',
-  'Universal Robina',
-  'Monde Nissin',
-  'Century',
-  'Nestle',
-];
-
 const stockCheckerFetcher = async (url: string): Promise<ApiResponse> => {
   const res = await fetch(url);
   if (!res.ok) {
@@ -93,7 +76,6 @@ export default function StockCheckerPage() {
   const [searchInput, setSearchInput] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedStockStatus, setSelectedStockStatus] = useState<StockStatusKey>('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -109,11 +91,7 @@ export default function StockCheckerPage() {
     setCurrentPage(1);
   }, [debouncedSearch]);
 
-  // Combined search term (includes brand filter if chosen)
-  const effectiveSearch = useMemo(() => {
-    const terms = [activeSearch.trim(), selectedBrand.trim()].filter(Boolean);
-    return terms.join(' ');
-  }, [activeSearch, selectedBrand]);
+  const effectiveSearch = activeSearch.trim();
 
   // Build API URL
   const buildUrl = useCallback(() => {
@@ -232,13 +210,12 @@ export default function StockCheckerPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const hasFilters = Boolean(searchInput || selectedCategory || selectedBrand || selectedStockStatus);
+  const hasFilters = Boolean(searchInput || selectedCategory || selectedStockStatus);
 
   function clearFilters() {
     setSearchInput('');
     setActiveSearch('');
     setSelectedCategory('');
-    setSelectedBrand('');
     setSelectedStockStatus('');
     setCurrentPage(1);
   }
@@ -251,7 +228,7 @@ export default function StockCheckerPage() {
 
   // ── Pagination helper ───────────────────────────────────────────────────────
   function getPageNumbers(): (number | '...')[] {
-    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
     const pages: (number | '...')[] = [1];
     if (currentPage > 3) pages.push('...');
     for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
@@ -303,10 +280,10 @@ export default function StockCheckerPage() {
         <div
           role="button"
           tabIndex={0}
-          className={`stat-card ${selectedStockStatus === '' ? 'active-card' : ''}`}
+          className="stat-card"
           onClick={() => { setSelectedStockStatus(''); setCurrentPage(1); }}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(''); setCurrentPage(1); } }}
-          style={{ cursor: 'pointer', border: selectedStockStatus === '' && hasFilters ? '2px solid var(--primary)' : undefined }}
+          style={{ cursor: 'pointer', boxShadow: selectedStockStatus === '' && hasFilters ? '0 0 0 2px var(--primary)' : undefined }}
           title="Click to view all stock statuses"
           aria-label="View all stock statuses"
         >
@@ -323,10 +300,10 @@ export default function StockCheckerPage() {
         <div
           role="button"
           tabIndex={0}
-          className={`stat-card ${selectedStockStatus === 'in_stock' ? 'active-card' : ''}`}
+          className="stat-card"
           onClick={() => { setSelectedStockStatus(prev => prev === 'in_stock' ? '' : 'in_stock'); setCurrentPage(1); }}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(prev => prev === 'in_stock' ? '' : 'in_stock'); setCurrentPage(1); } }}
-          style={{ cursor: 'pointer', border: selectedStockStatus === 'in_stock' ? '2px solid var(--success)' : undefined }}
+          style={{ cursor: 'pointer', boxShadow: selectedStockStatus === 'in_stock' ? '0 0 0 2px var(--success)' : undefined }}
           title="Click to filter In Stock products"
           aria-label="Filter in stock products"
         >
@@ -343,10 +320,10 @@ export default function StockCheckerPage() {
         <div
           role="button"
           tabIndex={0}
-          className={`stat-card ${selectedStockStatus === 'low_stock' ? 'active-card' : ''}`}
+          className="stat-card"
           onClick={() => { setSelectedStockStatus(prev => prev === 'low_stock' ? '' : 'low_stock'); setCurrentPage(1); }}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(prev => prev === 'low_stock' ? '' : 'low_stock'); setCurrentPage(1); } }}
-          style={{ cursor: 'pointer', border: selectedStockStatus === 'low_stock' ? '2px solid var(--warning)' : undefined }}
+          style={{ cursor: 'pointer', boxShadow: selectedStockStatus === 'low_stock' ? '0 0 0 2px var(--warning)' : undefined }}
           title="Click to filter Low Stock products"
           aria-label="Filter low stock products"
         >
@@ -365,10 +342,10 @@ export default function StockCheckerPage() {
         <div
           role="button"
           tabIndex={0}
-          className={`stat-card ${selectedStockStatus === 'out_of_stock' ? 'active-card' : ''}`}
+          className="stat-card"
           onClick={() => { setSelectedStockStatus(prev => prev === 'out_of_stock' ? '' : 'out_of_stock'); setCurrentPage(1); }}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(prev => prev === 'out_of_stock' ? '' : 'out_of_stock'); setCurrentPage(1); } }}
-          style={{ cursor: 'pointer', border: selectedStockStatus === 'out_of_stock' ? '2px solid var(--danger)' : undefined }}
+          style={{ cursor: 'pointer', boxShadow: selectedStockStatus === 'out_of_stock' ? '0 0 0 2px var(--danger)' : undefined }}
           title="Click to filter Out of Stock products"
           aria-label="Filter out of stock products"
         >
@@ -388,7 +365,7 @@ export default function StockCheckerPage() {
       <div className="card" style={{ marginBottom: '16px', padding: '16px' }}>
         {/* Search row with form support */}
         <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: '1 1 280px' }}>
+          <div style={{ position: 'relative', flex: '1 1 220px' }}>
             <Search
               size={16}
               style={{
@@ -412,10 +389,12 @@ export default function StockCheckerPage() {
         </form>
 
         {/* Filter row */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           {/* Category filter */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '160px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Category</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 160px', minWidth: '130px' }}>
+            <label className="form-label" style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 0 }}>
+              Category
+            </label>
             <select
               className="form-select"
               value={selectedCategory}
@@ -429,8 +408,10 @@ export default function StockCheckerPage() {
           </div>
 
           {/* Stock Status filter */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '140px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Stock Status</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 140px', minWidth: '130px' }}>
+            <label className="form-label" style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 0 }}>
+              Stock Status
+            </label>
             <select
               className="form-select"
               value={selectedStockStatus}
@@ -443,34 +424,17 @@ export default function StockCheckerPage() {
             </select>
           </div>
 
-          {/* Brand filter (filters product name keywords) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '140px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Brand</label>
-            <select
-              className="form-select"
-              value={selectedBrand}
-              onChange={e => { setSelectedBrand(e.target.value); setCurrentPage(1); }}
-            >
-              <option value="">All Brands</option>
-              {KNOWN_BRANDS.map(brand => (
-                <option key={brand} value={brand}>{brand}</option>
-              ))}
-            </select>
-          </div>
-
           {/* Clear Filters */}
           {hasFilters && (
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '1px' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                aria-label="Clear all filters"
-                onClick={clearFilters}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', marginTop: '20px' }}
-              >
-                <RotateCcw size={14} /> Clear Filters
-              </button>
-            </div>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              aria-label="Clear all filters"
+              onClick={clearFilters}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', height: '38px' }}
+            >
+              <RotateCcw size={14} /> Clear Filters
+            </button>
           )}
         </div>
       </div>
@@ -478,11 +442,10 @@ export default function StockCheckerPage() {
       {/* ── Table Card ───────────────────────────────────────────────────── */}
       <div className="card">
         <div className="table-container">
-          <table className="table mobile-stack">
+          <table className="table mobile-stack" style={{ minWidth: '650px' }}>
             <thead>
               <tr>
-                <th style={{ width: '48px' }}>#</th>
-                <th>Product Name</th>
+                <th>Product</th>
                 <th>Barcode / SKU</th>
                 <th>Category</th>
                 {canViewSellingPrice && <th>Selling Price</th>}
@@ -494,24 +457,23 @@ export default function StockCheckerPage() {
               {isLoading && !products ? (
                 Array.from({ length: 10 }).map((_, i) => (
                   <tr key={i}>
-                    <td data-label="#"><div className="skeleton" style={{ width: '20px', height: '14px', borderRadius: '4px' }} /></td>
-                    <td data-label="Product Name">
+                    <td data-label="Product">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div className="skeleton" style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-sm)', flexShrink: 0 }} />
-                        <div className="skeleton" style={{ width: '130px', height: '14px', borderRadius: '4px' }} />
+                        <div className="skeleton" style={{ width: '130px', height: '14px', borderRadius: 'var(--radius-sm)' }} />
                       </div>
                     </td>
-                    <td data-label="Barcode / SKU"><div className="skeleton" style={{ width: '100px', height: '14px', borderRadius: '4px' }} /></td>
-                    <td data-label="Category"><div className="skeleton" style={{ width: '90px', height: '14px', borderRadius: '4px' }} /></td>
-                    {canViewSellingPrice && <td data-label="Selling Price"><div className="skeleton" style={{ width: '60px', height: '14px', borderRadius: '4px' }} /></td>}
-                    <td data-label="Current Stock" style={{ textAlign: 'center' }}><div className="skeleton" style={{ width: '30px', height: '14px', borderRadius: '4px', margin: '0 auto' }} /></td>
-                    <td data-label="Status" style={{ textAlign: 'center' }}><div className="skeleton" style={{ width: '70px', height: '22px', borderRadius: '20px', margin: '0 auto' }} /></td>
+                    <td data-label="Barcode / SKU"><div><div className="skeleton" style={{ width: '100px', height: '14px', borderRadius: 'var(--radius-sm)' }} /></div></td>
+                    <td data-label="Category"><div><div className="skeleton" style={{ width: '90px', height: '14px', borderRadius: 'var(--radius-sm)' }} /></div></td>
+                    {canViewSellingPrice && <td data-label="Selling Price"><div><div className="skeleton" style={{ width: '60px', height: '14px', borderRadius: 'var(--radius-sm)' }} /></div></td>}
+                    <td data-label="Current Stock" style={{ textAlign: 'center' }}><div><div className="skeleton" style={{ width: '30px', height: '14px', borderRadius: 'var(--radius-sm)', margin: '0 auto' }} /></div></td>
+                    <td data-label="Status" style={{ textAlign: 'center' }}><div><div className="skeleton" style={{ width: '70px', height: '22px', borderRadius: 'var(--radius-full)', margin: '0 auto' }} /></div></td>
                   </tr>
                 ))
               ) : !products || products.length === 0 ? (
                 <tr>
-                  <td colSpan={canViewSellingPrice ? 7 : 6}>
-                    <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+                  <td colSpan={canViewSellingPrice ? 6 : 5}>
+                    <div style={{ padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', textAlign: 'center', color: 'var(--text-tertiary)' }}>
                       <Package size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
                       <p style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-secondary)' }}>No products found</p>
                       {hasFilters && (
@@ -530,17 +492,13 @@ export default function StockCheckerPage() {
                   </td>
                 </tr>
               ) : (
-                products.map((product, idx) => {
-                  const rowNum = (currentPage - 1) * PAGE_SIZE + idx + 1;
+                products.map((product) => {
                   const status = getStockStatus(product.stock, product.minStock);
                   const displayBarcode = product.barcode || product.sku;
 
                   return (
                     <tr key={product.id}>
-                      <td data-label="#" style={{ color: 'var(--text-tertiary)', fontWeight: 500, fontSize: '13px' }}>
-                        {rowNum}
-                      </td>
-                      <td data-label="Product Name">
+                      <td data-label="Product">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           {/* Product thumbnail */}
                           <div
@@ -568,30 +526,34 @@ export default function StockCheckerPage() {
                           </span>
                         </div>
                       </td>
-                      <td data-label="Barcode / SKU" style={{ color: 'var(--text-secondary)', fontSize: '13px', fontFamily: 'monospace' }}>
-                        {displayBarcode}
+                      <td data-label="Barcode / SKU" style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-sm)', fontFamily: 'monospace' }}>
+                        <div>{displayBarcode || '—'}</div>
                       </td>
                       <td data-label="Category">
-                        {product.category ? (
-                          <span className="badge badge-secondary" style={{ fontSize: '11px' }}>
-                            {product.category.name}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>—</span>
-                        )}
+                        <div>
+                          {product.category ? (
+                            <span className="badge badge-secondary" style={{ fontSize: 'var(--font-xs)' }}>
+                              {product.category.name}
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-sm)' }}>—</span>
+                          )}
+                        </div>
                       </td>
                       {canViewSellingPrice && (
                         <td data-label="Selling Price" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {formatCurrency(product.price)}
+                          <div>{formatCurrency(product.price)}</div>
                         </td>
                       )}
                       <td data-label="Current Stock" style={{ textAlign: 'center', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {product.stock}
+                        <div>{product.stock}</div>
                       </td>
                       <td data-label="Status" style={{ textAlign: 'center' }}>
-                        <span className={`badge ${status.className}`} style={{ fontSize: '11px', fontWeight: 600 }}>
-                          {status.label}
-                        </span>
+                        <div>
+                          <span className={`badge ${status.className}`} style={{ fontSize: 'var(--font-xs)', fontWeight: 600 }}>
+                            {status.label}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -603,23 +565,23 @@ export default function StockCheckerPage() {
 
         {/* ── Pagination ──────────────────────────────────────────────────── */}
         {products && products.length > 0 && (
-          <div style={{
+          <div className="table-footer" style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '12px 16px', borderTop: '1px solid var(--border-light)', flexWrap: 'wrap', gap: '8px',
+            padding: '12px 16px', borderTop: '1px solid var(--border-light)', flexWrap: 'wrap', gap: '10px',
           }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: 'var(--font-sm)', color: 'var(--text-secondary)' }}>
               Showing {(currentPage - 1) * PAGE_SIZE + 1} to{' '}
               {Math.min(currentPage * PAGE_SIZE, total)} of {total} products
             </span>
 
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-sm"
                 aria-label="Previous page"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                style={{ padding: '6px 10px', fontSize: '13px' }}
+                style={{ padding: '6px 10px', minWidth: '32px' }}
               >
                 ‹
               </button>
@@ -634,8 +596,8 @@ export default function StockCheckerPage() {
                     aria-label={`Page ${p}`}
                     aria-current={p === currentPage ? 'page' : undefined}
                     onClick={() => setCurrentPage(p as number)}
-                    className={p === currentPage ? 'btn btn-primary' : 'btn btn-secondary'}
-                    style={{ padding: '6px 10px', fontSize: '13px', minWidth: '34px' }}
+                    className={p === currentPage ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
+                    style={{ padding: '6px 10px', minWidth: '32px' }}
                   >
                     {p}
                   </button>
@@ -644,11 +606,11 @@ export default function StockCheckerPage() {
 
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-sm"
                 aria-label="Next page"
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                style={{ padding: '6px 10px', fontSize: '13px' }}
+                style={{ padding: '6px 10px', minWidth: '32px' }}
               >
                 ›
               </button>
