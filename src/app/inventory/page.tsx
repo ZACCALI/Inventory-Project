@@ -134,6 +134,7 @@ export default function InventoryPage() {
   const [lockProductCreate, setLockProductCreate] = useState<boolean>(initialSettings?.lockProductCreate ?? false);
   const [lockProductDelete, setLockProductDelete] = useState<boolean>(initialSettings?.lockProductDelete ?? true);
   const [lockProductEdit, setLockProductEdit] = useState<boolean>(initialSettings?.lockProductEdit ?? false);
+  const showActions = isAdmin || (!lockProductEdit || !lockProductDelete);
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -621,12 +622,12 @@ export default function InventoryPage() {
           <table className="table mobile-stack">
             <thead>
               <tr>
-                <th style={{ width: isAdmin ? '32%' : '42%' }}>Product Details</th>
-                <th style={{ width: isAdmin ? '18%' : '24%' }}>Category</th>
+                <th style={{ width: isAdmin ? '32%' : (showActions ? '42%' : '46%') }}>Product Details</th>
+                <th style={{ width: isAdmin ? '18%' : (showActions ? '24%' : '26%') }}>Category</th>
                 {isAdmin && <th style={{ textAlign: 'right', width: '14%' }}>Price</th>}
-                <th style={{ textAlign: 'right', width: isAdmin ? '14%' : '16%' }}>Stock</th>
+                <th style={{ textAlign: 'right', width: isAdmin ? '14%' : (showActions ? '16%' : '18%') }}>Stock</th>
                 <th style={{ width: isAdmin ? '12%' : '10%' }}>Status</th>
-                <th style={{ textAlign: 'right', width: isAdmin ? '10%' : '8%' }}>Actions</th>
+                {showActions && <th style={{ textAlign: 'right', width: isAdmin ? '10%' : '8%' }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -638,12 +639,12 @@ export default function InventoryPage() {
                     {isAdmin && <td><div className="skeleton" style={{ height: '20px', width: '70%' }} /></td>}
                     <td><div className="skeleton" style={{ height: '20px', width: '90%' }} /></td>
                     <td><div className="skeleton" style={{ height: '20px', width: '50%' }} /></td>
-                    <td><div className="skeleton" style={{ height: '20px', width: '50%' }} /></td>
+                    {showActions && <td><div className="skeleton" style={{ height: '20px', width: '50%' }} /></td>}
                   </tr>
                 ))
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 6 : 5} style={{ padding: '40px', color: 'var(--text-tertiary)' }}>
+                  <td colSpan={isAdmin ? 6 : (showActions ? 5 : 4)} style={{ padding: '40px', color: 'var(--text-tertiary)' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', textAlign: 'center' }}>
                       No products found.
                     </div>
@@ -743,105 +744,108 @@ export default function InventoryPage() {
                         <span className="badge badge-success" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>In Stock</span>
                       )}
                     </td>
-                    <td data-label="Actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                        {(!lockProductEdit || isAdmin) && (
-                          <button 
-                            className="btn btn-icon" 
-                            onClick={() => openModal(product)}
-                            data-tooltip="Edit Product"
-                            style={{ 
-                              width: '34px', height: '34px', padding: 0,
-                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                              background: 'var(--bg-main)',
-                              border: '1px solid var(--border)',
-                              color: 'var(--text-secondary)',
-                              borderRadius: '6px',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
-                          >
-                            <Edit size={16} />
-                          </button>
-                        )}
-                        
-                        {(() => {
-                          const hasHistory = (product._count?.orderItems || 0) > 0 || (product._count?.stockLogs || 0) > 0;
+                    {showActions && (
+                      <td data-label="Actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                          {(!lockProductEdit || isAdmin) && (
+                            <button 
+                              className="btn btn-icon" 
+                              onClick={() => openModal(product)}
+                              data-tooltip="Edit Product"
+                              style={{ 
+                                width: '34px', height: '34px', padding: 0,
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                background: 'var(--bg-main)',
+                                border: '1px solid var(--border)',
+                                color: 'var(--text-secondary)',
+                                borderRadius: '6px',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                            >
+                              <Edit size={16} />
+                            </button>
+                          )}
                           
-                          if (product.isArchived) {
-                            return (
-                              <button 
-                                className="btn btn-icon" 
-                                onClick={() => handleUnarchiveProduct(product.id, product.name)}
-                                style={{ 
-                                  width: '34px', height: '34px', padding: 0,
-                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                  background: 'var(--bg-main)',
-                                  border: '1px solid var(--border)',
-                                  color: 'var(--success)',
-                                  borderRadius: '6px',
-                                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                }}
-                                data-tooltip="Unarchive Product"
-                                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--success)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--success)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--success)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
-                              >
-                                <RefreshCw size={16} />
-                              </button>
-                            );
-                          } else if (isOnline && !swrProducts) {
-                            return (
-                              <div className="skeleton" style={{ width: '34px', height: '34px', borderRadius: '6px' }} />
-                            );
-                          } else if (hasHistory || !cleanupMode) {
-                            if (lockProductDelete && !isAdmin) return null;
-                            return (
-                              <button 
-                                className="btn btn-icon" 
-                                onClick={() => handleArchiveProduct(product.id, product.name)}
-                                style={{ 
-                                  width: '34px', height: '34px', padding: 0,
-                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                  background: 'var(--bg-main)',
-                                  border: '1px solid var(--border)',
-                                  color: 'var(--warning)',
-                                  borderRadius: '6px',
-                                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                }}
-                                data-tooltip="Archive Product"
-                                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--warning)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--warning)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--warning)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
-                              >
-                                <Archive size={16} />
-                              </button>
-                            );
-                          } else {
-                            if (lockProductDelete && !isAdmin) return null;
-                            return (
-                              <button 
-                                className="btn btn-icon" 
-                                onClick={() => handleDeleteProduct(product.id, product.name)}
-                                style={{ 
-                                  width: '34px', height: '34px', padding: 0,
-                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                  background: 'var(--bg-main)',
-                                  border: '1px solid var(--border)',
-                                  color: 'var(--danger)',
-                                  borderRadius: '6px',
-                                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                }}
-                                data-tooltip="Delete Product (Safe: 0 sales)"
-                                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--danger)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            );
-                          }
-                        })()}
-                      </div>
-                    </td>
+                          {(() => {
+                            const hasHistory = (product._count?.orderItems || 0) > 0 || (product._count?.stockLogs || 0) > 0;
+                            
+                            if (product.isArchived) {
+                              if ((lockProductDelete || lockProductEdit) && !isAdmin) return null;
+                              return (
+                                <button 
+                                  className="btn btn-icon" 
+                                  onClick={() => handleUnarchiveProduct(product.id, product.name)}
+                                  style={{ 
+                                    width: '34px', height: '34px', padding: 0,
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    background: 'var(--bg-main)',
+                                    border: '1px solid var(--border)',
+                                    color: 'var(--success)',
+                                    borderRadius: '6px',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                  }}
+                                  data-tooltip="Unarchive Product"
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--success)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--success)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--success)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                                >
+                                  <RefreshCw size={16} />
+                                </button>
+                              );
+                            } else if (isOnline && !swrProducts) {
+                              return (
+                                <div className="skeleton" style={{ width: '34px', height: '34px', borderRadius: '6px' }} />
+                              );
+                            } else if (hasHistory || !cleanupMode) {
+                              if (lockProductDelete && !isAdmin) return null;
+                              return (
+                                <button 
+                                  className="btn btn-icon" 
+                                  onClick={() => handleArchiveProduct(product.id, product.name)}
+                                  style={{ 
+                                    width: '34px', height: '34px', padding: 0,
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    background: 'var(--bg-main)',
+                                    border: '1px solid var(--border)',
+                                    color: 'var(--warning)',
+                                    borderRadius: '6px',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                  }}
+                                  data-tooltip="Archive Product"
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--warning)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--warning)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--warning)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                                >
+                                  <Archive size={16} />
+                                </button>
+                              );
+                            } else {
+                              if (lockProductDelete && !isAdmin) return null;
+                              return (
+                                <button 
+                                  className="btn btn-icon" 
+                                  onClick={() => handleDeleteProduct(product.id, product.name)}
+                                  style={{ 
+                                    width: '34px', height: '34px', padding: 0,
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    background: 'var(--bg-main)',
+                                    border: '1px solid var(--border)',
+                                    color: 'var(--danger)',
+                                    borderRadius: '6px',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                  }}
+                                  data-tooltip="Delete Product (Safe: 0 sales)"
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger)'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.borderColor = 'var(--danger)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              );
+                            }
+                          })()}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

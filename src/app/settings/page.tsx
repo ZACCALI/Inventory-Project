@@ -619,7 +619,7 @@ export default function SettingsPage() {
                 {[
                   { key: 'lockProductCreate' as const, label: 'Lock Product Add / Creation', desc: 'Only admins can add new products. Staff and Cashier cannot create new catalog items.' },
                   { key: 'lockProductDelete' as const, label: 'Lock Product Delete', desc: 'Only admins can delete products. Prevents accidental removal of inventory items by staff members. Does not affect editing.' },
-                  { key: 'lockProductEdit' as const, label: 'Lock Product Edit & Archive', desc: 'Only admins can edit existing products and archive products. Prevents staff from modifying prices, details, and archiving items.' },
+                  { key: 'lockProductEdit' as const, label: 'Lock Product Edit & Archive', desc: 'Only admins can edit existing products and archive products. When enabled (with delete locked), the Actions column in the product catalog completely vanishes for staff and cashier.' },
                   { key: 'lockOrderDelete' as const, label: 'Lock Order Archive/Delete', desc: 'Only admins can archive or delete orders. Staff can only view and edit pending orders. Prevents staff from hiding cancelled orders.' },
                   { key: 'lockOrderEdit' as const, label: 'Lock Order Edit', desc: 'Only admins can edit orders. Prevents staff from modifying products or quantities on existing orders. Staff can only view orders.' },
                   { key: 'lockOrderCancel' as const, label: 'Lock Order Cancel', desc: 'Only admins can cancel orders. Since cancelling an order automatically restores stock back to inventory, this prevents unauthorized stock manipulation by staff.' },

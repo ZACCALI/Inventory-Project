@@ -2,10 +2,10 @@ export default function StockCheckerLoading() {
   return (
     <div style={{ animation: 'simpleFadeIn 150ms ease' }}>
       {/* Page header skeleton */}
-      <div className="page-header">
+      <div className="page-header" style={{ marginBottom: '16px' }}>
         <div>
-          <div className="skeleton" style={{ width: 'min(220px, 100%)', height: '28px', borderRadius: 'var(--radius-sm)', marginBottom: '8px' }} />
-          <div className="skeleton" style={{ width: 'min(340px, 100%)', height: '18px', borderRadius: 'var(--radius-sm)' }} />
+          <div className="skeleton" style={{ width: 'min(200px, 100%)', height: '28px', borderRadius: 'var(--radius-sm)', marginBottom: '8px' }} />
+          <div className="skeleton" style={{ width: 'min(320px, 100%)', height: '18px', borderRadius: 'var(--radius-sm)' }} />
         </div>
       </div>
 
@@ -22,31 +22,40 @@ export default function StockCheckerLoading() {
         ))}
       </div>
 
-      {/* Filters + Search card skeleton */}
-      <div className="card" style={{ marginBottom: '16px', padding: '16px' }}>
-        {/* Search row */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-          <div className="skeleton" style={{ flex: '1 1 220px', height: '38px', borderRadius: 'var(--radius-md)' }} />
-          <div className="skeleton" style={{ width: '100px', height: '38px', borderRadius: 'var(--radius-md)' }} />
-        </div>
-        {/* Filter row: Category + Stock Status (Brand removed) */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div className="skeleton" style={{ flex: '1 1 160px', height: '38px', borderRadius: 'var(--radius-md)' }} />
-          <div className="skeleton" style={{ flex: '1 1 140px', height: '38px', borderRadius: 'var(--radius-md)' }} />
-        </div>
-      </div>
-
-      {/* Table skeleton with mobile-stack and data-labels */}
+      {/* Unified Single Card: Filters + Table skeleton */}
       <div className="card">
+        {/* Filter bar header skeleton */}
+        <div className="card-header filter-bar" style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-light)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          margin: 0,
+        }}>
+          {/* Row 1: Search */}
+          <div style={{ display: 'flex', gap: '10px', width: '100%', flexWrap: 'wrap' }}>
+            <div className="skeleton" style={{ flex: '1 1 240px', height: '38px', borderRadius: 'var(--radius-md)' }} />
+            <div className="skeleton" style={{ width: '90px', height: '38px', borderRadius: 'var(--radius-md)' }} />
+          </div>
+          {/* Row 2: Category + Stock Status */}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="skeleton" style={{ flex: '0 1 220px', minWidth: '150px', height: '38px', borderRadius: 'var(--radius-md)' }} />
+            <div className="skeleton" style={{ flex: '0 1 180px', minWidth: '140px', height: '38px', borderRadius: 'var(--radius-md)' }} />
+          </div>
+        </div>
+
+        {/* Table skeleton with mobile-stack and data-labels */}
         <div className="table-container">
-          <table className="table mobile-stack" style={{ minWidth: '650px' }}>
+          <table className="table mobile-stack">
             <thead>
               <tr>
-                {['Product', 'Barcode / SKU', 'Category', 'Selling Price', 'Current Stock', 'Status'].map((col) => (
-                  <th key={col}>
-                    <div className="skeleton" style={{ height: '14px', width: '80px', borderRadius: 'var(--radius-sm)' }} />
-                  </th>
-                ))}
+                <th><div className="skeleton" style={{ height: '14px', width: '70px', borderRadius: 'var(--radius-sm)' }} /></th>
+                <th><div className="skeleton" style={{ height: '14px', width: '90px', borderRadius: 'var(--radius-sm)' }} /></th>
+                <th><div className="skeleton" style={{ height: '14px', width: '75px', borderRadius: 'var(--radius-sm)' }} /></th>
+                <th style={{ textAlign: 'right' }}><div className="skeleton" style={{ height: '14px', width: '80px', borderRadius: 'var(--radius-sm)', marginLeft: 'auto' }} /></th>
+                <th style={{ textAlign: 'right' }}><div className="skeleton" style={{ height: '14px', width: '85px', borderRadius: 'var(--radius-sm)', marginLeft: 'auto' }} /></th>
+                <th style={{ textAlign: 'center' }}><div className="skeleton" style={{ height: '14px', width: '50px', borderRadius: 'var(--radius-sm)', margin: '0 auto' }} /></th>
               </tr>
             </thead>
             <tbody>
@@ -60,9 +69,9 @@ export default function StockCheckerLoading() {
                   </td>
                   <td data-label="Barcode / SKU"><div><div className="skeleton" style={{ width: '110px', height: '14px', borderRadius: 'var(--radius-sm)' }} /></div></td>
                   <td data-label="Category"><div><div className="skeleton" style={{ width: '90px', height: '14px', borderRadius: 'var(--radius-sm)' }} /></div></td>
-                  <td data-label="Selling Price"><div><div className="skeleton" style={{ width: '60px', height: '14px', borderRadius: 'var(--radius-sm)' }} /></div></td>
-                  <td data-label="Current Stock"><div><div className="skeleton" style={{ width: '40px', height: '14px', borderRadius: 'var(--radius-sm)' }} /></div></td>
-                  <td data-label="Status"><div><div className="skeleton" style={{ width: '70px', height: '22px', borderRadius: 'var(--radius-full)' }} /></div></td>
+                  <td data-label="Selling Price" style={{ textAlign: 'right' }}><div><div className="skeleton" style={{ width: '60px', height: '14px', borderRadius: 'var(--radius-sm)', marginLeft: 'auto' }} /></div></td>
+                  <td data-label="Current Stock" style={{ textAlign: 'right' }}><div><div className="skeleton" style={{ width: '40px', height: '14px', borderRadius: 'var(--radius-sm)', marginLeft: 'auto' }} /></div></td>
+                  <td data-label="Status" style={{ textAlign: 'center' }}><div><div className="skeleton" style={{ width: '70px', height: '22px', borderRadius: 'var(--radius-full)', margin: '0 auto' }} /></div></td>
                 </tr>
               ))}
             </tbody>

@@ -70,7 +70,7 @@ const stockCheckerFetcher = async (url: string): Promise<ApiResponse> => {
 export default function StockCheckerPage() {
   const { data: session } = useSession();
   const userRole = (session?.user as { role?: string })?.role?.toLowerCase();
-  const canViewSellingPrice = userRole === 'admin' || userRole === 'cashier';
+  const canViewSellingPrice = userRole === 'admin' || userRole === 'cashier' || userRole === 'staff';
 
   const isOnline = useOnlineStatus();
   const [searchInput, setSearchInput] = useState('');
@@ -243,9 +243,9 @@ export default function StockCheckerPage() {
   return (
     <>
       {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="page-header">
+      <div className="page-header" style={{ marginBottom: '16px' }}>
         <div>
-          <h1 className="page-title">Stock &amp; Price Checker</h1>
+          <h1 className="page-title">Stock &amp; Price Check</h1>
           <p className="page-subtitle">View current stock levels and selling prices for all products</p>
         </div>
       </div>
@@ -283,7 +283,11 @@ export default function StockCheckerPage() {
           className="stat-card"
           onClick={() => { setSelectedStockStatus(''); setCurrentPage(1); }}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(''); setCurrentPage(1); } }}
-          style={{ cursor: 'pointer', boxShadow: selectedStockStatus === '' && hasFilters ? '0 0 0 2px var(--primary)' : undefined }}
+          style={{
+            cursor: 'pointer',
+            border: selectedStockStatus === '' ? '1.5px solid var(--border)' : '1px solid var(--border)',
+            transition: 'all var(--transition-fast)',
+          }}
           title="Click to view all stock statuses"
           aria-label="View all stock statuses"
         >
@@ -303,7 +307,12 @@ export default function StockCheckerPage() {
           className="stat-card"
           onClick={() => { setSelectedStockStatus(prev => prev === 'in_stock' ? '' : 'in_stock'); setCurrentPage(1); }}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(prev => prev === 'in_stock' ? '' : 'in_stock'); setCurrentPage(1); } }}
-          style={{ cursor: 'pointer', boxShadow: selectedStockStatus === 'in_stock' ? '0 0 0 2px var(--success)' : undefined }}
+          style={{
+            cursor: 'pointer',
+            border: selectedStockStatus === 'in_stock' ? '1.5px solid var(--success)' : '1px solid var(--border)',
+            background: selectedStockStatus === 'in_stock' ? 'var(--success-light)' : 'var(--bg-card)',
+            transition: 'all var(--transition-fast)',
+          }}
           title="Click to filter In Stock products"
           aria-label="Filter in stock products"
         >
@@ -323,7 +332,12 @@ export default function StockCheckerPage() {
           className="stat-card"
           onClick={() => { setSelectedStockStatus(prev => prev === 'low_stock' ? '' : 'low_stock'); setCurrentPage(1); }}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(prev => prev === 'low_stock' ? '' : 'low_stock'); setCurrentPage(1); } }}
-          style={{ cursor: 'pointer', boxShadow: selectedStockStatus === 'low_stock' ? '0 0 0 2px var(--warning)' : undefined }}
+          style={{
+            cursor: 'pointer',
+            border: selectedStockStatus === 'low_stock' ? '1.5px solid var(--warning)' : '1px solid var(--border)',
+            background: selectedStockStatus === 'low_stock' ? 'var(--warning-light)' : 'var(--bg-card)',
+            transition: 'all var(--transition-fast)',
+          }}
           title="Click to filter Low Stock products"
           aria-label="Filter low stock products"
         >
@@ -345,7 +359,12 @@ export default function StockCheckerPage() {
           className="stat-card"
           onClick={() => { setSelectedStockStatus(prev => prev === 'out_of_stock' ? '' : 'out_of_stock'); setCurrentPage(1); }}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedStockStatus(prev => prev === 'out_of_stock' ? '' : 'out_of_stock'); setCurrentPage(1); } }}
-          style={{ cursor: 'pointer', boxShadow: selectedStockStatus === 'out_of_stock' ? '0 0 0 2px var(--danger)' : undefined }}
+          style={{
+            cursor: 'pointer',
+            border: selectedStockStatus === 'out_of_stock' ? '1.5px solid var(--danger)' : '1px solid var(--border)',
+            background: selectedStockStatus === 'out_of_stock' ? 'var(--danger-light)' : 'var(--bg-card)',
+            transition: 'all var(--transition-fast)',
+          }}
           title="Click to filter Out of Stock products"
           aria-label="Filter out of stock products"
         >
@@ -361,95 +380,117 @@ export default function StockCheckerPage() {
         </div>
       </div>
 
-      {/* ── Search + Filters ─────────────────────────────────────────────── */}
-      <div className="card" style={{ marginBottom: '16px', padding: '16px' }}>
-        {/* Search row with form support */}
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: '1 1 220px' }}>
-            <Search
-              size={16}
-              style={{
-                position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
-                color: 'var(--text-tertiary)', pointerEvents: 'none',
-              }}
-            />
-            <input
-              type="text"
-              className="form-input"
-              aria-label="Search product name, barcode or SKU"
-              placeholder="Search product name, barcode or SKU…"
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              style={{ paddingLeft: '36px' }}
-            />
-          </div>
-          <button type="submit" className="btn btn-primary" aria-label="Search products" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-            <Search size={16} /> Search
-          </button>
-        </form>
-
-        {/* Filter row */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          {/* Category filter */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 160px', minWidth: '130px' }}>
-            <label className="form-label" style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 0 }}>
-              Category
-            </label>
-            <select
-              className="form-select"
-              value={selectedCategory}
-              onChange={e => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
-            >
-              <option value="">All Categories</option>
-              {(categories || []).map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Stock Status filter */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 140px', minWidth: '130px' }}>
-            <label className="form-label" style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 0 }}>
-              Stock Status
-            </label>
-            <select
-              className="form-select"
-              value={selectedStockStatus}
-              onChange={e => { setSelectedStockStatus(e.target.value as StockStatusKey); setCurrentPage(1); }}
-            >
-              <option value="">All</option>
-              <option value="in_stock">In Stock</option>
-              <option value="low_stock">Low Stock</option>
-              <option value="out_of_stock">Out of Stock</option>
-            </select>
-          </div>
-
-          {/* Clear Filters */}
-          {hasFilters && (
-            <button
-              type="button"
-              className="btn btn-secondary"
-              aria-label="Clear all filters"
-              onClick={clearFilters}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', height: '38px' }}
-            >
-              <RotateCcw size={14} /> Clear Filters
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* ── Table Card ───────────────────────────────────────────────────── */}
+      {/* ── Unified Single Card: Search, Filters, Table & Pagination ────────── */}
       <div className="card">
+        {/* Filter Bar Header inside the Card */}
+        <div className="card-header filter-bar" style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-light)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          margin: 0,
+        }}>
+          {/* Row 1: Search row with input and action button */}
+          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '10px', width: '100%', flexWrap: 'wrap' }}>
+            <div className="search-bar" style={{ position: 'relative', flex: '1 1 240px' }}>
+              <Search
+                size={16}
+                style={{
+                  position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
+                  color: 'var(--text-tertiary)', pointerEvents: 'none',
+                }}
+              />
+              <input
+                type="text"
+                className="form-input"
+                aria-label="Search product name, barcode or SKU"
+                placeholder="Search product name, barcode or SKU…"
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                style={{ paddingLeft: '36px', width: '100%' }}
+              />
+            </div>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              aria-label="Search products"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+            >
+              <Search size={16} /> Search
+            </button>
+          </form>
+
+          {/* Row 2: Filter dropdowns and reset */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            alignItems: 'flex-end',
+            flexWrap: 'wrap',
+            width: '100%',
+          }}>
+            {/* Category filter */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px', flex: '0 1 220px' }}>
+              <label className="form-label" style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 0 }}>
+                Category
+              </label>
+              <select
+                className="form-select"
+                value={selectedCategory}
+                onChange={e => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
+              >
+                <option value="">All Categories</option>
+                {(categories || []).map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Stock Status filter */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '140px', flex: '0 1 180px' }}>
+              <label className="form-label" style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 0 }}>
+                Stock Status
+              </label>
+              <select
+                className="form-select"
+                value={selectedStockStatus}
+                onChange={e => { setSelectedStockStatus(e.target.value as StockStatusKey); setCurrentPage(1); }}
+              >
+                <option value="">All</option>
+                <option value="in_stock">In Stock</option>
+                <option value="low_stock">Low Stock</option>
+                <option value="out_of_stock">Out of Stock</option>
+              </select>
+            </div>
+
+            {/* Clear Filters button */}
+            {hasFilters && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                aria-label="Clear all filters"
+                onClick={clearFilters}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap',
+                  height: '38px', marginLeft: 'auto',
+                }}
+              >
+                <RotateCcw size={14} /> Clear Filters
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Table Container directly inside the single Card */}
         <div className="table-container">
-          <table className="table mobile-stack" style={{ minWidth: '650px' }}>
+          <table className="table mobile-stack">
             <thead>
               <tr>
                 <th>Product</th>
                 <th>Barcode / SKU</th>
                 <th>Category</th>
-                {canViewSellingPrice && <th>Selling Price</th>}
-                <th style={{ textAlign: 'center' }}>Current Stock</th>
+                {canViewSellingPrice && <th style={{ textAlign: 'right' }}>Selling Price</th>}
+                <th style={{ textAlign: 'right' }}>Current Stock</th>
                 <th style={{ textAlign: 'center' }}>Status</th>
               </tr>
             </thead>
@@ -465,19 +506,33 @@ export default function StockCheckerPage() {
                     </td>
                     <td data-label="Barcode / SKU"><div><div className="skeleton" style={{ width: '100px', height: '14px', borderRadius: 'var(--radius-sm)' }} /></div></td>
                     <td data-label="Category"><div><div className="skeleton" style={{ width: '90px', height: '14px', borderRadius: 'var(--radius-sm)' }} /></div></td>
-                    {canViewSellingPrice && <td data-label="Selling Price"><div><div className="skeleton" style={{ width: '60px', height: '14px', borderRadius: 'var(--radius-sm)' }} /></div></td>}
-                    <td data-label="Current Stock" style={{ textAlign: 'center' }}><div><div className="skeleton" style={{ width: '30px', height: '14px', borderRadius: 'var(--radius-sm)', margin: '0 auto' }} /></div></td>
+                    {canViewSellingPrice && <td data-label="Selling Price" style={{ textAlign: 'right' }}><div><div className="skeleton" style={{ width: '60px', height: '14px', borderRadius: 'var(--radius-sm)', marginLeft: 'auto' }} /></div></td>}
+                    <td data-label="Current Stock" style={{ textAlign: 'right' }}><div><div className="skeleton" style={{ width: '30px', height: '14px', borderRadius: 'var(--radius-sm)', marginLeft: 'auto' }} /></div></td>
                     <td data-label="Status" style={{ textAlign: 'center' }}><div><div className="skeleton" style={{ width: '70px', height: '22px', borderRadius: 'var(--radius-full)', margin: '0 auto' }} /></div></td>
                   </tr>
                 ))
               ) : !products || products.length === 0 ? (
                 <tr>
-                  <td colSpan={canViewSellingPrice ? 6 : 5}>
-                    <div style={{ padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', textAlign: 'center', color: 'var(--text-tertiary)' }}>
-                      <Package size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-                      <p style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-secondary)' }}>No products found</p>
-                      {hasFilters && (
-                        <p style={{ fontSize: '13px', marginTop: '6px' }}>
+                  <td colSpan={canViewSellingPrice ? 6 : 5} style={{ padding: 0 }}>
+                    <div
+                      className="empty-state"
+                      style={{
+                        padding: '56px 24px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        width: '100%',
+                        margin: '0 auto',
+                      }}
+                    >
+                      <Package size={44} style={{ margin: '0 auto 12px', opacity: 0.35, color: 'var(--text-tertiary)' }} />
+                      <h4 style={{ fontWeight: 600, fontSize: '16px', color: 'var(--text-primary)', marginBottom: '4px', textAlign: 'center', width: '100%' }}>
+                        No products found
+                      </h4>
+                      {hasFilters ? (
+                        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center', margin: '4px auto 0', width: '100%' }}>
                           Try adjusting your filters or{' '}
                           <button
                             type="button"
@@ -486,6 +541,10 @@ export default function StockCheckerPage() {
                           >
                             clear all filters
                           </button>
+                        </p>
+                      ) : (
+                        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center', margin: '4px auto 0', width: '100%' }}>
+                          No products are currently available in the catalog.
                         </p>
                       )}
                     </div>
@@ -541,15 +600,15 @@ export default function StockCheckerPage() {
                         </div>
                       </td>
                       {canViewSellingPrice && (
-                        <td data-label="Selling Price" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                          <div>{formatCurrency(product.price)}</div>
+                        <td data-label="Selling Price" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                          <div style={{ textAlign: 'right' }}>{formatCurrency(product.price)}</div>
                         </td>
                       )}
-                      <td data-label="Current Stock" style={{ textAlign: 'center', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        <div>{product.stock}</div>
+                      <td data-label="Current Stock" style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                        <div style={{ textAlign: 'right' }}>{product.stock}</div>
                       </td>
                       <td data-label="Status" style={{ textAlign: 'center' }}>
-                        <div>
+                        <div style={{ textAlign: 'center' }}>
                           <span className={`badge ${status.className}`} style={{ fontSize: 'var(--font-xs)', fontWeight: 600 }}>
                             {status.label}
                           </span>

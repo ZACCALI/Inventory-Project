@@ -1516,16 +1516,19 @@ p {
   margin-bottom: var(--space-md);
 }
 
-.empty-state h3 {
+.empty-state h3,
+.empty-state h4 {
   font-size: var(--font-lg);
   margin-bottom: var(--space-sm);
+  text-align: center;
 }
 
 .empty-state p {
   font-size: var(--font-base);
   color: var(--text-secondary);
-  margin-bottom: var(--space-lg);
+  margin: 0 auto var(--space-lg);
   max-width: 400px;
+  text-align: center;
 }
 
 /* ============================================================
@@ -4603,7 +4606,7 @@ p {
     display: table-cell !important;
     padding: 14px var(--space-md) !important;
     border-bottom: 1px solid var(--border-light) !important;
-    text-align: left !important;
+    text-align: left;
     font-size: var(--font-base) !important;
     font-weight: normal !important;
     width: auto !important;
@@ -4613,6 +4616,14 @@ p {
   }
   .table-container table.mobile-stack td > div {
     align-items: flex-start !important;
+  }
+  .table-container table.mobile-stack td > div.empty-state,
+  .table-container table.mobile-stack td .empty-state {
+    align-items: center !important;
+    text-align: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: 100% !important;
   }
 }
 
