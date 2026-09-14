@@ -23,6 +23,7 @@ interface SettingsData {
   currency: string;
   taxRate: number;
   cleanupMode: boolean;
+  lockProductCreate: boolean;
   lockProductDelete: boolean;
   lockProductEdit: boolean;
   lockOrderDelete: boolean;
@@ -53,7 +54,7 @@ export default function SettingsPage() {
   const [printerStatus, setPrinterStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [settings, setSettings] = useState<SettingsData>({
     companyName: '', email: '', phone: '', address: '', currency: 'PHP', taxRate: 0, cleanupMode: false,
-    lockProductDelete: true, lockProductEdit: false, lockOrderDelete: true, lockOrderEdit: false, lockOrderCancel: false, lockOrderDate: false, lockStockVoid: false,
+    lockProductCreate: false, lockProductDelete: true, lockProductEdit: false, lockOrderDelete: true, lockOrderEdit: false, lockOrderCancel: false, lockOrderDate: false, lockStockVoid: false,
     expiryWarningDays: 30, staffPermissions: '', cashierPermissions: ''
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -94,6 +95,7 @@ export default function SettingsPage() {
             currency: raw.currency || 'PHP',
             taxRate: raw.taxRate || 0,
             cleanupMode: raw.cleanupMode || false,
+            lockProductCreate: raw.lockProductCreate ?? false,
             lockProductDelete: raw.lockProductDelete ?? true,
             lockProductEdit: raw.lockProductEdit ?? false,
             lockOrderDelete: raw.lockOrderDelete ?? true,
@@ -125,6 +127,7 @@ export default function SettingsPage() {
         currency: raw.currency || 'PHP',
         taxRate: raw.taxRate || 0,
         cleanupMode: raw.cleanupMode || false,
+        lockProductCreate: raw.lockProductCreate ?? false,
         lockProductDelete: raw.lockProductDelete ?? true,
         lockProductEdit: raw.lockProductEdit ?? false,
         lockOrderDelete: raw.lockOrderDelete ?? true,
@@ -167,6 +170,7 @@ export default function SettingsPage() {
           currency: data.currency || 'PHP',
           taxRate: data.taxRate || 0,
           cleanupMode: data.cleanupMode || false,
+          lockProductCreate: data.lockProductCreate ?? false,
           lockProductDelete: data.lockProductDelete ?? true,
           lockProductEdit: data.lockProductEdit ?? false,
           lockOrderDelete: data.lockOrderDelete ?? true,
@@ -613,6 +617,7 @@ export default function SettingsPage() {
                   Control which actions are restricted to admin users only. When a lock is enabled, only admin users can perform that action. Staff members will see buttons hidden or disabled.
                 </p>
                 {[
+                  { key: 'lockProductCreate' as const, label: 'Lock Product Add / Creation', desc: 'Only admins can add new products. Staff and Cashier cannot create new catalog items.' },
                   { key: 'lockProductDelete' as const, label: 'Lock Product Delete', desc: 'Only admins can delete products. Prevents accidental removal of inventory items by staff members. Does not affect editing.' },
                   { key: 'lockProductEdit' as const, label: 'Lock Product Edit & Archive', desc: 'Only admins can edit existing products and archive products. Prevents staff from modifying prices, details, and archiving items.' },
                   { key: 'lockOrderDelete' as const, label: 'Lock Order Archive/Delete', desc: 'Only admins can archive or delete orders. Staff can only view and edit pending orders. Prevents staff from hiding cancelled orders.' },

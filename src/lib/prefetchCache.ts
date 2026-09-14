@@ -124,7 +124,7 @@ async function runPrefetch() {
             price: p.price || 0,
             costPrice: p.costPrice || 0,
             stock: p.stock || 0,
-            minStock: p.minStock || 10,
+            minStock: p.minStock ?? 0,
             image: p.image || null,
             categoryName: p.category?.name || null,
             uoms: p.uoms || [],

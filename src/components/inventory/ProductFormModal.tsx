@@ -58,6 +58,7 @@ export interface ProductFormModalProps {
   products: Product[];
   isAdmin: boolean;
   isOnline: boolean;
+  lockProductCreate?: boolean;
   initialBarcode?: string;
   onClose: () => void;
   onSaved: (savedProduct: Product, isEditing: boolean) => void;
@@ -72,6 +73,7 @@ export function ProductFormModal({
   products,
   isAdmin,
   isOnline,
+  lockProductCreate = false,
   initialBarcode,
   onClose,
   onSaved,
@@ -86,7 +88,7 @@ export function ProductFormModal({
     price: '',
     costPrice: '',
     stock: '0',
-    minStock: '10',
+    minStock: '0',
     unit: '',
     expiryDate: '',
     categoryId: '',
@@ -125,7 +127,7 @@ export function ProductFormModal({
         price: '',
         costPrice: '',
         stock: '0',
-        minStock: '10',
+        minStock: '0',
         unit: '',
         expiryDate: '',
         categoryId: '',
@@ -210,6 +212,13 @@ export function ProductFormModal({
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+
+    // Guard: Prevent product creation if locked to administrators only
+    if (!editingProduct && lockProductCreate && !isAdmin) {
+      showAlert('error', 'Access Denied', 'Product creation is locked to administrators only.');
+      setIsSaving(false);
+      return;
+    }
 
     // 1. Validate Pricing (Safety Feature - Admin Only)
     if (isAdmin) {
@@ -329,6 +338,12 @@ export function ProductFormModal({
             onClose();
             return;
           } else {
+            if (res.status === 403) {
+              const errData = await res.json().catch(() => ({}));
+              showAlert('error', 'Access Denied', errData?.error || 'Only administrators can add products.');
+              setIsSaving(false);
+              return;
+            }
             networkFailed = true;
           }
         } catch (fetchErr) {
@@ -358,6 +373,7 @@ export function ProductFormModal({
             price: Number(payload.price) || 0,
             costPrice: isAdmin ? (Number(payload.costPrice) || 0) : 0,
             stock: Number(payload.stock) || 0,
+            minStock: Number(payload.minStock) || 0,
             image: payload.image || null,
             categoryName: categoryObj?.name || null,
             uoms: payload.uoms?.map(u => ({

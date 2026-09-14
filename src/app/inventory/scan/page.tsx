@@ -86,6 +86,30 @@ export default function BarcodeScannerPage() {
   const [auditItems, setAuditItems] = useState<(ScannedProduct & { scannedQty: number })[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [notFoundCode, setNotFoundCode] = useState('');
+  const [lockProductCreate, setLockProductCreate] = useState(false);
+
+  // Load settings to check lockProductCreate
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem('amroding_settings_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (typeof parsed.lockProductCreate === 'boolean') {
+          setLockProductCreate(parsed.lockProductCreate);
+        }
+      }
+    } catch {
+      // Ignore cache parse error
+    }
+    db.settings.get('current').then(s => {
+      if (s?.data) {
+        const parsed = JSON.parse(s.data);
+        if (typeof parsed.lockProductCreate === 'boolean') {
+          setLockProductCreate(parsed.lockProductCreate);
+        }
+      }
+    }).catch(() => {});
+  }, []);
 
   // Load from Local Storage on mount
   useEffect(() => {
@@ -184,7 +208,7 @@ export default function BarcodeScannerPage() {
           setFallbackResults(results);
           setShowFallbackDropdown(true);
         }
-      } catch (err) {}
+      } catch {}
     };
     
     // Fire instant local search
@@ -915,13 +939,15 @@ export default function BarcodeScannerPage() {
               <AlertCircle size={48} color="var(--danger)" style={{ margin: '0 auto var(--space-md)' }} />
               <h3 style={{ fontSize: 'var(--font-lg)', fontWeight: 600, color: 'var(--danger-dark)', marginBottom: '8px' }}>Barcode Not Found</h3>
               <p style={{ color: 'var(--danger-dark)' }}>We couldn&apos;t find <strong>{notFoundCode}</strong> in the system.</p>
-              <button 
-                className="btn btn-primary" 
-                style={{ marginTop: 'var(--space-lg)' }}
-                onClick={() => router.push(`/inventory?add=true&barcode=${encodeURIComponent(notFoundCode)}`)}
-              >
-                <Plus size={18} style={{ marginRight: '8px' }} /> Register New Product
-              </button>
+              {(!lockProductCreate || isAdmin) && (
+                <button 
+                  className="btn btn-primary" 
+                  style={{ marginTop: 'var(--space-lg)' }}
+                  onClick={() => router.push(`/inventory?add=true&barcode=${encodeURIComponent(notFoundCode)}`)}
+                >
+                  <Plus size={18} style={{ marginRight: '8px' }} /> Register New Product
+                </button>
+              )}
             </div>
           ) : auditMode ? (
             <div style={{ marginTop: 'var(--space-md)' }}>

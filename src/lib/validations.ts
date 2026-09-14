@@ -240,6 +240,7 @@ export const settingsSchema = z.object({
   currency: safeOptionalString(10),
   taxRate: z.coerce.number().min(0).max(100).optional(),
   cleanupMode: z.boolean().optional(),
+  lockProductCreate: z.boolean().optional(),
   lockProductDelete: z.boolean().optional(),
   lockProductEdit: z.boolean().optional(),
   lockOrderDelete: z.boolean().optional(),

@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
 
     const sanitizedProducts = user.role === 'admin'
       ? products
-      : products.map(({ costPrice, ...p }) => ({ ...p, costPrice: 0 }));
+      : products.map(p => ({ ...p, costPrice: 0 }));
 
     return NextResponse.json(sanitizedProducts, {
       headers: {
@@ -118,6 +118,18 @@ export async function POST(request: NextRequest) {
   try {
     const { user, error } = await requirePermission(request, 'inventory');
     if (error) return error;
+
+    // Enforce lockProductCreate permission control: only admins can create products when locked
+    const settings = await prisma.systemSettings.findUnique({
+      where: { id: "1" },
+      select: { lockProductCreate: true },
+    });
+    if (settings?.lockProductCreate && user.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Only admins can add products.' },
+        { status: 403 }
+      );
+    }
 
     // Rate limit: 10 product creations per user per minute (100 for offline sync burst)
     const isOfflineHeader = request.headers.get('x-offline-sync') === '1' || request.headers.get('x-offline-sync') === 'true';
@@ -204,7 +216,7 @@ export async function POST(request: NextRequest) {
           price: price,
           costPrice: user.role === 'admin' ? (costPrice || 0) : 0,
           stock: initialStock,
-          minStock: minStock || 10,
+          minStock: minStock ?? 0,
           unit: unit || 'pcs',
           expiryDate: expiryDate ? new Date(expiryDate) : null,
           image: image || null,

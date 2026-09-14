@@ -149,7 +149,7 @@ export default function StockCheckerPage() {
           barcode: p.barcode,
           price: p.price,
           stock: p.stock,
-          minStock: p.minStock ?? 10,
+          minStock: p.minStock ?? 0,
           image: p.image,
           category: p.categoryName ? { id: p.categoryName, name: p.categoryName } : null,
         })));

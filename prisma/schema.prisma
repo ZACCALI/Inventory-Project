@@ -63,7 +63,7 @@ model Product {
   price      Float        @default(0)
   costPrice  Float        @default(0)
   stock      Int          @default(0)
-  minStock   Int          @default(10)
+  minStock   Int          @default(0)
   unit       String       @default("pcs")
   expiryDate DateTime?
   image      String?
@@ -243,6 +243,7 @@ model SystemSettings {
   taxRate            Float    @default(0)
   expiryWarningDays  Int      @default(30)
   cleanupMode        Boolean  @default(false)
+  lockProductCreate  Boolean  @default(false)
   lockProductDelete  Boolean  @default(true)
   lockProductEdit    Boolean  @default(false)
   lockOrderDelete    Boolean  @default(true)

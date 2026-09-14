@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, getDefaultLandingPage } from '@/lib/constants';
 import ExpiryAlertWidget from '@/components/ExpiryAlertWidget';
-import { db } from '@/lib/db';
+import { db, type OfflineProduct } from '@/lib/db';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface DashboardData {
@@ -62,7 +62,7 @@ export default function DashboardPage() {
       try {
         const saved = localStorage.getItem('amroding_cached_session');
         if (saved) role = JSON.parse(saved)?.user?.role;
-      } catch (e) {}
+      } catch {}
     }
 
     if (role && role !== 'admin') {
@@ -73,7 +73,7 @@ export default function DashboardPage() {
           const parsed = JSON.parse(cachedSettings);
           perms = role === 'staff' ? parsed.staffPermissions : parsed.cashierPermissions;
         }
-      } catch (e) {}
+      } catch {}
       router.replace(getDefaultLandingPage(role, perms));
     }
   }, [session, status, userRole, router]);
@@ -126,15 +126,15 @@ export default function DashboardPage() {
         try {
           const products = await db.products.toArray();
           const totalProducts = products.length;
-          const totalStock = products.reduce((acc: number, p: any) => acc + (p.stock || 0), 0);
-          const totalStockValue = products.reduce((acc: number, p: any) => acc + ((p.stock || 0) * (p.price || 0)), 0);
+          const totalStock = products.reduce((acc: number, p: OfflineProduct) => acc + (p.stock || 0), 0);
+          const totalStockValue = products.reduce((acc: number, p: OfflineProduct) => acc + ((p.stock || 0) * (p.price || 0)), 0);
           const lowStockProducts = products
-            .filter((p: any) => p.stock <= 5)
-            .map((p: any) => ({
+            .filter((p: OfflineProduct) => p.stock > 0 && p.stock <= (p.minStock ?? 0))
+            .map((p: OfflineProduct) => ({
               id: p.id,
               name: p.name,
               stock: p.stock,
-              minStock: 5,
+              minStock: p.minStock ?? 0,
               category: p.categoryName ? { name: p.categoryName } : null
             }));
 

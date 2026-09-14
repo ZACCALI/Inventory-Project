@@ -131,6 +131,7 @@ export default function InventoryPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const initialSettings = getCachedSettingsSync();
   const [cleanupMode, setCleanupMode] = useState<boolean>(initialSettings?.cleanupMode ?? false);
+  const [lockProductCreate, setLockProductCreate] = useState<boolean>(initialSettings?.lockProductCreate ?? false);
   const [lockProductDelete, setLockProductDelete] = useState<boolean>(initialSettings?.lockProductDelete ?? true);
   const [lockProductEdit, setLockProductEdit] = useState<boolean>(initialSettings?.lockProductEdit ?? false);
   
@@ -220,6 +221,7 @@ export default function InventoryPage() {
           localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settingsData));
         } catch {}
         setCleanupMode(!!settingsData.cleanupMode);
+        setLockProductCreate(settingsData.lockProductCreate ?? false);
         setLockProductDelete(settingsData.lockProductDelete ?? true);
         setLockProductEdit(settingsData.lockProductEdit ?? false);
       }
@@ -236,6 +238,7 @@ export default function InventoryPage() {
           const parsed = JSON.parse(cached.data);
           try { localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(parsed)); } catch {}
           setCleanupMode(!!parsed.cleanupMode);
+          setLockProductCreate(parsed.lockProductCreate ?? false);
           setLockProductDelete(parsed.lockProductDelete ?? true);
           setLockProductEdit(parsed.lockProductEdit ?? false);
         }
@@ -257,6 +260,7 @@ export default function InventoryPage() {
     // Check for add new product from barcode scanner
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('add') === 'true') {
+      if (lockProductCreate && !isAdmin) return;
       const barcode = searchParams.get('barcode') || '';
       setInitialBarcode(barcode);
       setTimeout(() => {
@@ -275,7 +279,7 @@ export default function InventoryPage() {
       window.removeEventListener('appDataSynced', handleAppSync);
       window.removeEventListener('amroding:data-changed', handleAppSync);
     };
-  }, [fetchDependencies, fetchProducts]);
+  }, [fetchDependencies, fetchProducts, lockProductCreate, isAdmin]);
 
   // Close filter dropdown on outside click
   useEffect(() => {
@@ -288,8 +292,11 @@ export default function InventoryPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isFilterOpen]);
 
+  // Filtering
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || p.sku.toLowerCase().includes(debouncedSearch.toLowerCase());
+    const matchesSearch = p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
+                          p.sku.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                          (p.barcode && p.barcode.toLowerCase().includes(debouncedSearch.toLowerCase()));
     let matchesStatus = true;
     if (statusFilter === 'out') matchesStatus = p.stock === 0;
     if (statusFilter === 'low') matchesStatus = p.stock > 0 && p.stock <= p.minStock;
@@ -300,6 +307,10 @@ export default function InventoryPage() {
   });
 
   const openModal = (product?: Product) => {
+    if (!product && lockProductCreate && !isAdmin) {
+      showAlert('error', 'Access Denied', 'Product creation is restricted to administrators.');
+      return;
+    }
     setEditingProduct(product || null);
     setInitialBarcode('');
     setIsModalOpen(true);
@@ -449,10 +460,12 @@ export default function InventoryPage() {
           <p className="page-subtitle">Manage your product catalog and stock levels</p>
         </div>
         <div className="page-header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button className="btn btn-primary" onClick={() => openModal()}>
-            <Plus size={18} />
-            Add Product
-          </button>
+          {(!lockProductCreate || isAdmin) && (
+            <button className="btn btn-primary" onClick={() => openModal()}>
+              <Plus size={18} />
+              Add Product
+            </button>
+          )}
         </div>
       </div>
 
@@ -846,6 +859,7 @@ export default function InventoryPage() {
         products={products}
         isAdmin={isAdmin}
         isOnline={isOnline}
+        lockProductCreate={lockProductCreate}
         initialBarcode={initialBarcode}
         onClose={closeModal}
         onSaved={handleProductSaved}
