@@ -283,12 +283,11 @@ export function ProductFormModal({
         }))
       };
 
+      productPayload.price = Number(formData.price) || 0;
       if (isAdmin) {
-        productPayload.price = Number(formData.price) || 0;
         productPayload.costPrice = Number(formData.costPrice) || 0;
       } else {
         delete productPayload.costPrice;
-        delete productPayload.price;
       }
 
       if (!isOffline) {
@@ -338,9 +337,15 @@ export function ProductFormModal({
             onClose();
             return;
           } else {
+            const errData = await res.json().catch(() => ({}));
             if (res.status === 403) {
-              const errData = await res.json().catch(() => ({}));
               showAlert('error', 'Access Denied', errData?.error || 'Only administrators can add products.');
+              setIsSaving(false);
+              return;
+            }
+            // Surface 4xx client validation errors to the user rather than corrupting the offline queue
+            if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
+              showAlert('error', 'Validation Error', errData?.error || 'Failed to save product. Please check the form fields.');
               setIsSaving(false);
               return;
             }

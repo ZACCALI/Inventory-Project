@@ -119,12 +119,14 @@ export async function POST(request: NextRequest) {
     const { user, error } = await requirePermission(request, 'inventory');
     if (error) return error;
 
+    const isOfflineHeader = request.headers.get('x-offline-sync') === '1' || request.headers.get('x-offline-sync') === 'true';
+
     // Enforce lockProductCreate permission control: only admins can create products when locked
     const settings = await prisma.systemSettings.findUnique({
       where: { id: "1" },
       select: { lockProductCreate: true },
     });
-    if (settings?.lockProductCreate && user.role !== 'admin') {
+    if (settings?.lockProductCreate && user.role !== 'admin' && !isOfflineHeader) {
       return NextResponse.json(
         { error: 'Only admins can add products.' },
         { status: 403 }
@@ -132,7 +134,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit: 10 product creations per user per minute (100 for offline sync burst)
-    const isOfflineHeader = request.headers.get('x-offline-sync') === '1' || request.headers.get('x-offline-sync') === 'true';
     const rateLimitMax = isOfflineHeader ? 100 : 10;
     const { allowed } = rateLimit(`products:${user.id}`, rateLimitMax, 60 * 1000);
     if (!allowed) {
@@ -142,14 +143,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const isOfflineSync = Boolean(
       body?.isOfflineSync || 
-      request.headers.get('x-offline-sync') === '1' || 
-      request.headers.get('x-offline-sync') === 'true'
+      isOfflineHeader
     );
     console.log("DEBUG PRODUCTS POST BODY:", JSON.stringify(body));
 
     const isDuplicate = await checkAndSetIdempotency(body.idempotencyKey);
     if (isDuplicate) {
       return NextResponse.json({ message: 'Already processed' }, { status: 200 });
+    }
+
+    // For offline sync: if a product with the same SKU already exists in PostgreSQL, return it gracefully
+    // so offlineSync can remap the temporary OFF- ID to the real database ID and continue child tasks
+    if (isOfflineSync && body?.sku) {
+      const existingProductBySku = await prisma.product.findUnique({
+        where: { sku: body.sku },
+        select: { id: true, name: true, sku: true, barcode: true, stock: true },
+      });
+      if (existingProductBySku) {
+        return NextResponse.json(existingProductBySku, { status: 200 });
+      }
     }
 
     // Validate input with Zod schema
@@ -162,8 +174,8 @@ export async function POST(request: NextRequest) {
 
     const { name, sku, barcode, price, costPrice, stock, minStock, unit, expiryDate, image, categoryId, uoms } = parsed.data;
 
-    // Block if selling price <= cost price (do not leak cost values in error message)
-    if (costPrice !== undefined && Number(price) <= Number(costPrice)) {
+    // Block if selling price <= cost price (only when costPrice > 0, do not leak cost values in error message)
+    if (costPrice !== undefined && Number(costPrice) > 0 && Number(price) <= Number(costPrice)) {
       return NextResponse.json({ error: 'Pricing Error: Base Selling Price must be higher than Cost Price.' }, { status: 400 });
     }
 
@@ -195,14 +207,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Resolve categoryId — discard offline temp IDs and validate existence
+    // Resolve categoryId — discard offline temp IDs and gracefully validate existence
     let resolvedCategoryId: string | null = null;
     if (categoryId && !String(categoryId).startsWith('OFF-')) {
       const catExists = await prisma.category.findUnique({ where: { id: categoryId }, select: { id: true } });
-      if (!catExists) {
+      if (catExists) {
+        resolvedCategoryId = categoryId;
+      } else if (isOfflineSync && body.category?.name) {
+        const catByName = await prisma.category.findFirst({ where: { name: body.category.name }, select: { id: true } });
+        resolvedCategoryId = catByName?.id || null;
+      } else if (!isOfflineSync) {
         return NextResponse.json({ error: 'The selected category no longer exists. Please refresh and try again.' }, { status: 400 });
       }
-      resolvedCategoryId = categoryId;
+    } else if (isOfflineSync && body.category?.name) {
+      const catByName = await prisma.category.findFirst({ where: { name: body.category.name }, select: { id: true } });
+      resolvedCategoryId = catByName?.id || null;
     }
 
     const product = await prisma.$transaction(async (tx) => {
@@ -278,6 +297,26 @@ export async function POST(request: NextRequest) {
     const prismaError = error as { code?: string };
     if (error instanceof Error) {
       if (error.message.includes('Unique constraint') || prismaError.code === 'P2002') {
+        const isOfflineHeader = request.headers.get('x-offline-sync') === '1' || request.headers.get('x-offline-sync') === 'true';
+        if (isOfflineHeader) {
+          try {
+            const rawBody = await request.clone().json().catch(() => null);
+            if (rawBody?.sku || rawBody?.barcode) {
+              const existing = await prisma.product.findFirst({
+                where: {
+                  OR: [
+                    ...(rawBody.sku ? [{ sku: rawBody.sku }] : []),
+                    ...(rawBody.barcode ? [{ barcode: rawBody.barcode }] : [])
+                  ]
+                },
+                select: { id: true, name: true, sku: true, barcode: true, stock: true },
+              });
+              if (existing) {
+                return NextResponse.json(existing, { status: 200 });
+              }
+            }
+          } catch { /* ignore */ }
+        }
         msg = 'SKU or Barcode already exists';
       } else if (prismaError.code === 'P2003') {
         msg = 'The selected category does not exist. Please refresh the page and try again.';

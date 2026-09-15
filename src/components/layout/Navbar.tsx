@@ -59,7 +59,7 @@ function getRelativeTime(dateStr: string) {
 
 export default function Navbar({ onMenuToggle }: NavbarProps) {
   const { data: session } = useSession();
-  const [cachedSession, setCachedSession] = useState<any>(null);
+  const [cachedSession, setCachedSession] = useState<{ user?: { id?: string | null; name?: string | null; email?: string | null; role?: string | null } } | null>(null);
   
   useEffect(() => {
     try {
@@ -67,7 +67,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       if (stored) {
         setCachedSession(JSON.parse(stored));
       }
-    } catch (e) {}
+    } catch {}
   }, []);
 
   const activeSession = session || cachedSession;
@@ -96,6 +96,31 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
     window.addEventListener('amroding:session-expired', handleSessionExpired);
     return () => window.removeEventListener('amroding:session-expired', handleSessionExpired);
   }, []);
+
+  const handleManualSync = useCallback(async () => {
+    if (isSyncingRef.current || isOffline) return;
+    try {
+      isSyncingRef.current = true;
+      setIsSyncing(true);
+      const toastId = toast.loading('Syncing offline data to cloud...');
+      const result = await processSyncQueue(true);
+      const remainingCount = await db.syncQueue.where('syncStatus').anyOf(['pending', 'failed', 'syncing']).count();
+      setPendingSyncCount(remainingCount);
+
+      if (result.synced > 0) {
+        toast.success(`Recovered and synced ${result.synced} item${result.synced > 1 ? 's' : ''} to cloud!`, { id: toastId });
+      } else if (result.failed > 0) {
+        toast.error(`Sync completed: ${result.failed} items still unresolved.`, { id: toastId });
+      } else {
+        toast.success('All data is synchronized with cloud.', { id: toastId });
+      }
+    } catch {
+      toast.error('Sync failed. Please check network connection.');
+    } finally {
+      isSyncingRef.current = false;
+      setIsSyncing(false);
+    }
+  }, [isOffline]);
 
   // Monitor Offline Status & Sync Queue
   useEffect(() => {
@@ -151,6 +176,11 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
     window.addEventListener('amroding:data-changed', countPending);
     checkOnlineStatus();
     countPending();
+
+    // Auto-attempt sync on startup if online
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      handleBackgroundSync();
+    }
 
     // Poll queue size periodically
     const syncInterval = setInterval(countPending, 5000);
@@ -378,8 +408,8 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
         <div 
           className="hide-mobile"
           style={{ display: 'inline-block', marginRight: '8px', cursor: pendingSyncCount > 0 && !isOffline ? 'pointer' : 'default' }}
-          onClick={() => { if (pendingSyncCount > 0 && !isOffline && !isSyncing) processSyncQueue(true); }}
-          title={isOffline ? 'Offline Mode' : isSyncing ? 'Syncing to Cloud...' : pendingSyncCount > 0 ? `${pendingSyncCount} items waiting to sync` : 'Cloud Sync Active'}
+          onClick={() => { if (pendingSyncCount > 0 && !isOffline) handleManualSync(); }}
+          title={isOffline ? 'Offline Mode' : isSyncing ? 'Syncing to Cloud...' : pendingSyncCount > 0 ? `${pendingSyncCount} items waiting to sync (Click to force sync)` : 'Cloud Sync Active'}
         >
           {isOffline ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--danger)', background: 'var(--danger-light)', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 600 }}>
@@ -410,10 +440,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
           onClick={() => {
             if (isOffline) toast.error('Offline Mode (No Internet)');
             else if (isSyncing) toast('Syncing to Cloud...', { icon: <RefreshCw size={16} className="spin-animation" /> });
-            else if (pendingSyncCount > 0) {
-              toast.success(`${pendingSyncCount} items waiting to sync`);
-              processSyncQueue(true);
-            }
+            else if (pendingSyncCount > 0) handleManualSync();
             else toast.success('System is Synced!');
           }}
         ></div>

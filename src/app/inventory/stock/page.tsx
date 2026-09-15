@@ -286,6 +286,7 @@ export default function StockInOutPage() {
     };
 
     syncData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [swrRes, swrError, products]);
 
   useEffect(() => {
@@ -335,12 +336,96 @@ export default function StockInOutPage() {
     }
   };
 
+  const overlayOfflineProducts = async (serverProducts: Product[] = []): Promise<Product[]> => {
+    const productMap = new Map<string, Product>();
+
+    // 1. Add server products
+    for (const p of serverProducts) {
+      if (p.id) productMap.set(p.id, p);
+      if (p.sku) productMap.set(`SKU:${p.sku.toLowerCase()}`, p);
+    }
+
+    // 2. Overlay from Dexie db.products
+    try {
+      const localProducts = await db.products.toArray();
+      for (const lp of localProducts) {
+        const hasId = productMap.has(lp.id);
+        const hasSku = lp.sku && productMap.has(`SKU:${lp.sku.toLowerCase()}`);
+        if (!hasId && !hasSku) {
+          const isPending = String(lp.id).startsWith('OFF-');
+          const mapped: Product = {
+            id: lp.id,
+            name: lp.name + (isPending ? ' (Pending Sync)' : ''),
+            sku: lp.sku,
+            barcode: lp.barcode || null,
+            price: lp.price,
+            stock: lp.stock,
+            image: lp.image || null,
+            unit: (lp as unknown as { unit?: string }).unit || lp.uoms?.find(u => u.isBase)?.name || 'pcs',
+            category: lp.categoryName ? { name: lp.categoryName } : null,
+            uoms: lp.uoms || []
+          };
+          productMap.set(lp.id, mapped);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to overlay Dexie products', e);
+    }
+
+    // 3. Overlay pending product CREATE tasks in db.syncQueue
+    try {
+      const pendingTasks = await db.syncQueue
+        .where('type')
+        .equals('product')
+        .and(t => t.action === 'CREATE' && t.syncStatus !== 'synced')
+        .toArray();
+
+      for (const task of pendingTasks) {
+        try {
+          const payload = JSON.parse(task.payload);
+          const taskId = payload.id || `OFF-${task.id}`;
+          const hasId = productMap.has(taskId);
+          const hasSku = payload.sku && productMap.has(`SKU:${String(payload.sku).toLowerCase()}`);
+          if (!hasId && !hasSku) {
+            const mapped: Product = {
+              id: taskId,
+              name: (payload.name || 'Offline Product') + ' (Pending Sync)',
+              sku: payload.sku || '',
+              barcode: payload.barcode || null,
+              price: Number(payload.price) || 0,
+              stock: Number(payload.stock) || 0,
+              image: payload.image || null,
+              unit: payload.unit || 'pcs',
+              category: payload.categoryName || payload.category?.name ? { name: payload.categoryName || payload.category?.name } : null,
+              uoms: payload.uoms || []
+            };
+            productMap.set(taskId, mapped);
+          }
+        } catch { /* ignore payload parse error */ }
+      }
+    } catch (e) {
+      console.warn('Failed to overlay syncQueue products', e);
+    }
+
+    const uniqueProducts: Product[] = [];
+    const seenIds = new Set<string>();
+    for (const [key, prod] of productMap.entries()) {
+      if (key.startsWith('SKU:')) continue;
+      if (!seenIds.has(prod.id)) {
+        seenIds.add(prod.id);
+        uniqueProducts.push(prod);
+      }
+    }
+    return uniqueProducts;
+  };
+
   const fetchProducts = async () => {
     try {
       const res = await fetch('/api/products');
       if (!res.ok) throw new Error('Network response was not ok');
       const data = await res.json();
-      setProducts(data);
+      const merged = await overlayOfflineProducts(data);
+      setProducts(merged);
       try {
         const cachedCats = await db.categories.toArray();
         if (cachedCats.length > 0) {
@@ -349,21 +434,8 @@ export default function StockInOutPage() {
       } catch {}
     } catch {
       try {
-        const cached = await db.products.toArray();
-        if (cached.length > 0) {
-          setProducts(cached.map(p => ({
-            id: p.id,
-            name: p.name,
-            sku: p.sku,
-            barcode: p.barcode,
-            price: p.price,
-            stock: p.stock,
-            image: p.image,
-            unit: (p as unknown as { unit?: string }).unit || p.uoms?.find(u => u.isBase)?.name || 'pcs',
-            category: p.categoryName ? { name: p.categoryName } : null,
-            uoms: p.uoms || []
-          })));
-        }
+        const merged = await overlayOfflineProducts([]);
+        setProducts(merged);
         const cachedCats = await db.categories.toArray();
         if (cachedCats.length > 0) {
           setCategories(cachedCats.map(c => ({ id: c.id, name: c.name })));
@@ -372,7 +444,7 @@ export default function StockInOutPage() {
     }
   };
 
-  const fetchStats = async (tf = statsTimeframe, currentLogs = logs) => {
+  async function fetchStats(tf = statsTimeframe, currentLogs = logs) {
     try {
       const res = await fetch(`/api/stock/stats?timeframe=${tf}`);
       if (!res.ok) throw new Error('Network response was not ok');
@@ -455,6 +527,7 @@ export default function StockInOutPage() {
       window.removeEventListener('stockSynced', handleAppSync);
       window.removeEventListener('offlineSyncTaskAdded', handleAppSync);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statsTimeframe]);
 
   const openModal = (type: 'IN' | 'OUT') => {
@@ -462,11 +535,11 @@ export default function StockInOutPage() {
     setIsModalOpen(true);
   };
 
-  const handleMovementSuccess = ({ productId, delta, finalQuantity, type, isOffline }: {
+  const handleMovementSuccess = ({ productId, delta, isOffline }: {
     productId: string;
     delta: number;
-    finalQuantity: number;
-    type: 'IN' | 'OUT';
+    finalQuantity?: number;
+    type?: 'IN' | 'OUT';
     isOffline: boolean;
   }) => {
     if (!isOffline) {
@@ -863,7 +936,7 @@ export default function StockInOutPage() {
                     name="sourceFilter"
                     className="form-select"
                     value={sourceFilter} 
-                    onChange={(e) => setSourceFilter(e.target.value as any)}
+                    onChange={(e) => setSourceFilter(e.target.value as typeof sourceFilter)}
                   >
                     <option value="ALL">All Sources</option>
                     <option value="STOCK_IN">Stock In / Deliveries ({inReceiveCount})</option>
@@ -1022,7 +1095,6 @@ export default function StockInOutPage() {
                               <button
                                 className="btn btn-icon"
                                 onClick={() => {
-                                  const prod = products.find(p => p.id === log.productId);
                                   setEditingLog(log);
                                   const parsedReason = log.reference ? log.reference.split(' (')[0] : '';
                                   setEditFormData({

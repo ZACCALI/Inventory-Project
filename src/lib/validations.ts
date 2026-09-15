@@ -45,7 +45,7 @@ const baseProductSchema = z.object({
   name: safeString(200),
   sku: safeString(100),
   barcode: safeOptionalString(100).or(z.literal(null)),
-  price: z.preprocess((val) => (val === '' ? undefined : val), z.coerce.number().min(0, 'Price cannot be negative')),
+  price: z.preprocess((val) => (val === '' || val === null || val === undefined ? 0 : val), z.coerce.number().min(0, 'Price cannot be negative')).default(0),
   costPrice: z.preprocess((val) => (val === '' || val === null || val === undefined ? undefined : val), z.coerce.number().min(0, 'Cost price cannot be negative')),
   stock: z.coerce.number().int().min(0),
   minStock: z.coerce.number().int().min(0),

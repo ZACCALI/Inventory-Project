@@ -130,7 +130,7 @@ export async function processSyncQueue(force: boolean = false): Promise<{ synced
       syncStatus: 'pending', 
       lastError: 'Recovered from interrupted sync' 
     });
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
 
   // CROSS-TAB LOCKING: Ensure only one tab processes the queue
   let result = { synced: 0, failed: 0 };
@@ -177,18 +177,17 @@ async function _processQueueInternal(force: boolean = false): Promise<{ synced: 
   });
 
   if (force) {
-    // Clear retry backoff and restore failed items (that aren't permanent 999 errors) to pending
+    // Clear retry backoff and unbrick ALL failed items (including those with 999 attempts) back to pending
     await db.syncQueue
       .where('syncStatus')
       .equals('failed')
-      .and(t => t.syncAttempts < 999)
-      .modify({ syncStatus: 'pending', nextRetryAfter: undefined });
+      .modify({ syncStatus: 'pending', syncAttempts: 0, nextRetryAfter: undefined, lastError: null });
   }
 
   const pending = await db.syncQueue
     .where('syncStatus')
     .anyOf(['pending', 'failed'])
-    .and(t => t.syncAttempts < 999 && (force || !t.nextRetryAfter || t.nextRetryAfter <= Date.now()))
+    .and(t => (force || t.syncAttempts < 999) && (force || !t.nextRetryAfter || t.nextRetryAfter <= Date.now()))
     .toArray();
 
   let synced = 0;
@@ -196,18 +195,20 @@ async function _processQueueInternal(force: boolean = false): Promise<{ synced: 
   const syncedTypes = new Set<string>();
   const failedDetails: Array<{ type: string; action: string; error: string }> = [];
 
-  // Pre-populate from existing permanently failed tasks (persists across sync runs)
-  const existingFailures = await db.syncQueue
-    .where('syncAttempts').aboveOrEqual(15)
-    .toArray();
+  // Pre-populate from existing permanently failed tasks only if NOT force-recovering
   const permanentlyFailedIds = new Set<string>();
-  for (const ft of existingFailures) {
-    try {
-      const ftPayload = JSON.parse(ft.payload);
-      if (ftPayload.id && String(ftPayload.id).startsWith('OFF-')) {
-        permanentlyFailedIds.add(ftPayload.id);
-      }
-    } catch { /* ignore */ }
+  if (!force) {
+    const existingFailures = await db.syncQueue
+      .where('syncAttempts').aboveOrEqual(15)
+      .toArray();
+    for (const ft of existingFailures) {
+      try {
+        const ftPayload = JSON.parse(ft.payload);
+        if (ftPayload.id && String(ftPayload.id).startsWith('OFF-')) {
+          permanentlyFailedIds.add(ftPayload.id);
+        }
+      } catch { /* ignore */ }
+    }
   }
 
   // Process sequentially to maintain order
@@ -251,6 +252,35 @@ async function _processQueueInternal(force: boolean = false): Promise<{ synced: 
 
       payload.isOfflineSync = true;
       payload.idempotencyKey = task.idempotencyKey;
+
+      // --- PAYLOAD AUTO-HEALING (Product creation robustness) ---
+      if (task.type === 'product' && task.action === 'CREATE') {
+        if (payload.price === undefined || payload.price === null || isNaN(Number(payload.price))) {
+          payload.price = 0;
+        } else {
+          payload.price = Number(payload.price);
+        }
+        if (payload.costPrice === undefined || payload.costPrice === null || isNaN(Number(payload.costPrice))) {
+          payload.costPrice = 0;
+        } else {
+          payload.costPrice = Number(payload.costPrice);
+        }
+        if (payload.minStock === undefined || payload.minStock === null || isNaN(Number(payload.minStock))) {
+          payload.minStock = 0;
+        } else {
+          payload.minStock = Number(payload.minStock);
+        }
+        if (payload.stock === undefined || payload.stock === null || isNaN(Number(payload.stock))) {
+          payload.stock = 0;
+        } else {
+          payload.stock = Number(payload.stock);
+        }
+        if (payload.categoryId && String(payload.categoryId).startsWith('OFF-')) {
+          if (!payload.category && payload.categoryName) {
+            payload.category = { name: payload.categoryName };
+          }
+        }
+      }
 
       // --- PHOTO UPLOAD PRE-STEP ---
       // If this task has a queued Base64 photo, upload it first and replace with URL
@@ -478,19 +508,17 @@ async function _processQueueInternal(force: boolean = false): Promise<{ synced: 
       } else {
         const errorMsg = responseJsonData?.error || responseJsonData?.message || `HTTP ${res.status}`;
         
-        // PERMANENT FAILURE HANDLING (4xx errors)
-        const isPermanentError = res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429;
-        const finalAttempts = isPermanentError ? 999 : task.syncAttempts + 1;
+        // Only mark truly unrecoverable permanent error (attempts = 999) on 404 or 410 for existing entity modifications.
+        // Never brick creations or recoverable validation / lock errors.
+        const isTrueUnrecoverable = (res.status === 404 || res.status === 410) && task.action !== 'CREATE';
+        const finalAttempts = isTrueUnrecoverable ? 999 : task.syncAttempts + 1;
         
-        if (isPermanentError && payload.id && String(payload.id).startsWith('OFF-')) {
+        if (isTrueUnrecoverable && payload.id && String(payload.id).startsWith('OFF-')) {
            permanentlyFailedIds.add(payload.id); // Mark this temp ID as failed so children are canceled
         }
 
-        let nextRetryAfter: number | undefined;
-        if (!isPermanentError) {
-          const backoffMs = Math.min(Math.pow(2, task.syncAttempts) * 5000, 300000);
-          nextRetryAfter = Date.now() + backoffMs;
-        }
+        const backoffMs = Math.min(Math.pow(2, task.syncAttempts) * 5000, 60000);
+        const nextRetryAfter = isTrueUnrecoverable ? undefined : Date.now() + backoffMs;
 
         await db.syncQueue.update(task.id!, {
           syncStatus: 'failed',
