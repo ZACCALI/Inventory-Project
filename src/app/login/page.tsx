@@ -31,7 +31,9 @@ export default function LoginPage() {
           const parsed = JSON.parse(cachedSettings);
           perms = role === 'staff' ? parsed.staffPermissions : parsed.cashierPermissions;
         }
-      } catch (e) {}
+      } catch {
+        // Ignore JSON parse errors
+      }
 
       const landing = getDefaultLandingPage(role, perms);
       router.replace(landing);
@@ -112,7 +114,7 @@ export default function LoginPage() {
     } catch (e) {
       console.error('Failed to parse auth error:', e);
     }
-  }, []);
+  }, [pathname, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -173,7 +175,9 @@ export default function LoginPage() {
                 const parsed = JSON.parse(cachedSettings);
                 perms = role === 'staff' ? parsed.staffPermissions : parsed.cashierPermissions;
               }
-            } catch (e) {}
+            } catch {
+              // Ignore cache parse errors
+            }
             landing = getDefaultLandingPage(role, perms);
           }
           router.push(landing);
@@ -182,7 +186,9 @@ export default function LoginPage() {
           try {
             const saved = localStorage.getItem('amroding_cached_session');
             if (saved) cachedRole = JSON.parse(saved)?.user?.role;
-          } catch (e) {}
+          } catch {
+            // Ignore cache parse errors
+          }
           router.push(getDefaultLandingPage(cachedRole));
         }
         router.refresh();
